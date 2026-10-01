@@ -617,3 +617,9 @@ body.sheet-open .to-top { display: none; }
 .settle-row { margin-top: 4px; }
 .form label.prev-night { margin-top: -4px; font-size: .85rem; flex-wrap: wrap; }
 .row .time small.prev-tag { color: var(--accent-ink); font-weight: 700; }
+.form.is-flight .not-flight { display: none !important; }
+.pax-refs { display: flex; flex-direction: column; gap: 6px; margin-top: 4px; }
+.pax-refs:empty { display: none; }
+.form label.pax-ref { flex-direction: row; align-items: center; gap: 10px; }
+.pax-ref span { flex: 0 0 64px; font-weight: 600; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pax-ref input { flex: 1; text-transform: uppercase; }

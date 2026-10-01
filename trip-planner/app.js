@@ -633,6 +633,7 @@ function renderTripSkeleton() {
           <fieldset class="sub flight-only">
             <legend>ใครอยู่ในไฟลท์นี้</legend>
             <div class="pax" id="pax-box">${members().map((m) => `<label class="pax-opt"><input type="checkbox" name="pax" value="${esc(m)}"><span>${esc(m)}</span></label>`).join("")}</div>
+            <div class="pax-refs" id="pax-refs"></div>
             <small class="muted">เอกสารโชว์ ตม. ของแต่ละคนจะมีเฉพาะไฟลท์ที่ติ๊กชื่อไว้</small>
           </fieldset>
           <fieldset class="sub hotel-only">
@@ -646,7 +647,7 @@ function renderTripSkeleton() {
             <small class="muted" id="nights-preview"></small>
           </fieldset>
           <label class="not-hotel">เวลา<input type="time" name="time"></label>
-          <label>เลขการจอง<input name="ref"></label>
+          <label class="not-flight">เลขการจอง<input name="ref"></label>
           <label class="wide hotel-only">ที่อยู่โรงแรม <small class="muted">(ภาษาอังกฤษ — ใช้ในเอกสารโชว์ ตม. และหาตำแหน่งที่พัก)</small>
             <textarea name="address" rows="2" placeholder="เช่น 8-9 Namba-sennichimae, Chuo-ku, Osaka 542-0075"></textarea></label>
           <label class="wide"><span class="hotel-only">ลิงก์ Google Maps / ชื่อบนแผนที่ (ไม่บังคับ)</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
@@ -812,6 +813,23 @@ const mapLink = (place, fallback = "") =>
 // เที่ยวบิน: ใครอยู่ในไฟลท์นี้ (รายการเก่าที่ยังไม่ระบุ = ทุกคน)
 const isFlight = (b) => b?.type === "เที่ยวบิน";
 const paxOf = (b) => (Array.isArray(b.passengers) ? b.passengers.filter((m) => members().includes(m)) : members());
+// เลขการจอง (Booking ref.) ของเที่ยวบินแยกรายคน — รายการเก่าที่มีเลขเดียวใช้กับทุกคน
+const refOf = (b, m) => (b ? (isFlight(b) && m && b.refs?.[m]) || b.ref || "" : "");
+const refsText = (b) => {
+  if (!isFlight(b)) return b.ref || "";
+  const list = paxOf(b).map((m) => [m, refOf(b, m)]).filter(([, r]) => r);
+  return [...new Set(list.map(([, r]) => r))].length === 1 && list.length === paxOf(b).length ? list[0][1] : list.map(([m, r]) => `${m}: ${r}`).join(" · ");
+};
+// ช่องกรอกเลขการจองของแต่ละคนที่ติ๊กไว้ (คงค่าที่พิมพ์ไว้)
+function renderPaxRefs(values) {
+  const box = document.getElementById("pax-refs");
+  if (!box) return;
+  const keep = values || Object.fromEntries([...box.querySelectorAll("[data-ref-m]")].map((i) => [i.dataset.refM, i.value]));
+  const pax = [...document.querySelectorAll("#book-form [name=pax]:checked")].map((c) => c.value);
+  box.innerHTML = pax.length ? `<div class="field-label">เลขการจอง (Booking ref.) ของแต่ละคน</div>` + pax.map((m) => `
+    <label class="pax-ref"><span>${esc(m)}</span><input data-ref-m="${esc(m)}" value="${esc(keep[m] || "")}" placeholder="เช่น ABC123" autocomplete="off"></label>`).join("") : "";
+}
+const readPaxRefs = () => Object.fromEntries([...document.querySelectorAll("#pax-refs [data-ref-m]")].map((i) => [i.dataset.refM, i.value.trim().toUpperCase()]).filter(([, v]) => v));
 
 /* ---------- แพลนรายวัน ---------- */
 let dragging = false; // กำลังลากจัดลำดับ → ยังไม่วาดรายการใหม่
@@ -981,7 +999,7 @@ function itemHtml(x) {
       <div class="body">
         <div class="title">${st === "done" ? `<span class="st-badge done">✓ ไปแล้ว</span> ` : st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
         <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
-        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
+        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${refOf(bk, getMe()) ? ` · ${esc(refOf(bk, getMe()))}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
         <div class="status-btns">
           <label class="st-check"><input type="checkbox" data-action="item-done" data-id="${esc(x.id)}" ${st === "done" ? "checked" : ""} ${st === "cancel" ? "disabled" : ""}><span>ไปแล้ว</span></label>
@@ -1366,7 +1384,7 @@ function renderBookings() {
                  <div class="meta">${mapLink(b.place || b.address || b.title, b.title)}</div>`
               : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place, b.title)}</div>`}
             ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
-            ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
+            ${refsText(b) ? `<div class="ref">เลขการจอง: <b>${esc(refsText(b))}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
           </div>
@@ -1447,6 +1465,7 @@ function startEditBooking(id) {
   ["type", "date", "time", "title", "ref", "place", "note", "address"].forEach((k) => (f[k].value = b[k] ?? ""));
   const pax = paxOf(b);
   form.querySelectorAll("[name=pax]").forEach((cb) => (cb.checked = pax.includes(cb.value)));
+  renderPaxRefs(Object.fromEntries(members().map((m) => [m, refOf(b, m)])));
   if (isHotel(b)) {
     f.checkInDate.value = b.date || "";
     f.checkInTime.value = b.time || "";
@@ -1463,6 +1482,7 @@ function startEditBooking(id) {
 function defaultPax() {
   const me = getMe();
   document.querySelectorAll("#book-form [name=pax]").forEach((cb) => (cb.checked = me ? cb.value === me : true));
+  renderPaxRefs({});
 }
 
 function newBooking() {
@@ -2313,7 +2333,7 @@ function buildImmiPrintView() {
       ${comp.length ? `<tr><th>Travelling with</th><td>${comp.length} friend${comp.length > 1 ? "s" : ""}</td></tr>` : ""}
     </tbody></table>
     <h2>Flights</h2>
-    ${fl.length ? table(["Date", "Flight / Route", "Time", "Booking ref."], fl.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.time || "")}</td><td>${esc(b.ref || "")}</td></tr>`), "c-flight") : "<p>—</p>"}
+    ${fl.length ? table(["Date", "Flight / Route", "Time", "Booking ref."], fl.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.time || "")}</td><td>${esc(refOf(b, me))}</td></tr>`), "c-flight") : "<p>—</p>"}
     <h2>Accommodation</h2>
     ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${esc(h.address || placeQuery(h.place) || "")}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(h.ref || "")}</td></tr>`), "c-hotel") : "<p>—</p>"}
     ${others.length ? `<h2>Other reservations</h2>${table(["Date", "Details", "Booking ref."], others.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.ref || "")}</td></tr>`), "c-other")}` : ""}
@@ -2351,7 +2371,7 @@ function buildPrintView() {
               const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
               const warns = hoursWarnings(x);
               return `<tr><td>${esc(x.time) || "-"}${x.prevNight && x.time ? "<br><small>(คืนก่อน)</small>" : ""}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
-                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
+                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${refsText(bk) ? ` (${esc(refsText(bk))})` : ""}` : ""}</td>
                 <td>${esc(placeLabel(x.place, x.activity))}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
                 <td>${esc(x.note)}</td></tr>`;
             }), "c-plan")
@@ -2360,7 +2380,7 @@ function buildPrintView() {
     <h2>การจอง</h2>
     ${data.bookings.length ? table(["ประเภท", "รายละเอียด", "วันที่/เวลา", "เลขการจอง", "สถานที่", "หมายเหตุ"],
       [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-        .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}${isFlight(b) ? `<br><small>ผู้โดยสาร: ${paxOf(b).map(esc).join(", ")}</small>` : ""}</td><td>${isHotel(b) ? `เช็คอิน ${fmtDate(b.date)} ${esc(b.time)}<br>เช็คเอาท์ ${fmtDate(b.checkOutDate)} ${esc(b.checkOutTime)} (${nightsOf(b)} คืน)` : `${fmtDate(b.date)} ${esc(b.time)}`}</td><td>${esc(b.ref)}</td><td>${esc(isHotel(b) ? b.address || placeLabel(b.place, b.title) : placeLabel(b.place, ""))}</td><td>${esc(b.note)}</td></tr>`), "c-book") : "<p>—</p>"}
+        .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}${isFlight(b) ? `<br><small>ผู้โดยสาร: ${paxOf(b).map(esc).join(", ")}</small>` : ""}</td><td>${isHotel(b) ? `เช็คอิน ${fmtDate(b.date)} ${esc(b.time)}<br>เช็คเอาท์ ${fmtDate(b.checkOutDate)} ${esc(b.checkOutTime)} (${nightsOf(b)} คืน)` : `${fmtDate(b.date)} ${esc(b.time)}`}</td><td>${esc(refsText(b))}</td><td>${esc(isHotel(b) ? b.address || placeLabel(b.place, b.title) : placeLabel(b.place, ""))}</td><td>${esc(b.note)}</td></tr>`), "c-book") : "<p>—</p>"}
     <h2>งบและค่าใช้จ่าย</h2>
     ${isForeign() && rateOf(tripCur()) ? `<p>อัตราแลกเปลี่ยน: 1 ${tripCur()} = ${num(trip.rate).toFixed(4)} บาท — ${esc(rateRefText())}</p>` : ""}
     ${data.expenses.length ? table(["รายการ", "จำนวน", "จ่ายโดย", "วันที่", "โอนคืนแล้ว"],
@@ -2662,6 +2682,7 @@ function onChange(e) {
   } else if (el.dataset.action === "toggle") {
     store.update(trip.id, el.dataset.sub, el.dataset.id, { done: el.checked });
   } else if (el.closest("#book-form")) {
+    if (el.name === "pax") renderPaxRefs();
     syncBookForm();
   }
 }
@@ -2757,6 +2778,8 @@ function onSubmit(e) {
       };
       if (f.type === "เที่ยวบิน") {
         rec.passengers = new FormData(form).getAll("pax");
+        rec.refs = readPaxRefs();
+        rec.ref = "";
         if (!rec.passengers.length) { toast("ติ๊กอย่างน้อย 1 คนที่อยู่ในไฟลท์นี้"); return; }
       }
       if (!rec.title) return;
