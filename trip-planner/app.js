@@ -266,6 +266,10 @@ function cleanup() {
   tab = "plan";
   firstTripLoad = true;
   wishView = null;
+  wishFilter = "all";
+  wishCatFilter = "all";
+  planOpenId = null;
+  editingWishId = null;
 }
 
 function route() {
@@ -468,18 +472,29 @@ function renderTripSkeleton() {
       </div>
       <div id="suggest-view"></div>
       <div id="wish-mine">
-      <div id="wish-list"></div>
-      <form id="wish-form" class="card form">
-        <h3>เพิ่มที่อยากไป</h3>
+      <button type="button" class="btn primary add-wish-btn" data-action="wish-new" id="wish-new-btn">＋ เพิ่มที่อยากไป</button>
+      <form id="wish-form" class="card form" hidden>
+        <h3 id="wish-form-title">เพิ่มที่อยากไป</h3>
         <div class="grid">
-          <label class="wide">ชื่อ*<input name="name" required placeholder="เช่น ร้านคาเฟ่ที่ศิลปินเคยมา"></label>
+          <label class="wide">ชื่อร้าน / สถานที่*<input name="name" required placeholder="เช่น Ichiran Ramen Dotonbori"></label>
           <label>หมวด<select name="category">${WISH_CATS.map((c) => `<option>${c}</option>`).join("")}</select></label>
-          <label>สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place"></label>
-          <label class="wide">ลิงก์ (IG / รีวิว)<input type="url" name="link" placeholder="https://"></label>
+          <div class="wide prio-field"><span class="prio-label">ความอยากไป</span>
+            <div class="prio-opts">${PRIORITIES.map(([v, l]) => `<label class="prio-opt"><input type="radio" name="priority" value="${v}" ${v === 2 ? "checked" : ""}><span>${"★".repeat(v)}<small>${l}</small></span></label>`).join("")}</div>
+          </div>
+          <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="ใช้เปิดแผนที่"></label>
+          <label class="wide">ลิงก์รีวิว / IG / TikTok<input type="url" name="link" placeholder="https://"></label>
+          <label class="wide">ใครแนะนำ / เจอจากไหน<input name="source" placeholder="เช่น พายแนะนำ, เพจ xxx, TikTok @xxx"></label>
+          <label>งบโดยประมาณ (ต่อคน)
+            <div class="amount-cur"><input type="number" name="budget" min="0" step="any" inputmode="decimal">${curSelect("budgetCurrency", tripCur())}</div></label>
+          <label>เมนูเด็ด / ต้องลอง<input name="mustTry" placeholder="เช่น ราเมนต้นตำรับ + ไข่ต้ม"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
-        <div class="actions"><button class="btn primary">เพิ่ม</button></div>
+        <div class="actions">
+          <button class="btn primary" id="wish-submit">บันทึก</button>
+          <button class="btn" type="button" data-action="wish-cancel">ยกเลิก</button>
+        </div>
       </form>
+      <div id="wish-list"></div>
       </div>
     </section>
 
@@ -608,7 +623,7 @@ function renderAll() { renderPlan(); renderWishlist(); renderSuggest(); renderBo
 
 function renderSection(s) {
   ({
-    items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); },
+    items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); renderWishlist(); renderSuggest(); },
     wishlist: () => { renderWishlist(); renderSuggest(); },
     bookings: () => { renderBookings(); renderPlan(); renderPrep(); renderSuggest(); },
     expenses: renderMoney,
@@ -772,43 +787,124 @@ function stopEdit() {
 }
 
 /* ---------- Wishlist ---------- */
+const PRIORITIES = [[1, "อยากไป"], [2, "อยากไปมาก"], [3, "ต้องไปให้ได้"]];
+let wishFilter = "all";      // all | todo | planned
+let wishCatFilter = "all";
+let planOpenId = null;       // รายการที่กำลังเลือกวันใส่แพลน
+let editingWishId = null;
+
+// วันที่ในแพลนของรายการนี้ (นับจากกิจกรรมจริง — ลบออกจากแพลนแล้วสถานะจะกลับเป็น "ยังไม่ได้ใส่")
+function wishPlanDates(w) {
+  const linked = data.items.filter((i) => i.wishId === w.id).map((i) => i.date);
+  if (linked.length || w.planLinked) return [...new Set(linked)].sort();
+  return w.plannedDate ? [w.plannedDate] : []; // รายการเก่า
+}
+const linkLabel = (url = "") =>
+  /instagram\.com/i.test(url) ? "📷 IG" : /tiktok\.com/i.test(url) ? "🎵 TikTok" : /youtu/i.test(url) ? "▶️ YouTube" :
+  /facebook\.com|fb\.watch/i.test(url) ? "📘 Facebook" : /tabelog/i.test(url) ? "🍽️ Tabelog" : "🔗 รีวิว";
+
 function renderWishlist() {
   const el = $("#wish-list");
   if (!el) return;
   const days = tripDays();
-  const dayOpts = days.map((d, i) => `<option value="${d}">วันที่ ${i + 1} · ${fmtDate(d)}</option>`).join("");
-  const catOf = (w) => (WISH_CATS.includes(w.category) ? w.category : "อื่นๆ");
-  const groups = WISH_CATS.map((c) => [c, data.wishlist.filter((w) => catOf(w) === c).sort(byCreated)]).filter((g) => g[1].length);
-  el.innerHTML = groups.length
-    ? groups.map(([c, list]) => `
-        <div class="card"><h3>${c} <small class="muted">(${list.length})</small></h3>
-          <ul class="rows">${list.map((w) => `
-            <li class="row">
-              <div class="body">
-                <div class="title">${esc(w.name)} ${w.plannedDate ? `<span class="badge ok">อยู่ในแพลน · ${fmtDate(w.plannedDate)}</span>` : ""}</div>
-                <div class="meta">${mapLink(w.place || w.name)}${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">🔗 ลิงก์</a>` : ""}</div>
-                ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
-                <div class="to-plan">
-                  <select data-role="wish-date" data-id="${esc(w.id)}">${dayOpts}</select>
-                  <button type="button" class="btn small" data-action="to-plan" data-id="${esc(w.id)}">ใส่ลงแพลน</button>
-                </div>
-              </div>
-              <div class="row-actions">${delBtn("wishlist", w.id)}</div>
-            </li>`).join("")}</ul>
-        </div>`).join("")
-    : `<p class="empty">ยังไม่มีที่อยากไป — เพิ่มคาเฟ่ ร้านอาหาร หรือที่ตามรอยศิลปินไว้ก่อน แล้วค่อยใส่ลงแพลน</p>`;
+  const all = data.wishlist.map((w) => ({ ...w, dates: wishPlanDates(w) }));
+  const todo = all.filter((w) => !w.dates.length);
+  const cats = [...new Set(all.map((w) => (WISH_CATS.includes(w.category) ? w.category : "อื่นๆ")))];
+  if (wishCatFilter !== "all" && !cats.includes(wishCatFilter)) wishCatFilter = "all";
+  let list = all.filter((w) => (wishFilter === "all" || (wishFilter === "todo" ? !w.dates.length : w.dates.length)) &&
+    (wishCatFilter === "all" || (WISH_CATS.includes(w.category) ? w.category : "อื่นๆ") === wishCatFilter));
+  list.sort((a, b) => (+!!a.dates.length - +!!b.dates.length) || (num(b.priority || 2) - num(a.priority || 2)) || byCreated(a, b));
+
+  if (!all.length) {
+    el.innerHTML = `<p class="empty">ยังไม่มีที่อยากไป — กด “＋ เพิ่มที่อยากไป” เพื่อลิสต์ร้านหรือที่เที่ยวไว้ก่อน<br>หรือดูไอเดียจาก “✨ สถานที่แนะนำ”</p>`;
+    return;
+  }
+  const dayOpts = days.map((d, i) => `<option value="${d}">วันที่ ${i + 1} · ${fmtDate(d, "weekday")}</option>`).join("");
+  el.innerHTML = `
+    <div class="wish-summary">
+      <div class="chip-row">
+        <button type="button" class="fchip ${wishFilter === "all" ? "active" : ""}" data-action="wish-filter" data-v="all">ทั้งหมด ${all.length}</button>
+        <button type="button" class="fchip ${wishFilter === "todo" ? "active" : ""}" data-action="wish-filter" data-v="todo">🟠 ยังไม่ใส่แพลน ${todo.length}</button>
+        <button type="button" class="fchip ${wishFilter === "planned" ? "active" : ""}" data-action="wish-filter" data-v="planned">✓ ใส่แพลนแล้ว ${all.length - todo.length}</button>
+      </div>
+      ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
+    </div>
+    ${list.length ? list.map((w) => {
+      const prio = num(w.priority) || 2;
+      const status = w.dates.length
+        ? `<span class="wstatus done">✓ อยู่ในแพลน ${w.dates.map((d) => `วันที่ ${days.indexOf(d) + 1} (${fmtDate(d)})`).join(", ")}</span>`
+        : `<span class="wstatus todo">ยังไม่ได้ใส่ในแพลน</span>`;
+      const picking = planOpenId === w.id;
+      return `
+      <article class="card wish-card ${w.dates.length ? "is-planned" : ""}" id="wish-${esc(w.id)}">
+        <div class="wish-top">
+          <div class="wish-title">
+            <h3>${esc(w.name)}</h3>
+            <div class="prio p${prio}" title="${esc(PRIORITIES[prio - 1][1])}">${"★".repeat(prio)}<span>${"★".repeat(3 - prio)}</span> <small>${esc(PRIORITIES[prio - 1][1])}</small></div>
+          </div>
+          <div class="row-actions">
+            <button type="button" class="icon" data-action="wish-edit" data-id="${esc(w.id)}" title="แก้ไข">✎</button>${delBtn("wishlist", w.id)}
+          </div>
+        </div>
+        ${status}
+        <div class="meta wish-meta">
+          <span class="badge">${esc(w.category || "อื่นๆ")}</span>
+          ${mapLink(w.place || w.name)}
+          ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
+          ${num(w.budget) ? `<span>💰 ~${fmtWithTHB(w.budget, w.budgetCurrency)}/คน</span>` : ""}
+        </div>
+        ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
+        ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
+        ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
+        ${picking
+          ? `<div class="to-plan">
+               <select data-role="wish-date" data-id="${esc(w.id)}">${dayOpts}</select>
+               <button type="button" class="btn small primary" data-action="to-plan" data-id="${esc(w.id)}">ยืนยัน</button>
+               <button type="button" class="btn small" data-action="plan-cancel">ยกเลิก</button>
+             </div>`
+          : `<button type="button" class="btn small plan-btn" data-action="plan-open" data-id="${esc(w.id)}">📅 ${w.dates.length ? "ใส่อีกวัน" : "ใส่ลงแพลน"}</button>`}
+      </article>`;
+    }).join("") : `<p class="empty">ไม่มีรายการตามตัวกรองนี้</p>`}`;
 }
 
 function wishToPlan(id) {
   const w = data.wishlist.find((x) => x.id === id);
   const sel = app.querySelector(`[data-role=wish-date][data-id="${CSS.escape(id)}"]`);
   if (!w || !sel) return;
+  const note = [w.mustTry ? `ต้องลอง: ${w.mustTry}` : "", w.note || ""].filter(Boolean).join(" · ");
   store.add(trip.id, "items", {
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
-    transport: "", cost: 0, costCurrency: tripCur(), note: w.note || "", createdAt: Date.now(),
+    transport: "", cost: num(w.budget), costCurrency: w.budgetCurrency || tripCur(), note, wishId: w.id, createdAt: Date.now(),
   });
-  store.update(trip.id, "wishlist", id, { plannedDate: sel.value });
+  store.update(trip.id, "wishlist", id, { plannedDate: sel.value, planLinked: true });
+  planOpenId = null;
   toast(`ใส่ “${w.name}” ลงแพลน ${fmtDate(sel.value)} แล้ว`);
+}
+
+function openWishForm(w) {
+  const form = $("#wish-form");
+  const f = form.elements;
+  form.reset();
+  editingWishId = w ? w.id : null;
+  if (w) {
+    ["name", "category", "place", "link", "source", "budget", "mustTry", "note"].forEach((k) => (f[k].value = w[k] ?? ""));
+    f.budgetCurrency.value = w.budgetCurrency || tripCur();
+    const pr = String(num(w.priority) || 2);
+    form.querySelectorAll("[name=priority]").forEach((r) => (r.checked = r.value === pr));
+  }
+  $("#wish-form-title").textContent = w ? "แก้ไขที่อยากไป" : "เพิ่มที่อยากไป";
+  form.hidden = false;
+  $("#wish-new-btn").hidden = true;
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  if (!w) setTimeout(() => f.name.focus(), 300);
+}
+
+function closeWishForm() {
+  const form = $("#wish-form");
+  form.reset();
+  form.hidden = true;
+  editingWishId = null;
+  $("#wish-new-btn").hidden = false;
 }
 
 /* ---------- การจอง ---------- */
@@ -1253,7 +1349,7 @@ function addSuggestToWishlist(id) {
   store.add(trip.id, "wishlist", {
     name: p.name, category: SG_TO_WISH[cat] || "อื่นๆ", place: p.nameEn, link: src?.url || "",
     note: `${p.season?.label ? p.season.label + " · " : ""}${p.time ? "ใช้เวลา " + p.time : ""}`.trim(),
-    plannedDate: "", suggestId: id, createdAt: Date.now(),
+    plannedDate: "", planLinked: true, priority: 2, source: `สถานที่แนะนำ · ${src?.publisher || ""}`, suggestId: id, createdAt: Date.now(),
   });
   toast(`เพิ่ม “${p.name}” ใน Wishlist แล้ว`);
 }
@@ -1317,7 +1413,7 @@ function renderSuggest() {
             <div class="muted">${esc(p.nameEn)} · ${esc(p.city)}</div>
           </div>
           ${added
-            ? `<span class="sg-added">${added.plannedDate ? `✓ อยู่ในแพลน ${fmtDate(added.plannedDate)}` : "✓ เพิ่มแล้ว"}</span>`
+            ? `<span class="sg-added">${wishPlanDates(added).length ? `✓ อยู่ในแพลน ${fmtDate(wishPlanDates(added)[0])}` : "✓ เพิ่มแล้ว · ยังไม่ใส่แพลน"}</span>`
             : `<button type="button" class="btn small primary" data-action="sg-add" data-id="${esc(p.id)}">+ Wishlist</button>`}
         </div>
         <div class="sg-tags">${p.cats.map((c) => `<span class="badge">${catLabel[c] || c}</span>`).join("")}${p.season ? `<span class="badge ${inSeason ? "ok" : ""}">${esc(p.season.label)}${inSeason ? " · ตรงช่วงทริป" : ""}</span>` : ""}</div>
@@ -1526,7 +1622,7 @@ function buildPrintView() {
       [...data.expenses].sort(byCreated).map((e) => `<tr><td>${esc(e.title)}</td><td>${fmtWithTHB(e.amount, e.currency)}</td><td>${esc(e.paidBy)}</td><td>${e.date ? fmtDate(e.date) : ""}</td></tr>`)) : ""}
     ${settleHtml()}
     <h2>Wishlist</h2>
-    ${data.wishlist.length ? `<ul>${[...data.wishlist].sort(byCreated).map((w) => `<li>[${esc(w.category)}] ${esc(w.name)}${w.place ? " — " + esc(w.place) : ""}${w.note ? " · " + esc(w.note) : ""}</li>`).join("")}</ul>` : "<p>—</p>"}
+    ${data.wishlist.length ? `<ul>${[...data.wishlist].sort((a, b) => num(b.priority || 2) - num(a.priority || 2)).map((w) => { const ds = wishPlanDates(w); return `<li>${"★".repeat(num(w.priority) || 2)} [${esc(w.category)}] ${esc(w.name)}${w.mustTry ? " · ต้องลอง: " + esc(w.mustTry) : ""}${num(w.budget) ? " · ~" + fmtCur(w.budget, w.budgetCurrency) : ""} — ${ds.length ? "อยู่ในแพลน " + ds.map((d) => fmtDate(d)).join(", ") : "ยังไม่ใส่แพลน"}</li>`; }).join("")}</ul>` : "<p>—</p>"}
     <h2>ของที่ต้องเตรียม</h2>
     ${members().map((m) => { const st = packStats(m); return `<h3>${esc(m)} (${st.done}/${st.total})</h3>${st.total ? `<ul>${st.list.map((p) => `<li>${p.done ? "☑" : "☐"} ${esc(p.name)}</li>`).join("")}</ul>` : "<p>—</p>"}`; }).join("")}
     <h2>เช็กลิสต์ก่อนเดินทาง</h2>
@@ -1586,6 +1682,13 @@ function onClick(e) {
   else if (action === "edit-booking") startEditBooking(id);
   else if (action === "cancel-book-edit") stopEditBooking();
   else if (action === "to-plan") wishToPlan(id);
+  else if (action === "plan-open") { planOpenId = id; renderWishlist(); }
+  else if (action === "plan-cancel") { planOpenId = null; renderWishlist(); }
+  else if (action === "wish-new") openWishForm(null);
+  else if (action === "wish-edit") { openWishForm(data.wishlist.find((w) => w.id === id)); }
+  else if (action === "wish-cancel") closeWishForm();
+  else if (action === "wish-filter") { wishFilter = b.dataset.v; renderWishlist(); }
+  else if (action === "wish-cat") { wishCatFilter = b.dataset.v; renderWishlist(); }
   else if (action === "add-sugg") {
     store.add(trip.id, "packing", { owner: getMe(), name: b.dataset.name, done: false, createdAt: Date.now() });
   }
@@ -1674,6 +1777,7 @@ async function confirmDelete(sub, id) {
   store.remove(trip.id, sub, id);
   if (id === editingItemId) stopEdit();
   if (id === editingBookingId) stopEditBooking();
+  if (id === editingWishId) closeWishForm();
   toast("ลบแล้ว");
 }
 
@@ -1759,9 +1863,20 @@ function onSubmit(e) {
       toast("บันทึกแล้ว");
       return;
     }
-    case "wish-form":
-      store.add(trip.id, "wishlist", { name: f.name.trim(), category: f.category, place: f.place.trim(), link: f.link.trim(), note: f.note.trim(), plannedDate: "", createdAt: now });
-      break;
+    case "wish-form": {
+      const rec = {
+        name: f.name.trim(), category: f.category, place: f.place.trim(), link: f.link.trim(), note: f.note.trim(),
+        priority: num(f.priority) || 2, source: f.source.trim(), budget: num(f.budget), budgetCurrency: f.budgetCurrency || "THB",
+        mustTry: f.mustTry.trim(),
+      };
+      if (!rec.name) return;
+      if (editingWishId) store.update(trip.id, "wishlist", editingWishId, rec);
+      else store.add(trip.id, "wishlist", { ...rec, plannedDate: "", planLinked: true, createdAt: now });
+      wishFilter = "all";
+      closeWishForm();
+      toast(editingWishId ? "บันทึกแล้ว" : `เพิ่ม “${rec.name}” แล้ว — ยังไม่ได้ใส่ในแพลน`);
+      return;
+    }
     case "book-form": {
       const hotel = f.type === "ที่พัก";
       if (hotel && (!f.checkInDate || !f.checkOutDate || f.checkOutDate <= f.checkInDate)) { toast("ใส่วันเช็คอิน–เช็คเอาท์ให้ถูกต้อง"); return; }

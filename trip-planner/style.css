@@ -229,6 +229,34 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); 
 .sg-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; margin-top: 6px; }
 .sg-src { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .8rem; color: var(--muted); overflow-wrap: anywhere; }
 
+/* ---------- Wishlist ของเรา ---------- */
+.add-wish-btn { width: 100%; margin-bottom: 14px; min-height: 48px; font-size: 1rem; }
+.wish-summary { margin-bottom: 10px; }
+.wish-card { padding: 14px 16px; }
+.wish-card.is-planned { background: #fbfdfb; }
+.wish-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.wish-title { min-width: 0; }
+.wish-title h3 { margin: 0; overflow-wrap: anywhere; }
+.prio { color: #f0a500; font-size: .95rem; letter-spacing: 1px; }
+.prio span { color: #ddd; }
+.prio small { color: var(--muted); font-size: .75rem; letter-spacing: 0; margin-left: 4px; }
+.prio.p3 small { color: var(--neg); font-weight: 700; }
+.wstatus { display: inline-block; margin-top: 6px; font-size: .8rem; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
+.wstatus.todo { background: #fff1e0; color: #b45f00; }
+.wstatus.done { background: #e3f4ea; color: var(--ok); }
+.wish-meta { margin-top: 8px; align-items: center; }
+.wish-line { font-size: .88rem; margin-top: 4px; overflow-wrap: anywhere; }
+.plan-btn { margin-top: 10px; }
+.prio-field { display: flex; flex-direction: column; gap: 4px; }
+.prio-label { font-size: .85rem; color: var(--muted); }
+.prio-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.form label.prio-opt { flex-direction: row; cursor: pointer; }
+.prio-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
+.prio-opt span { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; color: #f0a500; font-size: 1rem; line-height: 1.2; background: #fff; }
+.prio-opt span small { color: var(--text); font-size: .75rem; }
+.prio-opt input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
+.prio-opt input:focus-visible + span { outline: 2px solid var(--accent); }
+
 /* ---------- ตาราง ---------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
