@@ -461,6 +461,12 @@ function renderTripSkeleton() {
     </section>
 
     <section data-panel="wishlist">
+      <div class="seg" role="tablist">
+        <button type="button" data-action="wish-view" data-v="mine" id="seg-mine">⭐ ของเรา</button>
+        <button type="button" data-action="wish-view" data-v="suggest" id="seg-suggest">✨ สถานที่แนะนำ</button>
+      </div>
+      <div id="suggest-view"></div>
+      <div id="wish-mine">
       <div id="wish-list"></div>
       <form id="wish-form" class="card form">
         <h3>เพิ่มที่อยากไป</h3>
@@ -473,6 +479,7 @@ function renderTripSkeleton() {
         </div>
         <div class="actions"><button class="btn primary">เพิ่ม</button></div>
       </form>
+      </div>
     </section>
 
     <section data-panel="bookings">
@@ -596,13 +603,13 @@ function syncMeForms() {
   if (paidBy && me) paidBy.value = me;
 }
 
-function renderAll() { renderPlan(); renderWishlist(); renderBookings(); renderMoney(); renderPacking(); renderChecklist(); renderPrep(); }
+function renderAll() { renderPlan(); renderWishlist(); renderSuggest(); renderBookings(); renderMoney(); renderPacking(); renderChecklist(); renderPrep(); }
 
 function renderSection(s) {
   ({
     items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); },
-    wishlist: renderWishlist,
-    bookings: () => { renderBookings(); renderPlan(); renderPrep(); },
+    wishlist: () => { renderWishlist(); renderSuggest(); },
+    bookings: () => { renderBookings(); renderPlan(); renderPrep(); renderSuggest(); },
     expenses: renderMoney,
     packing: renderPacking,
     checklist: renderChecklist,
@@ -1179,6 +1186,155 @@ function openTripEdit(id) {
 /* ============================================================
    เตรียมตัว / ตม.
    ============================================================ */
+/* ============================================================
+   สถานที่แนะนำ (data/places.json) + ระยะทางจากที่พัก
+   ============================================================ */
+let PLACES = { places: [] };
+let wishView = "mine";
+let sgCity = "all";
+let sgCat = "all";
+let sgHotelId = "";
+const SG_CATS = [
+  ["all", "ทั้งหมด"], ["cafe", "☕ คาเฟ่"], ["photo", "📸 ถ่ายรูป"], ["food", "🍜 ของกิน"], ["shopping", "🛍️ ช้อปปิ้ง"],
+  ["kpop", "💚 ตามรอยศิลปิน"], ["nature", "🍁 ธรรมชาติ"], ["sight", "⛩️ วัด/ที่เที่ยว"], ["theme", "🎢 สวนสนุก"],
+];
+const SG_TO_WISH = { cafe: "คาเฟ่", food: "ร้านอาหาร", shopping: "ช้อปปิ้ง", kpop: "ตามรอยศิลปิน", theme: "ที่เที่ยว", nature: "ที่เที่ยว", sight: "ที่เที่ยว", photo: "ที่เที่ยว" };
+const geoTried = new Set();
+
+const toRad = (d) => (d * Math.PI) / 180;
+function distKm(a, b) {
+  const R = 6371, dLat = toRad(b.lat - a.lat), dLng = toRad(b.lng - a.lng);
+  const x = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(a.lat)) * Math.cos(toRad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.sqrt(x));
+}
+// ประมาณเวลาเดินทาง: ใกล้ = เดิน, ไกล = รถไฟ (รวมเวลาเดินไปสถานี/เปลี่ยนสาย)
+function travelEstimate(km) {
+  if (km <= 1.2) return { mode: "เดิน", icon: "🚶", min: Math.max(3, Math.round(km * 13)) };
+  // ในเมือง: รถไฟใต้ดิน/รถเมล์ + เดินไปสถานี ; ข้ามเมือง: รถไฟด่วน
+  const raw = km <= 15 ? 12 + km * 2.4 : Math.max(48, 25 + km * 1.1);
+  return { mode: "รถไฟ/รถเมล์", icon: "🚃", min: Math.round(raw / 5) * 5 };
+}
+
+// ตำแหน่งที่พัก: จากพิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap
+function coordsFromLink(s = "") {
+  const m = String(s).match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || String(s).match(/[?&](?:q|query|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
+  return m ? { lat: +m[1], lng: +m[2] } : null;
+}
+function hotelCoords(h) {
+  if (h && Number.isFinite(h.lat) && Number.isFinite(h.lng) && h.lat !== null) return { lat: h.lat, lng: h.lng };
+  return coordsFromLink(h?.place);
+}
+async function geocode(q) {
+  try {
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": "en" } });
+    const j = await r.json();
+    if (j[0]) return { lat: +j[0].lat, lng: +j[0].lon };
+  } catch {}
+  return null;
+}
+async function ensureHotelCoords(h) {
+  if (!h || hotelCoords(h) || geoTried.has(h.id) || !navigator.onLine) return;
+  geoTried.add(h.id);
+  const country = destInfo().nameEn || trip.country || "";
+  const qs = [h.place && !isLink(h.place) ? h.place : "", `${h.title}, ${country}`, h.title].filter(Boolean);
+  for (const q of qs) {
+    const c = await geocode(q);
+    if (c) { store.update(trip.id, "bookings", h.id, { lat: c.lat, lng: c.lng }); return; }
+  }
+  renderSuggest(); // หาไม่เจอ → แสดงข้อความแนะนำ
+}
+
+function addSuggestToWishlist(id) {
+  const p = (PLACES.places || []).find((x) => x.id === id);
+  if (!p || data.wishlist.some((w) => w.suggestId === id)) return;
+  const cat = p.cats.find((c) => SG_TO_WISH[c]) || "photo";
+  const src = p.sources?.[0];
+  store.add(trip.id, "wishlist", {
+    name: p.name, category: SG_TO_WISH[cat] || "อื่นๆ", place: p.nameEn, link: src?.url || "",
+    note: `${p.season?.label ? p.season.label + " · " : ""}${p.time ? "ใช้เวลา " + p.time : ""}`.trim(),
+    plannedDate: "", suggestId: id, createdAt: Date.now(),
+  });
+  toast(`เพิ่ม “${p.name}” ใน Wishlist แล้ว`);
+}
+
+function renderSuggest() {
+  const box = $("#suggest-view");
+  if (!box) return;
+  const nMine = data.wishlist.length;
+  $("#seg-mine").innerHTML = `⭐ ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
+  $("#seg-mine").classList.toggle("active", wishView === "mine");
+  $("#seg-suggest").classList.toggle("active", wishView === "suggest");
+  $("#wish-mine").hidden = wishView !== "mine";
+  box.hidden = wishView !== "suggest";
+  if (wishView !== "suggest") return;
+
+  const code = destOf();
+  const all = (PLACES.places || []).filter((p) => p.country === code);
+  if (!all.length) {
+    box.innerHTML = `<div class="card empty">ยังไม่มีสถานที่แนะนำสำหรับ${esc(destInfo().name || "ประเทศนี้")}<br><small>ขอ Claude ให้ค้นและเพิ่มสถานที่ของประเทศนี้ได้</small></div>`;
+    return;
+  }
+  const cities = [...new Set(all.map((p) => p.city.split(" (")[0]))];
+  if (sgCity !== "all" && !cities.includes(sgCity)) sgCity = "all";
+
+  // ที่พักที่ใช้วัดระยะ
+  const hs = hotels();
+  if (!hs.some((h) => h.id === sgHotelId)) sgHotelId = hs[0]?.id || "";
+  const hotel = hs.find((h) => h.id === sgHotelId);
+  const hc = hotelCoords(hotel);
+  if (hotel && !hc) ensureHotelCoords(hotel);
+
+  let list = all.filter((p) => (sgCity === "all" || p.city.startsWith(sgCity)) && (sgCat === "all" || p.cats.includes(sgCat)));
+  list = list.map((p) => ({ ...p, km: hc ? distKm(hc, p) : null }));
+  if (hc) list.sort((a, b) => a.km - b.km);
+  const tripMonths = new Set(tripDays().map((d) => +d.slice(5, 7)));
+  const catLabel = Object.fromEntries(SG_CATS);
+
+  const hotelBar = hs.length
+    ? `<label class="sg-hotel">📍 วัดระยะจากที่พัก
+         <select id="sg-hotel">${hs.map((h) => `<option value="${esc(h.id)}" ${h.id === sgHotelId ? "selected" : ""}>${esc(h.title)}</option>`).join("")}</select></label>
+       ${hotel && !hc ? `<p class="muted small-note">${geoTried.has(hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — แก้ช่อง “ที่อยู่” ของที่พักเป็นชื่อหรือที่อยู่ภาษาอังกฤษ" : "กำลังหาตำแหน่งที่พัก…"}</p>` : ""}`
+    : `<p class="muted small-note">🏨 เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหน</p>`;
+
+  box.innerHTML = `
+    <div class="card sg-filters">
+      <div class="chip-row">${["all", ...cities].map((c) => `<button type="button" class="fchip ${sgCity === c ? "active" : ""}" data-action="sg-city" data-v="${esc(c)}">${c === "all" ? "ทุกเมือง" : esc(c)}</button>`).join("")}</div>
+      <div class="chip-row">${SG_CATS.map(([k, l]) => `<button type="button" class="fchip ${sgCat === k ? "active" : ""}" data-action="sg-cat" data-v="${k}">${l}</button>`).join("")}</div>
+      ${hotelBar}
+    </div>
+    ${list.length ? list.map((p) => {
+      const added = data.wishlist.find((w) => w.suggestId === p.id);
+      const est = p.km !== null ? travelEstimate(p.km) : null;
+      const inSeason = p.season && p.season.months.some((m) => tripMonths.has(m));
+      const route = hotel ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(hc ? `${hc.lat},${hc.lng}` : hotel.place && !isLink(hotel.place) ? hotel.place : hotel.title)}&destination=${encodeURIComponent(`${p.lat},${p.lng}`)}&travelmode=transit` : "";
+      return `
+      <article class="card sg-card">
+        <div class="sg-top">
+          <div>
+            <h3>${esc(p.name)}</h3>
+            <div class="muted">${esc(p.nameEn)} · ${esc(p.city)}</div>
+          </div>
+          ${added
+            ? `<span class="sg-added">${added.plannedDate ? `✓ อยู่ในแพลน ${fmtDate(added.plannedDate)}` : "✓ เพิ่มแล้ว"}</span>`
+            : `<button type="button" class="btn small primary" data-action="sg-add" data-id="${esc(p.id)}">+ Wishlist</button>`}
+        </div>
+        <div class="sg-tags">${p.cats.map((c) => `<span class="badge">${catLabel[c] || c}</span>`).join("")}${p.season ? `<span class="badge ${inSeason ? "ok" : ""}">${esc(p.season.label)}${inSeason ? " · ตรงช่วงทริป" : ""}</span>` : ""}</div>
+        <p>${esc(p.desc)}</p>
+        ${p.kpop ? `<p class="sg-kpop">💚 ${esc(p.kpop)}</p>` : ""}
+        <div class="sg-meta">
+          ${p.time ? `<span>⏱ ${esc(p.time)}</span>` : ""}
+          ${est ? `<span class="sg-dist">${est.icon} ห่างจากที่พัก ~${p.km < 1 ? Math.round(p.km * 1000) + " ม." : p.km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></span>` : ""}
+        </div>
+        <div class="sg-links">
+          <a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">📍 แผนที่</a>
+          ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ เส้นทางจริงจากที่พัก</a>` : ""}
+        </div>
+        <div class="sg-src">อ้างอิง: ${p.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a> — ${esc(s.publisher)}${s.author ? ` (เขียนโดย ${esc(s.author)})` : ""}`).join("<br>")}</div>
+      </article>`;
+    }).join("") : `<p class="empty">ไม่มีสถานที่ตรงกับตัวกรอง</p>`}
+    <p class="muted small-note">คัดโดย Claude จากแหล่งข้อมูลที่ระบุ · อัปเดต ${fmtDate(PLACES.updated, "year")} · ระยะทางและเวลาเป็นค่าประมาณ กด “เส้นทางจริงจากที่พัก” เพื่อดูเวลาใน Google Maps · ตรวจเวลาเปิดปิดก่อนไป</p>`;
+}
+
 let IMMI = { countries: {}, default: null };
 const FALLBACK_DEST = { name: "ประเทศอื่น", risk: "unknown", riskReason: "ยังไม่มีข้อมูลเฉพาะประเทศ", entry: [], beforeFlight: [], upcoming: [], docs: [{ key: "passport", text: "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)" }], tips: [], sources: [] };
 const RISK = { low: ["ต่ำ", "low"], medium: ["ปานกลาง", "mid"], high: ["สูง", "high"], unknown: ["ยังไม่มีข้อมูล", "unk"] };
@@ -1445,6 +1601,10 @@ function onClick(e) {
   else if (action === "pdf") exportPdf();
   else if (action === "immi-pdf") exportPdf("immi");
   else if (action === "pick-me") showMePicker();
+  else if (action === "wish-view") { wishView = b.dataset.v; renderSuggest(); }
+  else if (action === "sg-city") { sgCity = b.dataset.v; renderSuggest(); }
+  else if (action === "sg-cat") { sgCat = b.dataset.v; renderSuggest(); }
+  else if (action === "sg-add") addSuggestToWishlist(id);
   else if (action === "delete-trip") deleteTrip();
 }
 
@@ -1532,7 +1692,10 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
-  if (el.dataset.action === "prep-toggle") {
+  if (el.id === "sg-hotel") {
+    sgHotelId = el.value;
+    renderSuggest();
+  } else if (el.dataset.action === "prep-toggle") {
     togglePrep(el.dataset.key, el.checked);
   } else if (el.dataset.action === "toggle") {
     store.update(trip.id, el.dataset.sub, el.dataset.id, { done: el.checked });
@@ -1606,6 +1769,7 @@ function onSubmit(e) {
         time: hotel ? f.checkInTime : f.time,
         checkOutDate: hotel ? f.checkOutDate : "",
         checkOutTime: hotel ? f.checkOutTime : "",
+        lat: null, lng: null, // ให้หาพิกัดใหม่เมื่อแก้ชื่อ/ที่อยู่
       };
       if (!rec.title) return;
       if (editingBookingId) { store.update(trip.id, "bookings", editingBookingId, rec); stopEditBooking(); }
@@ -1648,6 +1812,7 @@ async function init() {
     store = localStore();
   }
   try { IMMI = await (await fetch("data/immigration.json", { cache: "no-cache" })).json(); } catch { /* ใช้ค่าสำรอง */ }
+  try { PLACES = await (await fetch("data/places.json", { cache: "no-cache" })).json(); } catch { /* ไม่มีข้อมูลแนะนำ */ }
   app.addEventListener("click", onClick);
   app.addEventListener("change", onChange);
   app.addEventListener("input", onInput);

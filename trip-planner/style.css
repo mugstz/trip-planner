@@ -207,6 +207,27 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); 
 .ready-list .no .r-icon { background: #fdecea; color: var(--neg); }
 .ready-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
+/* ---------- Wishlist: ของเรา / สถานที่แนะนำ ---------- */
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #ece8e2; padding: 4px; border-radius: 12px; margin: 4px 0 14px; }
+.seg button { border: none; background: transparent; border-radius: 9px; min-height: 38px; font: inherit; font-size: .92rem; color: var(--muted); cursor: pointer; }
+.seg button.active { background: var(--card); color: var(--text); font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.seg-n { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: .72rem; line-height: 20px; margin-left: 4px; }
+.chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; scrollbar-width: none; }
+.chip-row::-webkit-scrollbar { display: none; }
+.fchip { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; color: var(--text); white-space: nowrap; }
+.fchip.active { background: var(--text); border-color: var(--text); color: #fff; }
+.sg-hotel { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); margin-top: 6px; }
+.sg-card h3 { margin: 0; }
+.sg-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.sg-added { flex: 0 0 auto; font-size: .82rem; font-weight: 700; color: var(--ok); background: #e3f4ea; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.sg-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; }
+.sg-card p { margin: 8px 0 0; }
+.sg-kpop { background: #eefaf3; border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
+.sg-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; color: var(--muted); margin-top: 8px; }
+.sg-dist { color: var(--text); font-weight: 600; }
+.sg-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; margin-top: 6px; }
+.sg-src { margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--line); font-size: .8rem; color: var(--muted); overflow-wrap: anywhere; }
+
 /* ---------- ตาราง ---------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
