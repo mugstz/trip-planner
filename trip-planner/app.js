@@ -24,6 +24,14 @@ const SUGGESTED_PACKING = [
 ];
 const WISH_CATS = ["คาเฟ่", "ร้านอาหาร", "ช้อปปิ้ง", "ตามรอยศิลปิน", "ที่เที่ยว", "อื่นๆ"];
 const DAY_NAMES = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+// [รหัส, ชื่อไทย, สัญลักษณ์]
+const CURRENCIES = [
+  ["THB", "บาท", "฿"], ["JPY", "เยน (ญี่ปุ่น)", "¥"], ["KRW", "วอน (เกาหลี)", "₩"], ["CNY", "หยวน (จีน)", "CN¥"],
+  ["TWD", "ดอลลาร์ไต้หวัน", "NT$"], ["HKD", "ดอลลาร์ฮ่องกง", "HK$"], ["SGD", "ดอลลาร์สิงคโปร์", "S$"],
+  ["MYR", "ริงกิต (มาเลเซีย)", "RM"], ["VND", "ดอง (เวียดนาม)", "₫"], ["LAK", "กีบ (ลาว)", "₭"],
+  ["USD", "ดอลลาร์สหรัฐ", "US$"], ["EUR", "ยูโร", "€"], ["GBP", "ปอนด์", "£"], ["AUD", "ดอลลาร์ออสเตรเลีย", "A$"],
+];
+const curInfo = (c) => CURRENCIES.find((x) => x[0] === c) || [c, c, c + " "];
 const BOOK_TYPES = ["เที่ยวบิน", "ที่พัก", "ตั๋ว/บัตรผ่าน", "รถ/รถไฟ", "อื่นๆ"];
 
 /* ============================================================
@@ -107,8 +115,6 @@ async function firebaseStore(cfg) {
       return ref.id;
     },
     updateTrip: (id, patch) => fs.updateDoc(fs.doc(db, "trips", id), patch).catch(onErr),
-    setBudget: (id, member, amount) =>
-      fs.updateDoc(fs.doc(db, "trips", id), new fs.FieldPath("budgets", member), amount).catch(onErr),
     listen: (t, s, cb) => fs.onSnapshot(sub(t, s), (snap) => cb(list(snap)), onErr),
     add: (t, s, data) => fs.addDoc(sub(t, s), data).catch(onErr),
     update: (t, s, id, patch) => fs.updateDoc(fs.doc(db, "trips", t, s, id), patch).catch(onErr),
@@ -147,7 +153,6 @@ function localStore() {
     listenTrip: (id, cb) => watch(() => cb(db.trips[id] ? { id, ...clone(db.trips[id]) } : null)),
     createTrip(data) { const id = uid(); db.trips[id] = clone(data); emit(); return id; },
     updateTrip(id, patch) { Object.assign(db.trips[id], clone(patch)); emit(); },
-    setBudget(id, member, amount) { (db.trips[id].budgets ||= {})[member] = amount; emit(); },
     listen: (t, s, cb) => watch(() => cb(Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) })))),
     add(t, s, data) { bucket(t, s)[uid()] = clone(data); emit(); },
     update(t, s, id, patch) { const b = bucket(t, s); if (b[id]) Object.assign(b[id], clone(patch)); emit(); },
@@ -173,6 +178,50 @@ const tripDays = () => daysBetween(trip?.startDate, trip?.endDate);
 const members = () => trip?.members || [];
 const getMe = () => { const m = lsGet("me-" + trip?.id); return members().includes(m) ? m : ""; };
 const byCreated = (a, b) => num(a.createdAt) - num(b.createdAt);
+
+/* ---------- สกุลเงิน: ทุกอย่างแปลงเป็นบาทเพื่อหารเงิน ---------- */
+const tripCur = () => trip?.currency || "THB";
+const isForeign = () => tripCur() !== "THB";
+// เรต = 1 หน่วยเงินต่างประเทศ เท่ากับกี่บาท (0 = ยังไม่มีเรต)
+const rateOf = (cur) => (!cur || cur === "THB" ? 1 : cur === tripCur() ? num(trip?.rate) : 0);
+const toTHB = (amount, cur) => num(amount) * rateOf(cur || "THB");
+const fmtCur = (n, cur = "THB") => {
+  if (!cur || cur === "THB") return money(n);
+  const digits = ["JPY", "KRW", "VND", "LAK"].includes(cur) ? 0 : 2;
+  return curInfo(cur)[2] + num(n).toLocaleString("th-TH", { maximumFractionDigits: digits });
+};
+// แสดงยอด: เงินต่างประเทศ + (≈ บาท)
+const fmtWithTHB = (n, cur) =>
+  !cur || cur === "THB" ? money(n)
+  : `${fmtCur(n, cur)} <span class="muted">${rateOf(cur) ? `≈ ${money(toTHB(n, cur))}` : "(ยังไม่มีเรต)"}</span>`;
+// แปลงบาท → เงินปลายทาง (ไว้แสดงคู่กัน)
+const thbToTrip = (thb) => (isForeign() && rateOf(tripCur()) ? ` <span class="muted">≈ ${fmtCur(thb / rateOf(tripCur()), tripCur())}</span>` : "");
+const curSelect = (name, selected) => {
+  const opts = [...new Set([tripCur(), "THB"])];
+  return `<select name="${name}" class="cur-select">${opts.map((c) => `<option value="${c}" ${c === selected ? "selected" : ""}>${c}</option>`).join("")}</select>`;
+};
+
+async function fetchRate(cur) {
+  // ที่มา 1: ExchangeRate-API (อัปเดตรายวัน) / ที่มา 2: Frankfurter (สำรอง)
+  try {
+    const r = await (await fetch(`https://open.er-api.com/v6/latest/${cur}`)).json();
+    if (r.result === "success" && r.rates?.THB) return { rate: r.rates.THB, source: "ExchangeRate-API" };
+  } catch {}
+  try {
+    const r = await (await fetch(`https://api.frankfurter.dev/v1/latest?base=${cur}&symbols=THB`)).json();
+    if (r.rates?.THB) return { rate: r.rates.THB, source: "Frankfurter" };
+  } catch {}
+  return null;
+}
+
+async function updateRate(tripId, cur, silent = false) {
+  if (!cur || cur === "THB") return;
+  if (!navigator.onLine) { if (!silent) toast("ออฟไลน์อยู่ — ดึงเรตไม่ได้ ใส่เรตเองได้"); return; }
+  const r = await fetchRate(cur);
+  if (!r) { if (!silent) toast("ดึงเรตไม่สำเร็จ — ใส่เรตเองได้"); return; }
+  store.updateTrip(tripId, { rate: r.rate, rateUpdated: new Date().toISOString().slice(0, 10), rateSource: r.source });
+  if (!silent) toast(`อัปเดตเรตแล้ว: 1 ${cur} = ${r.rate.toFixed(4)} บาท`);
+}
 const sortItems = (list) =>
   [...list].sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99") || byCreated(a, b));
 
@@ -233,8 +282,9 @@ async function importSample() {
     const t = (await res.json()).trips[0];
     const id = store.createTrip({
       name: t.name, country: t.country, startDate: t.startDate, endDate: t.endDate,
-      members: t.members, budgets: {}, createdAt: Date.now(),
+      members: t.members, currency: t.currency || "THB", createdAt: Date.now(),
     });
+    if (t.currency && t.currency !== "THB") updateRate(id, t.currency, true);
     (t.items || []).forEach((it, i) => store.add(id, "items", { ...it, createdAt: Date.now() + i }));
     DEFAULT_CHECKLIST.forEach((text, i) => store.add(id, "checklist", { text, done: false, createdAt: Date.now() + i }));
     location.hash = "#/trip/" + id;
@@ -252,6 +302,8 @@ function tripFormFields(t = {}) {
       <label class="wide">ประเทศ / เมือง<input name="country" value="${esc(t.country)}" placeholder="เช่น ญี่ปุ่น"></label>
       <label>วันไป*<input type="date" name="startDate" required value="${esc(t.startDate)}"></label>
       <label>วันกลับ*<input type="date" name="endDate" required value="${esc(t.endDate)}"></label>
+      <label class="wide">สกุลเงินที่ใช้ในทริป
+        <select name="currency">${CURRENCIES.map(([c, n]) => `<option value="${c}" ${c === (t.currency || "THB") ? "selected" : ""}>${c} · ${n}</option>`).join("")}</select></label>
       <label class="wide">ผู้ร่วมทริป* <small class="muted">(คั่นด้วยจุลภาค หรือขึ้นบรรทัดใหม่)</small>
         <textarea name="members" rows="3" required placeholder="เอิง, มิว, พาย, เบ้น">${esc((t.members || []).join(", "))}</textarea></label>
     </div>`;
@@ -262,7 +314,7 @@ function readTripForm(form) {
   const memberList = [...new Set(f.members.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
   if (!f.name.trim() || !f.startDate || !f.endDate || !memberList.length) { toast("กรอกช่องที่มี * ให้ครบ"); return null; }
   if (f.endDate < f.startDate) { toast("วันกลับต้องไม่ก่อนวันไป"); return null; }
-  return { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, members: memberList, useChecklist: f.useChecklist };
+  return { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, currency: f.currency || "THB", members: memberList, useChecklist: f.useChecklist };
 }
 
 function renderCreate() {
@@ -283,14 +335,14 @@ function openTrip(id) {
   SUBS.forEach((s) => (data[s] = []));
   unsubs.push(store.listenTrip(id, (t) => {
     if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
-    trip = { budgets: {}, members: [], ...t };
+    trip = { members: [], ...t };
     if (firstTripLoad) {
       firstTripLoad = false;
       const today = new Date().toISOString().slice(0, 10);
       const i = tripDays().indexOf(today);
       if (i >= 0) dayIdx = i;
     }
-    const sig = JSON.stringify([t.name, t.country, t.startDate, t.endDate, t.members]);
+    const sig = JSON.stringify([t.name, t.country, t.startDate, t.endDate, t.members, t.currency]);
     if (sig !== skeletonSig) { skeletonSig = sig; renderTripSkeleton(); }
     renderAll();
   }));
@@ -350,7 +402,8 @@ function renderTripSkeleton() {
           <label class="wide">กิจกรรม*<input name="activity" required placeholder="เช่น ปราสาทโอซาก้า"></label>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
           <label>อยู่ที่นี่ประมาณ (นาที)<input type="number" name="stay" min="0" step="5" inputmode="numeric" placeholder="เช่น 90"></label>
-          <label>ค่าใช้จ่าย (บาท)<input type="number" name="cost" min="0" step="any" inputmode="decimal"></label>
+          <label>ค่าใช้จ่าย
+            <div class="amount-cur"><input type="number" name="cost" min="0" step="any" inputmode="decimal">${curSelect("costCurrency", tripCur())}</div></label>
           <fieldset class="sub">
             <legend>เวลาเปิด–ปิด</legend>
             <div class="hours"><input type="time" name="openTime" aria-label="เปิด"><span>–</span><input type="time" name="closeTime" aria-label="ปิด"></div>
@@ -405,14 +458,16 @@ function renderTripSkeleton() {
     </section>
 
     <section data-panel="money">
-      <div class="card"><h3>งบของแต่ละคน</h3><div id="budget-list"></div></div>
-      <div class="card"><h3>สรุปหารค่าใช้จ่าย <small class="muted">(หารเท่ากันทุกคน)</small></h3><div id="settle"></div></div>
+      <div class="card" id="rate-card"></div>
+      <div class="card"><h3>สรุปหารค่าใช้จ่าย <small class="muted">(หารเท่ากันทุกคน · คิดเป็นเงินบาท)</small></h3><div id="settle"></div></div>
       <div class="card"><h3>รายการที่จ่ายไปแล้ว</h3><div id="expense-list"></div></div>
       <form id="expense-form" class="card form">
         <h3>เพิ่มค่าใช้จ่าย</h3>
         <div class="grid">
           <label class="wide">รายการ*<input name="title" required placeholder="เช่น ค่าอาหารเย็น"></label>
-          <label>จำนวนเงิน (บาท)*<input type="number" name="amount" min="0" step="any" required inputmode="decimal"></label>
+          <label>จำนวนเงิน*
+            <div class="amount-cur"><input type="number" name="amount" min="0" step="any" required inputmode="decimal">${curSelect("currency", tripCur())}</div>
+            <small class="muted" id="expense-preview"></small></label>
           <label>ใครจ่าย<select name="paidBy">${memberOpts}</select></label>
           <label>วันที่<select name="date"><option value="">—</option>${dayOpts}</select></label>
         </div>
@@ -499,7 +554,7 @@ function renderPlan() {
   }).join("");
   const d = days[dayIdx];
   const list = sortItems(data.items.filter((x) => x.date === d));
-  const total = list.reduce((s, x) => s + num(x.cost), 0);
+  const total = list.reduce((s, x) => s + toTHB(x.cost, x.costCurrency), 0);
   const travelTotal = list.reduce((s, x) => s + legsMinutes(x), 0);
   el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + (list.length
     ? `<ul class="rows timeline">${list.map((x, i) => connectorHtml(list[i - 1], x) + itemHtml(x)).join("")}</ul>
@@ -574,7 +629,7 @@ function itemHtml(x) {
       <div class="time">${esc(x.time) || "—"}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
       <div class="body">
         <div class="title">${esc(x.activity)} ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
-        <div class="meta">${mapLink(x.place)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${money(x.cost)}</span>` : ""}</div>
+        <div class="meta">${mapLink(x.place)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
         ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
       </div>
@@ -610,7 +665,7 @@ function startEdit(id) {
   if (!x) return;
   editingItemId = id;
   const f = $("#item-form");
-  ["date", "time", "activity", "place", "stay", "cost", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
+  ["date", "time", "activity", "place", "stay", "cost", "costCurrency", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
     .forEach((k) => (f[k].value = x[k] ?? ""));
   const closed = (x.closedDays || []).map(String);
   f.querySelectorAll("[name=closed]").forEach((cb) => (cb.checked = closed.includes(cb.value)));
@@ -667,7 +722,7 @@ function wishToPlan(id) {
   if (!w || !sel) return;
   store.add(trip.id, "items", {
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
-    transport: "", cost: 0, note: w.note || "", createdAt: Date.now(),
+    transport: "", cost: 0, costCurrency: tripCur(), note: w.note || "", createdAt: Date.now(),
   });
   store.update(trip.id, "wishlist", id, { plannedDate: sel.value });
   toast(`ใส่ “${w.name}” ลงแพลน ${fmtDate(sel.value)} แล้ว`);
@@ -709,10 +764,10 @@ function renderBookings() {
 /* ---------- ค่าใช้จ่าย + หารเงิน ---------- */
 function settle() {
   const ms = members();
-  const total = data.expenses.reduce((s, e) => s + num(e.amount), 0);
+  const total = data.expenses.reduce((s, e) => s + toTHB(e.amount, e.currency), 0);
   const share = ms.length ? total / ms.length : 0;
   const paid = Object.fromEntries(ms.map((m) => [m, 0]));
-  data.expenses.forEach((e) => { if (e.paidBy in paid) paid[e.paidBy] += num(e.amount); });
+  data.expenses.forEach((e) => { if (e.paidBy in paid) paid[e.paidBy] += toTHB(e.amount, e.currency); });
   const cred = ms.map((m) => ({ m, b: paid[m] - share })).filter((x) => x.b > 0.005).sort((a, b) => b.b - a.b);
   const debt = ms.map((m) => ({ m, b: share - paid[m] })).filter((x) => x.b > 0.005).sort((a, b) => b.b - a.b);
   const tx = [];
@@ -728,47 +783,78 @@ function settle() {
   return { total, share, paid, tx };
 }
 
-function budgetTable(editable) {
-  const me = getMe();
-  const { share } = settle();
-  const planTotal = data.items.reduce((s, x) => s + num(x.cost), 0);
-  const perPlan = members().length ? planTotal / members().length : 0;
-  return `
-    <div class="table-wrap"><table>
-      <thead><tr><th>ชื่อ</th><th class="num">งบ</th><th class="num">ใช้ไป (ส่วนของตัวเอง)</th><th class="num">คงเหลือ</th></tr></thead>
-      <tbody>${members().map((m) => {
-        const b = num(trip.budgets?.[m]);
-        const cell = editable && m === me
-          ? `<div class="budget-edit"><input type="number" min="0" step="any" inputmode="decimal" id="my-budget" value="${b || ""}" placeholder="กรอกงบ"><button type="button" class="btn small primary" data-action="save-budget">บันทึก</button></div>`
-          : b ? money(b) : `<span class="muted">ยังไม่กรอก</span>`;
-        const left = b - share;
-        return `<tr><td>${esc(m)}${editable && m === me ? " (ฉัน)" : ""}</td><td class="num">${cell}</td><td class="num">${money(share)}</td>
-          <td class="num ${b && left < 0 ? "neg" : ""}">${b ? money(left) : "—"}</td></tr>`;
-      }).join("")}</tbody>
-    </table></div>
-    <p class="muted">ประมาณการตามแพลน: ${money(planTotal)} (ตกคนละ ${money(perPlan)})</p>`;
+const planTotalTHB = () => data.items.reduce((s, x) => s + toTHB(x.cost, x.costCurrency), 0);
+
+function settleHtml() {
+  const { total, share, paid, tx } = settle();
+  const missingRate = data.expenses.some((e) => e.currency && e.currency !== "THB" && !rateOf(e.currency));
+  const planTotal = planTotalTHB();
+  const n = members().length || 1;
+  return (missingRate ? `<p class="warn">⚠️ มีรายการที่เป็นเงินต่างประเทศแต่ยังไม่มีเรต — ใส่เรตด้านบนก่อน ยอดจึงจะถูกต้อง</p>` : "") +
+    (data.expenses.length
+      ? `<p>รวมทั้งหมด <b>${money(total)}</b>${thbToTrip(total)} · หาร ${members().length} คน = คนละ <b>${money(share)}</b>${thbToTrip(share)}</p>
+         <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th class="num">จ่ายไปแล้ว</th><th class="num">ส่วนต่าง</th></tr></thead>
+         <tbody>${members().map((m) => { const d = paid[m] - share; return `<tr><td>${esc(m)}</td><td class="num">${money(paid[m])}</td><td class="num ${d < -0.005 ? "neg" : "pos"}">${d > 0.005 ? "+" : ""}${money(d)}</td></tr>`; }).join("")}</tbody></table></div>
+         <h4>ใครต้องโอนให้ใคร</h4>
+         ${tx.length ? `<ul class="transfers">${tx.map((t) => `<li><b>${esc(t.from)}</b> โอนให้ <b>${esc(t.to)}</b> ${money(t.amt)}${thbToTrip(t.amt)}</li>`).join("")}</ul>` : `<p class="muted">ไม่มีใครต้องโอน 🎉</p>`}`
+      : `<p class="muted">ยังไม่มีรายการค่าใช้จ่าย</p>`) +
+    (planTotal ? `<p class="muted">ประมาณการค่าใช้จ่ายตามแพลน: ${money(planTotal)} (ตกคนละ ${money(planTotal / n)})</p>` : "");
+}
+
+function rateCardHtml() {
+  if (!isForeign()) {
+    return `<h3>สกุลเงิน</h3><p class="muted">ทริปนี้ใช้เงินบาท — ถ้าไปต่างประเทศ เปลี่ยนสกุลเงินได้ที่ “แก้ไขข้อมูลทริป” ด้านบน</p>`;
+  }
+  const cur = tripCur();
+  const r = num(trip.rate);
+  return `<h3>อัตราแลกเปลี่ยน · ${cur} ${esc(curInfo(cur)[1])}</h3>
+    <div class="rate-row">
+      <span>1 ${cur} =</span>
+      <input type="number" id="rate-input" min="0" step="any" inputmode="decimal" value="${r || ""}" placeholder="เช่น 0.2133">
+      <span>บาท</span>
+      <button type="button" class="btn small primary" data-action="save-rate">บันทึก</button>
+      <button type="button" class="btn small" data-action="fetch-rate">↻ ดึงเรตล่าสุด</button>
+    </div>
+    <p class="muted">${r
+      ? `${trip.rateSource === "manual" ? "ใส่เอง" : `ที่มา: ${esc(trip.rateSource || "")}`}${trip.rateUpdated ? ` · อัปเดต ${fmtDate(trip.rateUpdated, "year")}` : ""} · ถ้าแลกเงินมาแล้ว ใส่เรตที่แลกจริงแทนได้`
+      : "ยังไม่มีเรต — กด “ดึงเรตล่าสุด” หรือใส่เรตเอง"}</p>
+    <div class="converter">
+      <span>แปลงเร็ว:</span>
+      <input type="number" id="conv-input" min="0" step="any" inputmode="decimal" placeholder="${cur}">
+      <span id="conv-out" class="muted">= — บาท</span>
+    </div>`;
+}
+
+function updateConverter() {
+  const inp = $("#conv-input");
+  if (!inp) return;
+  const v = num(inp.value);
+  $("#conv-out").textContent = v && rateOf(tripCur()) ? `= ${money(toTHB(v, tripCur()))}` : "= — บาท";
+}
+
+function updateExpensePreview() {
+  const f = $("#expense-form");
+  const out = $("#expense-preview");
+  if (!f || !out) return;
+  const cur = f.currency.value;
+  const v = num(f.amount.value);
+  out.textContent = cur !== "THB" && v ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))}` : "ยังไม่มีเรต") : "";
 }
 
 function renderMoney() {
-  const el = $("#budget-list");
+  const el = $("#settle");
   if (!el) return;
-  // ถ้ากำลังพิมพ์งบอยู่ ไม่ต้องวาดตารางงบใหม่ (กันตัวเลขที่พิมพ์หาย)
-  if (!el.contains(document.activeElement)) {
-    el.innerHTML = budgetTable(true) + (getMe() ? "" : `<p class="muted">เลือก “ฉันคือ” ด้านบน เพื่อกรอกงบของตัวเอง</p>`);
-  }
-  const { total, share, paid, tx } = settle();
-  $("#settle").innerHTML = data.expenses.length
-    ? `<p>รวมทั้งหมด <b>${money(total)}</b> · หาร ${members().length} คน = คนละ <b>${money(share)}</b></p>
-       <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th class="num">จ่ายไปแล้ว</th><th class="num">ส่วนต่าง</th></tr></thead>
-       <tbody>${members().map((m) => { const d = paid[m] - share; return `<tr><td>${esc(m)}</td><td class="num">${money(paid[m])}</td><td class="num ${d < -0.005 ? "neg" : "pos"}">${d > 0.005 ? "+" : ""}${money(d)}</td></tr>`; }).join("")}</tbody></table></div>
-       <h4>ใครต้องโอนให้ใคร</h4>
-       ${tx.length ? `<ul class="transfers">${tx.map((t) => `<li><b>${esc(t.from)}</b> โอนให้ <b>${esc(t.to)}</b> ${money(t.amt)}</li>`).join("")}</ul>` : `<p class="muted">ไม่มีใครต้องโอน 🎉</p>`}`
-    : `<p class="muted">ยังไม่มีรายการค่าใช้จ่าย</p>`;
+  const card = $("#rate-card");
+  // ถ้ากำลังพิมพ์ในการ์ดเรตอยู่ ไม่ต้องวาดใหม่ (กันตัวเลขที่พิมพ์หาย)
+  if (!card.contains(document.activeElement)) { card.innerHTML = rateCardHtml(); }
+  updateConverter();
+  updateExpensePreview();
+  el.innerHTML = settleHtml();
   const list = [...data.expenses].sort((a, b) => byCreated(b, a));
   $("#expense-list").innerHTML = list.length
     ? `<ul class="rows">${list.map((e) => `
         <li class="row">
-          <div class="body"><div class="title">${esc(e.title)} · <b>${money(e.amount)}</b></div>
+          <div class="body"><div class="title">${esc(e.title)} · <b>${fmtWithTHB(e.amount, e.currency)}</b></div>
             <div class="meta"><span>จ่ายโดย ${esc(e.paidBy)}</span>${e.date ? `<span>${fmtDate(e.date)}</span>` : ""}</div></div>
           <div class="row-actions">${delBtn("expenses", e.id)}</div>
         </li>`).join("")}</ul>`
@@ -870,7 +956,7 @@ function buildPrintView() {
               return `<tr><td>${esc(x.time) || "-"}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
                 <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>🎫 ${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
                 <td>${isLink(x.place) ? "ลิงก์ Google Maps" : esc(x.place)}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
-                <td>${num(x.cost) ? money(x.cost) : ""}</td><td>${esc(x.note)}</td></tr>`;
+                <td>${num(x.cost) ? fmtWithTHB(x.cost, x.costCurrency) : ""}</td><td>${esc(x.note)}</td></tr>`;
             }))
         : "<p>—</p>"}</div>`;
     }).join("")}
@@ -879,9 +965,10 @@ function buildPrintView() {
       [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
         .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}</td><td>${fmtDate(b.date)} ${esc(b.time)}</td><td>${esc(b.ref)}</td><td>${esc(b.place)}</td><td>${esc(b.note)}</td></tr>`)) : "<p>—</p>"}
     <h2>งบและค่าใช้จ่าย</h2>
-    ${budgetTable(false)}
-    <p>จ่ายไปแล้วรวม ${money(total)} · คนละ ${money(share)}</p>
-    ${tx.length ? `<ul>${tx.map((x) => `<li>${esc(x.from)} โอนให้ ${esc(x.to)} ${money(x.amt)}</li>`).join("")}</ul>` : ""}
+    ${isForeign() && rateOf(tripCur()) ? `<p>อัตราแลกเปลี่ยน: 1 ${tripCur()} = ${num(trip.rate).toFixed(4)} บาท${trip.rateUpdated ? ` (${fmtDate(trip.rateUpdated, "year")})` : ""}</p>` : ""}
+    ${data.expenses.length ? table(["รายการ", "จำนวน", "จ่ายโดย", "วันที่"],
+      [...data.expenses].sort(byCreated).map((e) => `<tr><td>${esc(e.title)}</td><td>${fmtWithTHB(e.amount, e.currency)}</td><td>${esc(e.paidBy)}</td><td>${e.date ? fmtDate(e.date) : ""}</td></tr>`)) : ""}
+    ${settleHtml()}
     <h2>Wishlist</h2>
     ${data.wishlist.length ? `<ul>${[...data.wishlist].sort(byCreated).map((w) => `<li>[${esc(w.category)}] ${esc(w.name)}${w.place ? " — " + esc(w.place) : ""}${w.note ? " · " + esc(w.note) : ""}</li>`).join("")}</ul>` : "<p>—</p>"}
     <h2>ของที่ต้องเตรียม</h2>
@@ -939,28 +1026,101 @@ function onClick(e) {
     renderPlan();
     flash(document.getElementById("item-" + id));
   }
-  else if (action === "del") {
-    if (confirm("ลบรายการนี้?")) { store.remove(trip.id, sub, id); if (id === editingItemId) stopEdit(); }
-  }
+  else if (action === "del") confirmDelete(sub, id);
   else if (action === "to-plan") wishToPlan(id);
   else if (action === "add-sugg") {
     store.add(trip.id, "packing", { owner: getMe(), name: b.dataset.name, done: false, createdAt: Date.now() });
   }
-  else if (action === "save-budget") {
-    const v = num($("#my-budget").value);
-    store.setBudget(trip.id, getMe(), v);
+  else if (action === "save-rate") {
+    const v = num($("#rate-input").value);
+    if (!v) { toast("ใส่เรตเป็นตัวเลขก่อน"); return; }
     document.activeElement?.blur();
-    toast("บันทึกงบแล้ว");
+    store.updateTrip(trip.id, { rate: v, rateUpdated: new Date().toISOString().slice(0, 10), rateSource: "manual" });
+    toast("บันทึกเรตแล้ว");
+  }
+  else if (action === "fetch-rate") {
+    document.activeElement?.blur();
+    updateRate(trip.id, tripCur());
   }
   else if (action === "pdf") exportPdf();
   else if (action === "delete-trip") deleteTrip();
 }
 
+/* ---------- Pop-up ยืนยัน ---------- */
+function confirmDialog({ title, message, okText = "ลบ", requireText = "" }) {
+  return new Promise((resolve) => {
+    const prevFocus = document.activeElement;
+    const wrap = document.createElement("div");
+    wrap.className = "modal-backdrop";
+    wrap.innerHTML = `
+      <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="m-title" aria-describedby="m-msg">
+        <div class="m-icon" aria-hidden="true">🗑️</div>
+        <h3 id="m-title">${esc(title)}</h3>
+        <p id="m-msg">${message}</p>
+        ${requireText ? `<label class="m-req">พิมพ์ <b>${esc(requireText)}</b> เพื่อยืนยัน<input id="m-input" autocomplete="off"></label>` : ""}
+        <div class="m-actions">
+          <button type="button" class="btn" data-m="cancel">ยกเลิก</button>
+          <button type="button" class="btn danger-solid" data-m="ok" ${requireText ? "disabled" : ""}>${esc(okText)}</button>
+        </div>
+      </div>`;
+    document.body.appendChild(wrap);
+    const ok = wrap.querySelector("[data-m=ok]");
+    const inp = wrap.querySelector("#m-input");
+    const close = (v) => {
+      document.removeEventListener("keydown", onKey);
+      wrap.remove();
+      prevFocus?.focus?.();
+      resolve(v);
+    };
+    const onKey = (e) => {
+      if (e.key === "Escape") close(false);
+      else if (e.key === "Enter" && !ok.disabled) { e.preventDefault(); close(true); }
+    };
+    document.addEventListener("keydown", onKey);
+    wrap.addEventListener("click", (e) => {
+      if (e.target === wrap) return close(false);
+      const m = e.target.closest("[data-m]")?.dataset.m;
+      if (m === "cancel") close(false);
+      else if (m === "ok" && !ok.disabled) close(true);
+    });
+    if (inp) {
+      inp.addEventListener("input", () => (ok.disabled = inp.value.trim() !== requireText));
+      inp.focus();
+    } else wrap.querySelector("[data-m=cancel]").focus();
+  });
+}
+
+const SUB_LABEL = { items: "แพลน", wishlist: "Wishlist", bookings: "การจอง", expenses: "ค่าใช้จ่าย", packing: "ของที่ต้องเตรียม", checklist: "เช็กลิสต์" };
+
+async function confirmDelete(sub, id) {
+  const x = (data[sub] || []).find((r) => r.id === id);
+  if (!x) return;
+  const name = x.activity || x.name || x.title || x.text || "รายการนี้";
+  let extra = "";
+  if (sub === "expenses") extra = ` (${fmtWithTHB(x.amount, x.currency)} จ่ายโดย ${esc(x.paidBy)})`;
+  if (sub === "bookings") {
+    const n = data.items.filter((i) => i.bookingId === id).length;
+    if (n) extra = `<br><small>มีกิจกรรมในแพลน ${n} รายการที่ลิงก์อยู่ — ลิงก์จะหายไป แต่กิจกรรมยังอยู่</small>`;
+  }
+  const yes = await confirmDialog({
+    title: `ลบจาก${SUB_LABEL[sub] || ""}?`,
+    message: `จะลบ <b>“${esc(name)}”</b>${extra}<br>ทุกคนในทริปจะไม่เห็นรายการนี้อีก`,
+  });
+  if (!yes) return;
+  store.remove(trip.id, sub, id);
+  if (id === editingItemId) stopEdit();
+  toast("ลบแล้ว");
+}
+
 async function deleteTrip() {
   const name = trip.name;
-  const typed = prompt(`พิมพ์ชื่อทริป “${name}” เพื่อยืนยันการลบ\n(ข้อมูลทั้งหมดของทริปนี้จะหายถาวร ทุกคนจะไม่เห็นอีก)`);
-  if (typed === null) return;
-  if (typed.trim() !== name) { toast("ชื่อไม่ตรง — ยังไม่ได้ลบ"); return; }
+  const yes = await confirmDialog({
+    title: "ลบทั้งทริป?",
+    message: `แพลน การจอง ค่าใช้จ่าย และรายการของทั้งหมดของ <b>“${esc(name)}”</b> จะหายถาวร ทุกคนจะไม่เห็นอีก และกู้คืนไม่ได้`,
+    okText: "ลบทริป",
+    requireText: name,
+  });
+  if (!yes) return;
   const id = trip.id;
   location.hash = "#/";
   await store.deleteTrip(id);
@@ -979,6 +1139,12 @@ function onChange(e) {
   }
 }
 
+function onInput(e) {
+  const el = e.target;
+  if (el.id === "conv-input") updateConverter();
+  else if (el.closest("#expense-form")) updateExpensePreview();
+}
+
 function onSubmit(e) {
   const form = e.target;
   e.preventDefault();
@@ -990,9 +1156,10 @@ function onSubmit(e) {
       if (!t) return;
       const id = store.createTrip({
         name: t.name, country: t.country, startDate: t.startDate, endDate: t.endDate,
-        members: t.members, budgets: {}, createdAt: now,
+        members: t.members, currency: t.currency, createdAt: now,
       });
       if (t.useChecklist) DEFAULT_CHECKLIST.forEach((text, i) => store.add(id, "checklist", { text, done: false, createdAt: now + i }));
+      if (t.currency !== "THB") updateRate(id, t.currency, true);
       location.hash = "#/trip/" + id;
       return;
     }
@@ -1000,7 +1167,10 @@ function onSubmit(e) {
       const t = readTripForm(form);
       if (!t) return;
       delete t.useChecklist;
+      const curChanged = t.currency !== tripCur();
+      if (curChanged) Object.assign(t, { rate: 0, rateUpdated: "", rateSource: "" });
       store.updateTrip(trip.id, t);
+      if (curChanged) updateRate(trip.id, t.currency, true);
       toast("บันทึกข้อมูลทริปแล้ว");
       return;
     }
@@ -1008,7 +1178,7 @@ function onSubmit(e) {
       const legs = readLegs();
       const rec = {
         date: f.date, time: f.time, activity: f.activity.trim(), place: f.place.trim(),
-        stay: num(f.stay), cost: num(f.cost), note: f.note.trim(),
+        stay: num(f.stay), cost: num(f.cost), costCurrency: f.costCurrency || "THB", note: f.note.trim(),
         openTime: f.openTime, closeTime: f.closeTime, hoursNote: f.hoursNote.trim(),
         closedDays: new FormData(form).getAll("closed").map(Number),
         legs, transport: "", bookingId: f.bookingId || "",
@@ -1028,9 +1198,10 @@ function onSubmit(e) {
       store.add(trip.id, "bookings", { type: f.type, title: f.title.trim(), date: f.date, time: f.time, ref: f.ref.trim(), place: f.place.trim(), note: f.note.trim(), createdAt: now });
       break;
     case "expense-form":
-      store.add(trip.id, "expenses", { title: f.title.trim(), amount: num(f.amount), paidBy: f.paidBy, date: f.date, createdAt: now });
+      store.add(trip.id, "expenses", { title: f.title.trim(), amount: num(f.amount), currency: f.currency || "THB", paidBy: f.paidBy, date: f.date, createdAt: now });
       form.reset();
       syncMeForms();
+      updateExpensePreview();
       toast("บันทึกแล้ว");
       return;
     case "pack-form":
@@ -1062,6 +1233,7 @@ async function init() {
   }
   app.addEventListener("click", onClick);
   app.addEventListener("change", onChange);
+  app.addEventListener("input", onInput);
   app.addEventListener("submit", onSubmit);
   window.addEventListener("hashchange", route);
   window.addEventListener("online", updateNet);
