@@ -172,6 +172,7 @@ let data = {};
 let tab = "plan";
 let dayIdx = 0;
 let editingItemId = null;
+let editingBookingId = null;
 let skeletonSig = "";
 let firstTripLoad = true;
 
@@ -474,17 +475,30 @@ function renderTripSkeleton() {
     <section data-panel="bookings">
       <div id="book-list"></div>
       <form id="book-form" class="card form">
-        <h3>เพิ่มการจอง</h3>
+        <h3 id="book-form-title">เพิ่มการจอง</h3>
         <div class="grid">
           <label>ประเภท<select name="type">${BOOK_TYPES.map((c) => `<option>${c}</option>`).join("")}</select></label>
-          <label>วันที่<input type="date" name="date" value="${esc(t.startDate)}"></label>
-          <label class="wide">รายละเอียด*<input name="title" required placeholder="เช่น Thai AirAsia FD xxx DMK→KIX"></label>
-          <label>เวลา<input type="time" name="time"></label>
+          <label class="not-hotel">วันที่<input type="date" name="date" value="${esc(t.startDate)}"></label>
+          <label class="wide"><span class="hotel-only">ชื่อที่พัก*</span><span class="not-hotel">รายละเอียด*</span><input name="title" required placeholder="เช่น Thai AirAsia FD xxx DMK→KIX"></label>
+          <fieldset class="sub hotel-only">
+            <legend>เข้าพัก</legend>
+            <div class="stay-grid">
+              <label>เช็คอิน (วันที่)<input type="date" name="checkInDate" value="${esc(t.startDate)}"></label>
+              <label>เวลาเช็คอิน<input type="time" name="checkInTime" value="15:00"></label>
+              <label>เช็คเอาท์ (วันที่)<input type="date" name="checkOutDate" value="${esc(t.endDate)}"></label>
+              <label>เวลาเช็คเอาท์<input type="time" name="checkOutTime" value="11:00"></label>
+            </div>
+            <small class="muted" id="nights-preview"></small>
+          </fieldset>
+          <label class="not-hotel">เวลา<input type="time" name="time"></label>
           <label>เลขการจอง<input name="ref"></label>
-          <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place"></label>
+          <label class="wide"><span class="hotel-only">ที่อยู่ / ชื่อบน Google Maps</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
-        <div class="actions"><button class="btn primary">เพิ่ม</button></div>
+        <div class="actions">
+          <button class="btn primary" id="book-submit">เพิ่ม</button>
+          <button class="btn" type="button" data-action="cancel-book-edit" id="book-cancel" hidden>ยกเลิก</button>
+        </div>
       </form>
     </section>
 
@@ -538,6 +552,7 @@ function renderTripSkeleton() {
   const d = days[dayIdx];
   if (d) $("#item-form [name=date]").value = d;
   syncMeForms();
+  syncBookForm();
   setTab(tab);
 }
 
@@ -601,7 +616,7 @@ function renderPlan() {
   const list = sortItems(data.items.filter((x) => x.date === d));
   const total = list.reduce((s, x) => s + toTHB(x.cost, x.costCurrency), 0);
   const travelTotal = list.reduce((s, x) => s + legsMinutes(x), 0);
-  el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + (list.length
+  el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + dayHotelHtml(d) + (list.length
     ? `<ul class="rows timeline">${list.map((x, i) => connectorHtml(list[i - 1], x) + itemHtml(x)).join("")}</ul>
        <p class="total">รวมวันนี้ ${money(total)}${travelTotal ? ` · เดินทางรวม ${fmtDur(travelTotal)}` : ""}</p>`
     : `<p class="empty">ยังไม่มีแพลนวันนี้ — เพิ่มด้านล่าง หรือดึงจากแท็บ Wishlist</p>`);
@@ -787,23 +802,117 @@ function renderBookings() {
     sel.value = list.some((b) => b.id === keep) ? keep : "";
   }
   const days = tripDays();
-  el.innerHTML = list.length
-    ? `<div class="card"><ul class="rows">${list.map((b) => {
+  el.innerHTML = hotelSummaryHtml() + (list.length
+    ? `<div class="card"><h3>การจองทั้งหมด</h3><ul class="rows">${list.map((b) => {
         const used = sortItems(data.items.filter((i) => i.bookingId === b.id))
           .sort((p, q) => (p.date || "").localeCompare(q.date || ""));
         return `
         <li class="row" id="booking-${esc(b.id)}">
           <div class="body">
             <div class="title"><span class="badge">${esc(b.type)}</span> ${esc(b.title)}</div>
-            <div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>
+            ${isHotel(b)
+              ? `<div class="stay-line">🛬 เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → 🛫 เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
+                 <div class="meta">${mapLink(b.place || b.title)}</div>`
+              : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>`}
             ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
           </div>
-          <div class="row-actions">${delBtn("bookings", b.id)}</div>
+          <div class="row-actions">
+            <button type="button" class="icon" data-action="edit-booking" data-id="${esc(b.id)}" title="แก้ไข">✎</button>${delBtn("bookings", b.id)}
+          </div>
         </li>`;
       }).join("")}</ul></div>`
-    : `<p class="empty">ยังไม่มีข้อมูลการจอง</p>`;
+    : `<p class="empty">ยังไม่มีข้อมูลการจอง</p>`);
+}
+
+/* ---------- ที่พัก ---------- */
+const isHotel = (b) => b?.type === "ที่พัก";
+const hotels = () => data.bookings.filter(isHotel).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+const nightsOf = (b) => Math.max(0, daysBetween(b.date, b.checkOutDate).length - 1);
+// คืนที่ต้องมีที่พัก = ทุกคืนตั้งแต่วันไป ถึงก่อนวันกลับ
+const tripNights = () => tripDays().slice(0, -1);
+// ที่พักของคืนวันที่ d (เช็คอิน <= d < เช็คเอาท์)
+const hotelForNight = (d) => hotels().filter((h) => h.date && h.checkOutDate && h.date <= d && d < h.checkOutDate);
+
+function hotelSummaryHtml() {
+  const nights = tripNights();
+  const hs = hotels();
+  if (!nights.length) return "";
+  const missing = nights.filter((d) => !hotelForNight(d).length);
+  const overlap = nights.filter((d) => hotelForNight(d).length > 1);
+  const days = tripDays();
+  return `<div class="card hotel-card">
+    <h3>🏨 ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
+    ${hs.length ? `<ul class="hotel-list">${hs.map((h) => `
+      <li>
+        <button type="button" class="hotel-name" data-action="goto-booking" data-id="${esc(h.id)}">${esc(h.title)}</button>
+        <div class="muted">${fmtDate(h.date)} ${esc(h.time || "")} → ${fmtDate(h.checkOutDate)} ${esc(h.checkOutTime || "")} · ${nightsOf(h)} คืน</div>
+      </li>`).join("")}</ul>` : ""}
+    <div class="night-strip">${nights.map((d) => {
+      const h = hotelForNight(d);
+      const cls = !h.length ? "none" : h.length > 1 ? "dup" : "ok";
+      return `<span class="night ${cls}" title="${esc(h.map((x) => x.title).join(", ") || "ยังไม่มีที่พัก")}">คืน${days.indexOf(d) + 1}<small>${fmtDate(d)}</small></span>`;
+    }).join("")}</div>
+    ${missing.length ? `<p class="warn">⚠️ ยังไม่มีที่พัก ${missing.length} คืน: ${missing.map((d) => fmtDate(d)).join(", ")}</p>` : `<p class="ok-text">✓ มีที่พักครบทุกคืน</p>`}
+    ${overlap.length ? `<p class="warn">⚠️ จองซ้อนกัน: ${overlap.map((d) => fmtDate(d)).join(", ")}</p>` : ""}
+  </div>`;
+}
+
+// แถบที่พักบนหัวแต่ละวันในแพลน
+function dayHotelHtml(d) {
+  const out = hotels().filter((h) => h.checkOutDate === d);
+  const tonight = hotelForNight(d);
+  const isLastDay = d === tripDays().at(-1);
+  const parts = [];
+  out.forEach((h) => parts.push(`<div>🛫 เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
+  tonight.forEach((h) => parts.push(h.date === d
+    ? `<div>🛬 เช็คอิน <b>${esc(h.title)}</b>${h.time ? ` ตั้งแต่ ${esc(h.time)}` : ""} ${mapLink(h.place || h.title)}</div>`
+    : `<div>🏨 คืนนี้พักที่ <b>${esc(h.title)}</b> ${mapLink(h.place || h.title)}</div>`));
+  if (!tonight.length && !isLastDay) parts.push(`<div class="warn">⚠️ คืนนี้ยังไม่มีที่พัก</div>`);
+  return parts.length ? `<div class="day-hotel">${parts.join("")}</div>` : "";
+}
+
+function syncBookForm() {
+  const form = $("#book-form");
+  if (!form) return;
+  const f = form.elements;
+  const hotel = f.type.value === "ที่พัก";
+  form.classList.toggle("is-hotel", hotel);
+  f.title.placeholder = hotel ? "เช่น Hotel Gracery Namba" : "เช่น Thai AirAsia FD xxx DMK→KIX";
+  const n = Math.max(0, daysBetween(f.checkInDate.value, f.checkOutDate.value).length - 1);
+  $("#nights-preview").textContent = hotel && f.checkInDate.value && f.checkOutDate.value
+    ? (f.checkOutDate.value <= f.checkInDate.value ? "⚠️ วันเช็คเอาท์ต้องหลังวันเช็คอิน" : `${n} คืน`) : "";
+}
+
+function startEditBooking(id) {
+  const b = data.bookings.find((x) => x.id === id);
+  if (!b) return;
+  editingBookingId = id;
+  const form = $("#book-form");
+  const f = form.elements;
+  ["type", "date", "time", "title", "ref", "place", "note"].forEach((k) => (f[k].value = b[k] ?? ""));
+  if (isHotel(b)) {
+    f.checkInDate.value = b.date || "";
+    f.checkInTime.value = b.time || "";
+    f.checkOutDate.value = b.checkOutDate || "";
+    f.checkOutTime.value = b.checkOutTime || "";
+  }
+  $("#book-form-title").textContent = "แก้ไขการจอง";
+  $("#book-submit").textContent = "บันทึก";
+  $("#book-cancel").hidden = false;
+  syncBookForm();
+  form.scrollIntoView({ behavior: "smooth", block: "center" });
+}
+
+function stopEditBooking() {
+  editingBookingId = null;
+  const f = $("#book-form");
+  f.reset();
+  $("#book-form-title").textContent = "เพิ่มการจอง";
+  $("#book-submit").textContent = "เพิ่ม";
+  $("#book-cancel").hidden = true;
+  syncBookForm();
 }
 
 /* ---------- ค่าใช้จ่าย + หารเงิน ---------- */
@@ -991,7 +1100,11 @@ function buildPrintView() {
     <h2>แพลนรายวัน</h2>
     ${days.map((d, i) => {
       const list = sortItems(data.items.filter((x) => x.date === d));
-      return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${list.length
+      const ph = [
+        ...hotels().filter((h) => h.checkOutDate === d).map((h) => `เช็คเอาท์ ${esc(h.title)} ${esc(h.checkOutTime || "")}`),
+        ...hotelForNight(d).map((h) => (h.date === d ? `เช็คอิน ${esc(h.title)} ${esc(h.time || "")}` : `พักที่ ${esc(h.title)}`)),
+      ];
+      return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${ph.length ? `<p class="p-hotel">🏨 ${ph.join(" · ")}</p>` : ""}${list.length
         ? table(["เวลา", "กิจกรรม", "สถานที่", "เวลาเปิด–ปิด", "การเดินทางมาที่นี่", "ค่าใช้จ่าย", "หมายเหตุ"],
             list.map((x) => {
               const legs = legsOf(x);
@@ -1010,7 +1123,7 @@ function buildPrintView() {
     <h2>การจอง</h2>
     ${data.bookings.length ? table(["ประเภท", "รายละเอียด", "วันที่/เวลา", "เลขการจอง", "สถานที่", "หมายเหตุ"],
       [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
-        .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}</td><td>${fmtDate(b.date)} ${esc(b.time)}</td><td>${esc(b.ref)}</td><td>${esc(b.place)}</td><td>${esc(b.note)}</td></tr>`)) : "<p>—</p>"}
+        .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}</td><td>${isHotel(b) ? `เช็คอิน ${fmtDate(b.date)} ${esc(b.time)}<br>เช็คเอาท์ ${fmtDate(b.checkOutDate)} ${esc(b.checkOutTime)} (${nightsOf(b)} คืน)` : `${fmtDate(b.date)} ${esc(b.time)}`}</td><td>${esc(b.ref)}</td><td>${esc(b.place)}</td><td>${esc(b.note)}</td></tr>`)) : "<p>—</p>"}
     <h2>งบและค่าใช้จ่าย</h2>
     ${isForeign() && rateOf(tripCur()) ? `<p>อัตราแลกเปลี่ยน: 1 ${tripCur()} = ${num(trip.rate).toFixed(4)} บาท — ${esc(rateRefText())}</p>` : ""}
     ${data.expenses.length ? table(["รายการ", "จำนวน", "จ่ายโดย", "วันที่"],
@@ -1074,6 +1187,8 @@ function onClick(e) {
     flash(document.getElementById("item-" + id));
   }
   else if (action === "del") confirmDelete(sub, id);
+  else if (action === "edit-booking") startEditBooking(id);
+  else if (action === "cancel-book-edit") stopEditBooking();
   else if (action === "to-plan") wishToPlan(id);
   else if (action === "add-sugg") {
     store.add(trip.id, "packing", { owner: getMe(), name: b.dataset.name, done: false, createdAt: Date.now() });
@@ -1156,6 +1271,7 @@ async function confirmDelete(sub, id) {
   if (!yes) return;
   store.remove(trip.id, sub, id);
   if (id === editingItemId) stopEdit();
+  if (id === editingBookingId) stopEditBooking();
   toast("ลบแล้ว");
 }
 
@@ -1183,6 +1299,8 @@ function onChange(e) {
     renderPacking();
   } else if (el.dataset.action === "toggle") {
     store.update(trip.id, el.dataset.sub, el.dataset.id, { done: el.checked });
+  } else if (el.closest("#book-form")) {
+    syncBookForm();
   }
 }
 
@@ -1241,9 +1359,22 @@ function onSubmit(e) {
     case "wish-form":
       store.add(trip.id, "wishlist", { name: f.name.trim(), category: f.category, place: f.place.trim(), link: f.link.trim(), note: f.note.trim(), plannedDate: "", createdAt: now });
       break;
-    case "book-form":
-      store.add(trip.id, "bookings", { type: f.type, title: f.title.trim(), date: f.date, time: f.time, ref: f.ref.trim(), place: f.place.trim(), note: f.note.trim(), createdAt: now });
-      break;
+    case "book-form": {
+      const hotel = f.type === "ที่พัก";
+      if (hotel && (!f.checkInDate || !f.checkOutDate || f.checkOutDate <= f.checkInDate)) { toast("ใส่วันเช็คอิน–เช็คเอาท์ให้ถูกต้อง"); return; }
+      const rec = {
+        type: f.type, title: f.title.trim(), ref: f.ref.trim(), place: f.place.trim(), note: f.note.trim(),
+        date: hotel ? f.checkInDate : f.date,
+        time: hotel ? f.checkInTime : f.time,
+        checkOutDate: hotel ? f.checkOutDate : "",
+        checkOutTime: hotel ? f.checkOutTime : "",
+      };
+      if (!rec.title) return;
+      if (editingBookingId) { store.update(trip.id, "bookings", editingBookingId, rec); stopEditBooking(); }
+      else { store.add(trip.id, "bookings", { ...rec, createdAt: now }); form.reset(); syncBookForm(); }
+      toast("บันทึกแล้ว");
+      return;
+    }
     case "expense-form":
       store.add(trip.id, "expenses", { title: f.title.trim(), amount: num(f.amount), currency: f.currency || "THB", paidBy: f.paidBy, date: f.date, createdAt: now });
       form.reset();
