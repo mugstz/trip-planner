@@ -85,7 +85,7 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 
 /* แท็บหลัก: จอใหญ่ = แถวบนแบบ sticky / มือถือ = แถบล่าง */
 .main-tabs { position: sticky; top: var(--topbar-h); background: var(--bg); padding: 8px 0; z-index: 15; }
-.main-tabs .t-icon { display: none; }  /* จอใหญ่: ไม่ใช้ไอคอน */
+.main-tabs .t-icon { display: inline; }
 .main-tabs button { display: inline-flex; align-items: center; gap: 6px; }
 .main-tabs .t-short { display: none; }
 

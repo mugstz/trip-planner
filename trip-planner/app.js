@@ -470,8 +470,8 @@ function renderTripSkeleton() {
 
     <section data-panel="wishlist">
       <div class="seg" role="tablist">
-        <button type="button" data-action="wish-view" data-v="mine" id="seg-mine">ของเรา</button>
-        <button type="button" data-action="wish-view" data-v="suggest" id="seg-suggest">สถานที่แนะนำ</button>
+        <button type="button" data-action="wish-view" data-v="mine" id="seg-mine">⭐ ของเรา</button>
+        <button type="button" data-action="wish-view" data-v="suggest" id="seg-suggest">✨ สถานที่แนะนำ</button>
       </div>
       <div id="suggest-view"></div>
       <div id="wish-mine">
@@ -571,17 +571,17 @@ function renderTripSkeleton() {
     <section data-panel="prep">
       <div id="prep-info"></div>
       <div class="card">
-        <h3>ความพร้อมของทริป</h3>
+        <h3>✅ ความพร้อมของทริป</h3>
         <div id="prep-ready"></div>
       </div>
       <div class="card">
-        <h3>เช็กลิสต์ของฉัน <small class="muted" id="prep-count"></small></h3>
+        <h3>🧍 เช็กลิสต์ของฉัน <small class="muted" id="prep-count"></small></h3>
         <div id="prep-mine"></div>
         <h4>ความคืบหน้าของทุกคน</h4>
         <div id="prep-progress"></div>
       </div>
       <div class="card">
-        <h3>เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
+        <h3>📋 เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
         <div id="check-list"></div>
         <form id="check-form" class="inline-form">
           <input name="text" required placeholder="เพิ่มรายการ">
@@ -642,7 +642,7 @@ function renderSection(s) {
 
 const delBtn = (sub, id) => `<button type="button" class="icon" data-action="del" data-sub="${sub}" data-id="${esc(id)}" title="ลบ">✕</button>`;
 const mapLink = (place) =>
-  place ? `<a href="${esc(mapUrl(place))}" target="_blank" rel="noopener">${isLink(place) ? "เปิดแผนที่" : esc(place)}</a>` : "";
+  place ? `<a href="${esc(mapUrl(place))}" target="_blank" rel="noopener">📍 ${isLink(place) ? "เปิดแผนที่" : esc(place)}</a>` : "";
 
 /* ---------- แพลนรายวัน ---------- */
 function renderPlan() {
@@ -719,9 +719,9 @@ function connectorHtml(prev, x) {
   }
   return `<li class="connector">
     ${legs.length
-      ? `<ol class="legs">${legs.map((l) => `<li>${esc(legText(l))}</li>`).join("")}</ol>`
-      : x.transport ? `<div>${esc(x.transport)}</div>` : ""}
-    <div class="conn-meta">${mins ? `<b>เดินทางรวม ${fmtDur(mins)}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาใน Google Maps</a>` : ""}</div>
+      ? `<ol class="legs">${legs.map((l) => `<li>🚃 ${esc(legText(l))}</li>`).join("")}</ol>`
+      : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
+    <div class="conn-meta">${mins ? `<b>เดินทางรวม ${fmtDur(mins)}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทาง/เวลาใน Google Maps</a>` : ""}</div>
   </li>`;
 }
 
@@ -734,8 +734,8 @@ function itemHtml(x) {
       <div class="time">${esc(x.time) || "—"}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
       <div class="body">
         <div class="title">${esc(x.activity)} ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
-        <div class="meta">${mapLink(x.place)}${hrs ? `<span>เปิด ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>ค่าใช้จ่าย ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
-        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
+        <div class="meta">${mapLink(x.place)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
+        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
       </div>
       <div class="row-actions">
@@ -807,8 +807,8 @@ function wishPlanDates(w) {
   return w.plannedDate ? [w.plannedDate] : []; // รายการเก่า
 }
 const linkLabel = (url = "") =>
-  /instagram\.com/i.test(url) ? "IG" : /tiktok\.com/i.test(url) ? "TikTok" : /youtu/i.test(url) ? "YouTube" :
-  /facebook\.com|fb\.watch/i.test(url) ? "Facebook" : /tabelog/i.test(url) ? "Tabelog" : "ลิงก์รีวิว";
+  /instagram\.com/i.test(url) ? "📷 IG" : /tiktok\.com/i.test(url) ? "🎵 TikTok" : /youtu/i.test(url) ? "▶️ YouTube" :
+  /facebook\.com|fb\.watch/i.test(url) ? "📘 Facebook" : /tabelog/i.test(url) ? "🍽️ Tabelog" : "🔗 ลิงก์รีวิว";
 
 function renderWishlist() {
   const el = $("#wish-list");
@@ -831,7 +831,7 @@ function renderWishlist() {
     <div class="wish-summary">
       <div class="chip-row">
         <button type="button" class="fchip ${wishFilter === "all" ? "active" : ""}" data-action="wish-filter" data-v="all">ทั้งหมด ${all.length}</button>
-        <button type="button" class="fchip ${wishFilter === "todo" ? "active" : ""}" data-action="wish-filter" data-v="todo">ยังไม่ใส่แพลน ${todo.length}</button>
+        <button type="button" class="fchip ${wishFilter === "todo" ? "active" : ""}" data-action="wish-filter" data-v="todo">🟠 ยังไม่ใส่แพลน ${todo.length}</button>
         <button type="button" class="fchip ${wishFilter === "planned" ? "active" : ""}" data-action="wish-filter" data-v="planned">✓ ใส่แพลนแล้ว ${all.length - todo.length}</button>
       </div>
       ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
@@ -841,7 +841,7 @@ function renderWishlist() {
       const prio = num(w.priority) || 2;
       const status = w.dates.length
         ? `<span class="wstatus done">✓ อยู่ในแพลน ${w.dates.map((d) => `วันที่ ${days.indexOf(d) + 1} (${fmtDate(d)})`).join(", ")}</span>`
-        : `<span class="wstatus todo">ยังไม่ได้ใส่ในแพลน</span>`;
+        : `<span class="wstatus todo">🟠 ยังไม่ได้ใส่ในแพลน</span>`;
       const picking = planOpenId === w.id;
       return `
       <article class="card wish-card ${w.dates.length ? "is-planned" : ""}" id="wish-${esc(w.id)}">
@@ -859,10 +859,10 @@ function renderWishlist() {
           <span class="badge">${esc(w.category || "อื่นๆ")}</span>
           ${mapLink(w.place || w.name)}
           ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
-          ${num(w.budget) ? `<span>งบ ~${fmtWithTHB(w.budget, w.budgetCurrency)}/คน</span>` : ""}
+          ${num(w.budget) ? `<span>💰 ~${fmtWithTHB(w.budget, w.budgetCurrency)}/คน</span>` : ""}
         </div>
-        ${w.mustTry ? `<div class="wish-line"><b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
-        ${w.source ? `<div class="wish-line muted">แนะนำโดย / เจอจาก: ${esc(w.source)}</div>` : ""}
+        ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
+        ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
         ${w.timeNeeded ? `<div class="wish-line">${timeHtml(w.timeNeeded)}</div>` : ""}
         ${(() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: w.place || w.name, access: w.access, label: w.name, pending: !c && (geoBusy || geoQueue.some((x) => x.id === w.id)) }); })()}
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
@@ -940,10 +940,10 @@ function renderBookings() {
           <div class="body">
             <div class="title"><span class="badge">${esc(b.type)}</span> ${esc(b.title)}</div>
             ${isHotel(b)
-              ? `<div class="stay-line">เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
+              ? `<div class="stay-line">🛬 เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → 🛫 เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
                  ${b.address ? `<div class="note">ที่อยู่: ${esc(b.address)}</div>` : `<div class="note warn-soft">ยังไม่ได้ใส่ที่อยู่โรงแรม — ใช้ในเอกสารโชว์ ตม.</div>`}
                  <div class="meta">${mapLink(b.place || b.address || b.title)}</div>`
-              : `<div class="meta"><span>${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>`}
+              : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>`}
             ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
@@ -973,7 +973,7 @@ function hotelSummaryHtml() {
   const overlap = nights.filter((d) => hotelForNight(d).length > 1);
   const days = tripDays();
   return `<div class="card hotel-card">
-    <h3>ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
+    <h3>🏨 ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
     ${hs.length ? `<ul class="hotel-list">${hs.map((h) => `
       <li>
         <button type="button" class="hotel-name" data-action="goto-booking" data-id="${esc(h.id)}">${esc(h.title)}</button>
@@ -995,10 +995,10 @@ function dayHotelHtml(d) {
   const tonight = hotelForNight(d);
   const isLastDay = d === tripDays().at(-1);
   const parts = [];
-  out.forEach((h) => parts.push(`<div>เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
+  out.forEach((h) => parts.push(`<div>🛫 เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
   tonight.forEach((h) => parts.push(h.date === d
-    ? `<div>เช็คอิน <b>${esc(h.title)}</b>${h.time ? ` ตั้งแต่ ${esc(h.time)}` : ""} ${mapLink(h.place || h.title)}</div>`
-    : `<div>คืนนี้พักที่ <b>${esc(h.title)}</b> ${mapLink(h.place || h.title)}</div>`));
+    ? `<div>🛬 เช็คอิน <b>${esc(h.title)}</b>${h.time ? ` ตั้งแต่ ${esc(h.time)}` : ""} ${mapLink(h.place || h.title)}</div>`
+    : `<div>🏨 คืนนี้พักที่ <b>${esc(h.title)}</b> ${mapLink(h.place || h.title)}</div>`));
   if (!tonight.length && !isLastDay) parts.push(`<div class="warn">⚠️ คืนนี้ยังไม่มีที่พัก</div>`);
   return parts.length ? `<div class="day-hotel">${parts.join("")}</div>` : "";
 }
@@ -1244,7 +1244,7 @@ function showMePicker() {
   wrap.className = "modal-backdrop me-picker";
   wrap.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mp-title">
-      <div class="m-icon" aria-hidden="true"></div>
+      <div class="m-icon" aria-hidden="true">👋</div>
       <h3 id="mp-title">ฉันคือใคร?</h3>
       <p class="muted">เลือกชื่อตัวเองในทริป “${esc(trip.name)}” เพื่อจ่ายเงิน จัดของ และติ๊กเช็กลิสต์ในชื่อของคุณ</p>
       <div class="me-options">
@@ -1259,7 +1259,7 @@ function showMePicker() {
   document.addEventListener("keydown", onKey);
   wrap.addEventListener("click", (e) => {
     const opt = e.target.closest("[data-m]");
-    if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} `); return; }
+    if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} 👋`); return; }
     if (e.target.closest("[data-skip]")) { lsSet("me-skip-" + trip.id, "1"); close(); }
   });
   wrap.querySelector(".me-option")?.focus();
@@ -1304,8 +1304,8 @@ let wishView = null; // null = เลือกให้อัตโนมัต�
 let sgCity = "all";
 let sgCat = "all";
 const SG_CATS = [
-  ["all", "ทั้งหมด"], ["cafe", "คาเฟ่"], ["photo", "ถ่ายรูป"], ["food", "ของกิน"], ["shopping", "ช้อปปิ้ง"],
-  ["kpop", "ตามรอยศิลปิน"], ["nature", "ธรรมชาติ"], ["sight", "วัด/ที่เที่ยว"], ["theme", "สวนสนุก"],
+  ["all", "ทั้งหมด"], ["cafe", "☕ คาเฟ่"], ["photo", "📸 ถ่ายรูป"], ["food", "🍜 ของกิน"], ["shopping", "🛍️ ช้อปปิ้ง"],
+  ["kpop", "💚 ตามรอยศิลปิน"], ["nature", "🍁 ธรรมชาติ"], ["sight", "⛩️ วัด/ที่เที่ยว"], ["theme", "🎢 สวนสนุก"],
 ];
 const SG_TO_WISH = { cafe: "คาเฟ่", food: "ร้านอาหาร", shopping: "ช้อปปิ้ง", kpop: "ตามรอยศิลปิน", theme: "ที่เที่ยว", nature: "ที่เที่ยว", sight: "ที่เที่ยว", photo: "ที่เที่ยว" };
 const geoTried = new Set();
@@ -1318,10 +1318,10 @@ function distKm(a, b) {
 }
 // ประมาณเวลาเดินทาง: ใกล้ = เดิน, ไกล = รถไฟ (รวมเวลาเดินไปสถานี/เปลี่ยนสาย)
 function travelEstimate(km) {
-  if (km <= 1.2) return { mode: "เดิน", icon: "", min: Math.max(3, Math.round(km * 13)) };
+  if (km <= 1.2) return { mode: "เดิน", icon: "🚶", min: Math.max(3, Math.round(km * 13)) };
   // ในเมือง: รถไฟใต้ดิน/รถเมล์ + เดินไปสถานี ; ข้ามเมือง: รถไฟด่วน
   const raw = km <= 15 ? 12 + km * 2.4 : Math.max(48, 25 + km * 1.1);
-  return { mode: "รถไฟ/รถเมล์", icon: "", min: Math.round(raw / 5) * 5 };
+  return { mode: "รถไฟ/รถเมล์", icon: "🚃", min: Math.round(raw / 5) * 5 };
 }
 
 // ตำแหน่งที่พัก: จากพิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap
@@ -1457,7 +1457,7 @@ function travelBoxHtml({ coords, query, access, pending, label }) {
     if (km < 0.05) dist = `<div class="sg-dist">คุณใช้ที่นี่เป็นจุดเริ่มต้นวัดระยะอยู่</div>`;
     else {
       const est = travelEstimate(km);
-      dist = `<div class="sg-dist">จาก ${esc(o.label)} ~${km < 1 ? Math.round(km * 1000) + " ม." : km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></div>`;
+      dist = `<div class="sg-dist">${est.icon} จาก ${esc(o.label)} ~${km < 1 ? Math.round(km * 1000) + " ม." : km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></div>`;
     }
   } else if (!o.none && !coords) {
     dist = `<div class="muted small-note">${pending ? "กำลังหาตำแหน่งสถานที่…" : "คำนวณระยะทางไม่ได้ — ใส่ชื่อสถานที่ภาษาอังกฤษในช่อง “สถานที่”"}</div>`;
@@ -1469,13 +1469,13 @@ function travelBoxHtml({ coords, query, access, pending, label }) {
   const route = origin && dest ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit` : "";
   if (!access && !dist && !route && !hereBtn) return "";
   return `<div class="travel-box">
-      <div class="tb-title">การเดินทาง</div>
+      <div class="tb-title">🚉 การเดินทาง</div>
       ${access ? `<div>${esc(access)}</div>` : ""}
       ${dist}
       <div class="tb-links">${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาจริงใน Google Maps</a>` : ""}${hereBtn}</div>
     </div>`;
 }
-const timeHtml = (t) => (t ? `<span class="time-need">เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
+const timeHtml = (t) => (t ? `<span class="time-need">⏱ เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
 
 // ตำแหน่งของรายการใน Wishlist: พิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap (ทีละรายการ ไม่เกิน 1 ครั้ง/วินาที)
 const wishCoords = (w) => (Number.isFinite(w?.lat) && Number.isFinite(w?.lng) ? { lat: w.lat, lng: w.lng } : coordsFromLink(w?.place));
@@ -1520,7 +1520,7 @@ function renderSuggest() {
   if (!box) return;
   const nMine = data.wishlist.length;
   if (!wishView) wishView = nMine ? "mine" : "suggest";
-  $("#seg-mine").innerHTML = `ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
+  $("#seg-mine").innerHTML = `⭐ ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
   $("#seg-mine").classList.toggle("active", wishView === "mine");
   $("#seg-suggest").classList.toggle("active", wishView === "suggest");
   $("#wish-mine").hidden = wishView !== "mine";
@@ -1569,8 +1569,8 @@ function renderSuggest() {
         </div>
         <div class="sg-tags">${p.cats.map((c) => `<span class="badge">${catLabel[c] || c}</span>`).join("")}${p.season ? `<span class="badge ${inSeason ? "ok" : ""}">${esc(p.season.label)}${inSeason ? " · ตรงช่วงทริป" : ""}</span>` : ""}</div>
         <p>${esc(p.desc)}</p>
-        ${p.kpop ? `<p class="sg-kpop">${esc(p.kpop)}</p>` : ""}
-        <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">แผนที่</a></div>
+        ${p.kpop ? `<p class="sg-kpop">💚 ${esc(p.kpop)}</p>` : ""}
+        <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">📍 แผนที่</a></div>
         ${travelBoxHtml({ coords: { lat: p.lat, lng: p.lng }, query: p.nameEn, access: p.access, label: p.name })}
         <div class="sg-src">อ้างอิง: ${p.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a> — ${esc(s.publisher)}${s.author ? ` (เขียนโดย ${esc(s.author)})` : ""}`).join("<br>")}</div>
       </article>`;
@@ -1646,7 +1646,7 @@ function renderPrep() {
     <div class="card immi-card">
       <div class="immi-head">
         <div>
-          <h3>เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
+          <h3>🛂 เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
           <div class="muted">สำหรับพาสปอร์ตไทย · ท่องเที่ยวระยะสั้น${IMMI.updated ? ` · อัปเดต ${fmtDate(IMMI.updated, "year")}` : ""}</div>
         </div>
         <span class="risk risk-${riskCls}">ความเสี่ยง: ${riskLabel}</span>
@@ -1666,7 +1666,7 @@ function renderPrep() {
     <ul class="ready-list">${readinessChecks().map(([ok, title, detail]) => `
       <li class="${ok ? "ok" : "no"}"><span class="r-icon">${ok ? "✓" : "!"}</span><div><b>${esc(title)}</b><div class="muted">${esc(detail)}</div></div></li>`).join("")}</ul>
     <div class="ready-actions">
-      <button type="button" class="btn primary" data-action="immi-pdf">เอกสารโชว์ ตม. (PDF ภาษาอังกฤษ)</button>
+      <button type="button" class="btn primary" data-action="immi-pdf">🖨️ เอกสารโชว์ ตม. (PDF ภาษาอังกฤษ)</button>
       <button type="button" class="btn" data-action="tab" data-tab="bookings">ไปที่การจอง</button>
     </div>
     <p class="muted small-note">เอกสารรวมตั๋วเครื่องบิน ที่พักทุกคืน และแพลนรายวัน เป็นภาษาอังกฤษ ปริ้นต์หรือเก็บในมือถือไว้ยื่นเวลา ตม. ถาม</p>`;
@@ -1917,7 +1917,7 @@ function confirmDialog({ title, message, okText = "ลบ", requireText = "" }) 
     wrap.className = "modal-backdrop";
     wrap.innerHTML = `
       <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="m-title" aria-describedby="m-msg">
-        <div class="m-icon" aria-hidden="true"></div>
+        <div class="m-icon" aria-hidden="true">🗑️</div>
         <h3 id="m-title">${esc(title)}</h3>
         <p id="m-msg">${message}</p>
         ${requireText ? `<label class="m-req">พิมพ์ <b>${esc(requireText)}</b> เพื่อยืนยัน<input id="m-input" autocomplete="off"></label>` : ""}
