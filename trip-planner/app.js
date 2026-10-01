@@ -266,6 +266,9 @@ function cleanup() {
   tab = "plan";
   firstTripLoad = true;
   wishView = null;
+  originSel = null;
+  originLoaded = false;
+  originEditing = false;
   wishFilter = "all";
   wishCatFilter = "all";
   planOpenId = null;
@@ -629,7 +632,7 @@ function renderSection(s) {
   ({
     items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); renderWishlist(); renderSuggest(); },
     wishlist: () => { renderWishlist(); renderSuggest(); },
-    bookings: () => { renderBookings(); renderPlan(); renderPrep(); renderSuggest(); },
+    bookings: () => { renderBookings(); renderPlan(); renderPrep(); renderSuggest(); renderWishlist(); },
     expenses: renderMoney,
     packing: renderPacking,
     checklist: renderChecklist,
@@ -832,7 +835,7 @@ function renderWishlist() {
         <button type="button" class="fchip ${wishFilter === "planned" ? "active" : ""}" data-action="wish-filter" data-v="planned">✓ ใส่แพลนแล้ว ${all.length - todo.length}</button>
       </div>
       ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
-      ${hotelPickerHtml()}
+      ${originPickerHtml()}
     </div>
     ${list.length ? list.map((w) => {
       const prio = num(w.priority) || 2;
@@ -861,7 +864,7 @@ function renderWishlist() {
         ${w.mustTry ? `<div class="wish-line"><b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
         ${w.source ? `<div class="wish-line muted">แนะนำโดย / เจอจาก: ${esc(w.source)}</div>` : ""}
         ${w.timeNeeded ? `<div class="wish-line">${timeHtml(w.timeNeeded)}</div>` : ""}
-        ${(() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: w.place || w.name, access: w.access, pending: !c && (geoBusy || geoQueue.some((x) => x.id === w.id)) }); })()}
+        ${(() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: w.place || w.name, access: w.access, label: w.name, pending: !c && (geoBusy || geoQueue.some((x) => x.id === w.id)) }); })()}
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
         ${picking
           ? `<div class="to-plan">
@@ -1300,7 +1303,6 @@ let PLACES = { places: [] };
 let wishView = null; // null = เลือกให้อัตโนมัติ (ยังไม่มี Wishlist → เปิดสถานที่แนะนำ)
 let sgCity = "all";
 let sgCat = "all";
-let sgHotelId = "";
 const SG_CATS = [
   ["all", "ทั้งหมด"], ["cafe", "คาเฟ่"], ["photo", "ถ่ายรูป"], ["food", "ของกิน"], ["shopping", "ช้อปปิ้ง"],
   ["kpop", "ตามรอยศิลปิน"], ["nature", "ธรรมชาติ"], ["sight", "วัด/ที่เที่ยว"], ["theme", "สวนสนุก"],
@@ -1351,44 +1353,126 @@ async function ensureHotelCoords(h) {
   renderSuggest(); // หาไม่เจอ → แสดงข้อความแนะนำ
 }
 
-// ที่พักที่ใช้วัดระยะ (ใช้ร่วมกันทั้ง "ของเรา" และ "สถานที่แนะนำ")
-function currentHotel() {
+// ---------- จุดเริ่มต้นสำหรับวัดระยะ (ใช้ร่วมกันทั้ง "ของเรา" และ "สถานที่แนะนำ") ----------
+// เลือกได้: ที่พักในการจอง · ตำแหน่งปัจจุบัน (GPS) · พิมพ์สถานที่เอง · "วัดระยะจากที่นี่" จากการ์ด
+// จำไว้ในเครื่องนี้ต่อทริป (แต่ละคนอาจอยู่คนละที่)
+let originSel = null;
+let originLoaded = false;
+let originEditing = false;
+let gpsBusy = false;
+const originKey = () => "origin-" + trip?.id;
+function saveOrigin(o) {
+  originSel = o;
+  lsSet(originKey(), JSON.stringify(o));
+  renderSuggest();
+  renderWishlist();
+}
+function currentOrigin() {
   const hs = hotels();
-  if (!hs.some((h) => h.id === sgHotelId)) sgHotelId = hs[0]?.id || "";
-  const hotel = hs.find((h) => h.id === sgHotelId);
-  const hc = hotelCoords(hotel);
-  if (hotel && !hc) ensureHotelCoords(hotel);
-  return { hs, hotel, hc };
+  if (!originLoaded) {
+    originLoaded = true;
+    try { originSel = JSON.parse(lsGet(originKey())) || null; } catch { originSel = null; }
+  }
+  let o = originSel;
+  if (o?.kind === "hotel" && !hs.some((h) => h.id === o.id)) o = null;
+  if (!o && hs.length) o = { kind: "hotel", id: hs[0].id };
+  if (!o) return { none: true, hs };
+  if (o.kind === "hotel") {
+    const h = hs.find((x) => x.id === o.id);
+    const c = hotelCoords(h);
+    if (!c) ensureHotelCoords(h);
+    return { hs, sel: o, label: h.title, coords: c, query: h.address || (h.place && !isLink(h.place) ? h.place : h.title), hotel: h };
+  }
+  return { hs, sel: o, label: o.label, coords: { lat: o.lat, lng: o.lng }, query: `${o.lat},${o.lng}` };
 }
 
-function hotelPickerHtml() {
-  const { hs, hotel, hc } = currentHotel();
-  if (!hs.length) return `<p class="muted small-note">เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหนและเดินทางกี่นาที</p>`;
-  return `<label class="sg-hotel">วัดระยะจากที่พัก
-      <select class="hotel-pick">${hs.map((h) => `<option value="${esc(h.id)}" ${h.id === sgHotelId ? "selected" : ""}>${esc(h.title)}</option>`).join("")}</select></label>
-    ${hotel && !hc ? `<p class="muted small-note">${geoTried.has(hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — แก้ช่อง “ที่อยู่” ของที่พักเป็นชื่อหรือที่อยู่ภาษาอังกฤษ" : "กำลังหาตำแหน่งที่พัก…"}</p>` : ""}`;
+function originPickerHtml() {
+  const o = currentOrigin();
+  const val = o.none ? "" : o.sel.kind === "hotel" ? "h:" + o.sel.id : "saved";
+  const opts = [
+    ...(o.none ? [["", "— เลือกจุดเริ่มต้น —"]] : []),
+    ...o.hs.map((h) => [`h:${h.id}`, `ที่พัก: ${h.title}`]),
+    ...(!o.none && o.sel.kind !== "hotel" ? [["saved", o.label]] : []),
+    ["gps", "ใช้ตำแหน่งปัจจุบันของฉัน (GPS)"],
+    ["custom", "พิมพ์สถานที่เอง…"],
+  ];
+  let status = "";
+  if (gpsBusy) status = "กำลังหาตำแหน่งปัจจุบัน…";
+  else if (o.hotel && !o.coords) status = geoTried.has(o.hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — เพิ่ม “ที่อยู่โรงแรม” ภาษาอังกฤษในการจอง หรือเลือกพิมพ์สถานที่เอง" : "กำลังหาตำแหน่งที่พัก…";
+  else if (o.none) status = "เพิ่มที่พักในแท็บการจอง หรือเลือก GPS / พิมพ์สถานที่เอง เพื่อดูระยะทางและเวลาเดินทาง";
+  return `<div class="origin-box">
+      <label class="sg-hotel">วัดระยะจาก
+        <select class="origin-pick">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+      ${originEditing ? `<div class="inline-form origin-form">
+          <input class="origin-input" placeholder="ชื่อสถานที่ / ที่อยู่ภาษาอังกฤษ หรือวางลิงก์ Google Maps">
+          <button type="button" class="btn primary" data-action="origin-set">ใช้ที่นี่</button>
+          <button type="button" class="btn" data-action="origin-cancel">ยกเลิก</button>
+        </div>` : ""}
+      ${status ? `<p class="muted small-note">${status}</p>` : ""}
+    </div>`;
 }
 
-// กล่อง "การเดินทาง": วิธีไป/สถานี + ระยะทางและเวลาจากที่พัก + ลิงก์เส้นทางจริง
-function travelBoxHtml({ coords, query, access, pending }) {
-  const { hotel, hc } = currentHotel();
+function useGps() {
+  if (!navigator.geolocation) { toast("เบราว์เซอร์นี้ใช้ GPS ไม่ได้ — พิมพ์สถานที่เองแทน"); return; }
+  gpsBusy = true;
+  renderSuggest(); renderWishlist();
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      gpsBusy = false;
+      const t = new Date().toTimeString().slice(0, 5);
+      saveOrigin({ kind: "gps", lat: pos.coords.latitude, lng: pos.coords.longitude, label: `ตำแหน่งของฉัน (${t})` });
+      toast("วัดระยะจากตำแหน่งปัจจุบันแล้ว");
+    },
+    () => {
+      gpsBusy = false;
+      renderSuggest(); renderWishlist();
+      toast("ใช้ตำแหน่งไม่ได้ — อนุญาตการเข้าถึงตำแหน่งในเบราว์เซอร์ หรือพิมพ์สถานที่เอง");
+    },
+    { enableHighAccuracy: true, timeout: 12000, maximumAge: 60000 },
+  );
+}
+
+async function setCustomOrigin(q) {
+  q = (q || "").trim();
+  if (!q) return;
+  let c = coordsFromLink(q);
+  if (!c) {
+    if (!navigator.onLine) { toast("ออฟไลน์อยู่ — หาตำแหน่งไม่ได้"); return; }
+    toast("กำลังหาตำแหน่ง…");
+    const country = destInfo().nameEn || trip?.country || "";
+    c = (await geocode(`${q}, ${country}`)) || (await geocode(q));
+  }
+  if (!c) { toast("หาสถานที่นี้ไม่เจอ — ลองพิมพ์เป็นภาษาอังกฤษ หรือวางลิงก์ Google Maps"); return; }
+  originEditing = false;
+  saveOrigin({ kind: "custom", lat: c.lat, lng: c.lng, label: isLink(q) ? "ตำแหน่งจากลิงก์" : q });
+  toast(`วัดระยะจาก “${isLink(q) ? "ตำแหน่งจากลิงก์" : q}” แล้ว`);
+}
+
+// กล่อง "การเดินทาง": วิธีไป/สถานี + ระยะทางและเวลาจากจุดที่เลือก + ลิงก์เส้นทางจริง
+function travelBoxHtml({ coords, query, access, pending, label }) {
+  const o = currentOrigin();
   let dist = "";
-  if (hotel && hc && coords) {
-    const km = distKm(hc, coords);
-    const est = travelEstimate(km);
-    dist = `<div class="sg-dist">${est.icon} จาก ${esc(hotel.title)} ~${km < 1 ? Math.round(km * 1000) + " ม." : km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></div>`;
-  } else if (hotel && !coords) {
+  if (!o.none && o.coords && coords) {
+    const km = distKm(o.coords, coords);
+    if (km < 0.05) dist = `<div class="sg-dist">คุณใช้ที่นี่เป็นจุดเริ่มต้นวัดระยะอยู่</div>`;
+    else {
+      const est = travelEstimate(km);
+      dist = `<div class="sg-dist">จาก ${esc(o.label)} ~${km < 1 ? Math.round(km * 1000) + " ม." : km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></div>`;
+    }
+  } else if (!o.none && !coords) {
     dist = `<div class="muted small-note">${pending ? "กำลังหาตำแหน่งสถานที่…" : "คำนวณระยะทางไม่ได้ — ใส่ชื่อสถานที่ภาษาอังกฤษในช่อง “สถานที่”"}</div>`;
   }
-  const origin = hotel ? (hc ? `${hc.lat},${hc.lng}` : hotel.place && !isLink(hotel.place) ? hotel.place : hotel.title) : "";
+  const origin = o.none ? "" : o.coords ? `${o.coords.lat},${o.coords.lng}` : o.query;
+  const hereBtn = coords && !(o.coords && distKm(o.coords, coords) < 0.05)
+    ? `<button type="button" class="link-plain" data-action="origin-here" data-lat="${coords.lat}" data-lng="${coords.lng}" data-label="${esc(label || query || "")}">วัดระยะจากที่นี่แทน</button>` : "";
   const dest = coords ? `${coords.lat},${coords.lng}` : query && !isLink(query) ? query : "";
   const route = origin && dest ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit` : "";
-  if (!access && !dist && !route) return "";
+  if (!access && !dist && !route && !hereBtn) return "";
   return `<div class="travel-box">
       <div class="tb-title">การเดินทาง</div>
       ${access ? `<div>${esc(access)}</div>` : ""}
       ${dist}
-      ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาจริงจากที่พักใน Google Maps</a>` : ""}
+      <div class="tb-links">${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาจริงใน Google Maps</a>` : ""}${hereBtn}</div>
     </div>`;
 }
 const timeHtml = (t) => (t ? `<span class="time-need">เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
@@ -1453,7 +1537,7 @@ function renderSuggest() {
   if (sgCity !== "all" && !cities.includes(sgCity)) sgCity = "all";
 
   // ที่พักที่ใช้วัดระยะ
-  const { hc } = currentHotel();
+  const hc = currentOrigin().coords;
 
   let list = all.filter((p) => (sgCity === "all" || p.city.startsWith(sgCity)) && (sgCat === "all" || p.cats.includes(sgCat)));
   list = list.map((p) => ({ ...p, km: hc ? distKm(hc, p) : null }));
@@ -1461,7 +1545,7 @@ function renderSuggest() {
   const tripMonths = new Set(tripDays().map((d) => +d.slice(5, 7)));
   const catLabel = Object.fromEntries(SG_CATS);
 
-  const hotelBar = hotelPickerHtml();
+  const hotelBar = originPickerHtml();
 
   box.innerHTML = `
     <div class="card sg-filters">
@@ -1487,7 +1571,7 @@ function renderSuggest() {
         <p>${esc(p.desc)}</p>
         ${p.kpop ? `<p class="sg-kpop">${esc(p.kpop)}</p>` : ""}
         <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">แผนที่</a></div>
-        ${travelBoxHtml({ coords: { lat: p.lat, lng: p.lng }, query: p.nameEn, access: p.access })}
+        ${travelBoxHtml({ coords: { lat: p.lat, lng: p.lng }, query: p.nameEn, access: p.access, label: p.name })}
         <div class="sg-src">อ้างอิง: ${p.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a> — ${esc(s.publisher)}${s.author ? ` (เขียนโดย ${esc(s.author)})` : ""}`).join("<br>")}</div>
       </article>`;
     }).join("") : `<p class="empty">ไม่มีสถานที่ตรงกับตัวกรอง</p>`}
@@ -1815,6 +1899,13 @@ function onClick(e) {
   else if (action === "sg-city") { sgCity = b.dataset.v; renderSuggest(); }
   else if (action === "sg-cat") { sgCat = b.dataset.v; renderSuggest(); }
   else if (action === "sg-add") addSuggestToWishlist(id);
+  else if (action === "origin-set") setCustomOrigin(b.closest(".origin-box").querySelector(".origin-input").value);
+  else if (action === "origin-cancel") { originEditing = false; renderSuggest(); renderWishlist(); }
+  else if (action === "origin-here") {
+    saveOrigin({ kind: "place", lat: +b.dataset.lat, lng: +b.dataset.lng, label: b.dataset.label || "สถานที่ที่เลือก" });
+    toast(`วัดระยะจาก “${b.dataset.label}” แล้ว`);
+    scrollTo({ top: 0, behavior: "smooth" });
+  }
   else if (action === "delete-trip") deleteTrip();
 }
 
@@ -1903,10 +1994,16 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
-  if (el.classList.contains("hotel-pick")) {
-    sgHotelId = el.value;
-    renderSuggest();
-    renderWishlist();
+  if (el.classList.contains("origin-pick")) {
+    const v = el.value;
+    if (v.startsWith("h:")) { originEditing = false; saveOrigin({ kind: "hotel", id: v.slice(2) }); }
+    else if (v === "gps") { originEditing = false; useGps(); }
+    else if (v === "custom") {
+      originEditing = true;
+      renderSuggest(); renderWishlist();
+      const vis = [...document.querySelectorAll(".origin-input")].find((i) => i.offsetParent);
+      vis?.focus();
+    }
   } else if (el.dataset.action === "prep-toggle") {
     togglePrep(el.dataset.key, el.checked);
   } else if (el.dataset.action === "toggle") {
@@ -2042,6 +2139,9 @@ async function init() {
   app.addEventListener("click", onClick);
   app.addEventListener("change", onChange);
   app.addEventListener("input", onInput);
+  app.addEventListener("keydown", (e) => {
+    if (e.key === "Enter" && e.target.classList?.contains("origin-input")) { e.preventDefault(); setCustomOrigin(e.target.value); }
+  });
   app.addEventListener("submit", onSubmit);
   window.addEventListener("hashchange", route);
   window.addEventListener("online", updateNet);

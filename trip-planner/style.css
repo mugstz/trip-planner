@@ -433,3 +433,11 @@ th { background: var(--bg); white-space: nowrap; }
 textarea { resize: vertical; }
 .sg-kpop { background: #F2ECF7; }
 .btn.small.primary { color: var(--on-accent); }
+
+/* ---------- จุดเริ่มต้นวัดระยะ ---------- */
+.origin-box { margin-top: 6px; }
+.origin-form { margin-top: 8px; flex-wrap: wrap; }
+.origin-form input { flex: 1 1 100%; }
+.origin-form .btn { flex: 1; }
+.tb-links { display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; }
+.link-plain { border: none; background: none; padding: 0; font: inherit; font-size: .85rem; color: var(--rose-ink); text-decoration: underline; cursor: pointer; }
