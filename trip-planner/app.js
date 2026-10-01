@@ -4,11 +4,11 @@ import { FIREBASE_CONFIG } from "./firebase-config.js";
    ค่าตั้งต้น
    ============================================================ */
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2";
-const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist"];
+const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist", "prep"];
 // [key, ชื่อเต็ม, ไอคอน, ชื่อสั้น (แถบล่างในมือถือ)]
 const TABS = [
   ["plan", "แพลน", "🗓️", "แพลน"], ["wishlist", "Wishlist", "⭐", "Wishlist"], ["bookings", "การจอง", "🎫", "การจอง"],
-  ["money", "ค่าใช้จ่าย", "💰", "ค่าใช้จ่าย"], ["packing", "ของที่ต้องเตรียม", "🎒", "ของเตรียม"], ["checklist", "เช็กลิสต์", "✅", "เช็กลิสต์"],
+  ["money", "ค่าใช้จ่าย", "💰", "ค่าใช้จ่าย"], ["packing", "ของที่ต้องเตรียม", "🎒", "ของเตรียม"], ["prep", "เตรียมตัว / ตม.", "🛂", "เตรียมตัว"],
 ];
 const DEFAULT_CHECKLIST = [
   "พาสปอร์ต (อายุเหลือเกิน 6 เดือน)",
@@ -271,7 +271,11 @@ function route() {
   cleanup();
   const h = location.hash;
   if (h === "#/new") renderCreate();
-  else if (h.startsWith("#/trip/")) openTrip(decodeURIComponent(h.slice(7)));
+  else if (h.startsWith("#/trip/")) {
+    const [id, sub] = h.slice(7).split("/");
+    if (sub === "edit") openTripEdit(decodeURIComponent(id));
+    else openTrip(decodeURIComponent(id));
+  }
   else renderList();
   window.scrollTo(0, 0);
 }
@@ -329,6 +333,8 @@ function tripFormFields(t = {}) {
       <label class="wide">ประเทศ / เมือง<input name="country" value="${esc(t.country)}" placeholder="เช่น ญี่ปุ่น"></label>
       <label>วันไป*<input type="date" name="startDate" required value="${esc(t.startDate)}"></label>
       <label>วันกลับ*<input type="date" name="endDate" required value="${esc(t.endDate)}"></label>
+      <label class="wide">ข้อมูล ตม. ของประเทศปลายทาง
+        <select name="destCode">${destOptions(t)}</select></label>
       <label class="wide">สกุลเงินที่ใช้ในทริป
         <select name="currency">${CURRENCIES.map(([c, n]) => `<option value="${c}" ${c === (t.currency || "THB") ? "selected" : ""}>${c} · ${n}</option>`).join("")}</select></label>
       <label class="wide">ผู้ร่วมทริป* <small class="muted">(คั่นด้วยจุลภาค หรือขึ้นบรรทัดใหม่)</small>
@@ -341,7 +347,7 @@ function readTripForm(form) {
   const memberList = [...new Set(f.members.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
   if (!f.name.trim() || !f.startDate || !f.endDate || !memberList.length) { toast("กรอกช่องที่มี * ให้ครบ"); return null; }
   if (f.endDate < f.startDate) { toast("วันกลับต้องไม่ก่อนวันไป"); return null; }
-  return { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, currency: f.currency || "THB", members: memberList, useChecklist: f.useChecklist };
+  return { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, currency: f.currency || "THB", destCode: f.destCode || "OTHER", members: memberList, useChecklist: f.useChecklist };
 }
 
 function renderCreate() {
@@ -373,9 +379,12 @@ function openTrip(id) {
         updateRate(t.id, t.currency, true);
       }
     }
-    const sig = JSON.stringify([t.name, t.country, t.startDate, t.endDate, t.members, t.currency]);
+    const sig = JSON.stringify([t.name, t.country, t.startDate, t.endDate, t.members, t.currency, t.destCode]);
+    const first = !skeletonSig;
     if (sig !== skeletonSig) { skeletonSig = sig; renderTripSkeleton(); }
     renderAll();
+    // ยังไม่ได้เลือกว่าเป็นใคร → ถามก่อนเข้าทริป
+    if (first && !getMe() && !lsGet("me-skip-" + t.id)) showMePicker();
   }));
   SUBS.forEach((s) => unsubs.push(store.listen(id, s, (list) => {
     data[s] = list;
@@ -400,30 +409,24 @@ function renderTripSkeleton() {
         <div class="chips">${members().map((m) => `<span>${esc(m)}</span>`).join("")}</div>
       </div>
       <div class="head-actions">
-        <label class="me">
-          <span class="me-label">ฉันคือใคร?</span>
-          <select id="me-select"><option value="">— เลือกชื่อตัวเอง —</option>${memberOpts}</select>
-        </label>
-        <button class="btn pdf-btn" type="button" data-action="pdf"><span aria-hidden="true">⬇︎</span> Export PDF</button>
+        <button type="button" class="me-chip" data-action="pick-me" title="เปลี่ยนว่าฉันคือใคร">
+          <span class="me-avatar" aria-hidden="true">👤</span>
+          <span class="me-text"><small>ฉันคือ</small><b id="me-name">—</b></span>
+          <span class="me-caret" aria-hidden="true">▾</span>
+        </button>
+        <a class="btn" href="#/trip/${encodeURIComponent(t.id)}/edit"><span aria-hidden="true">⚙️</span> แก้ไขทริป</a>
       </div>
     </div>
-
-    <details class="card edit-trip">
-      <summary>แก้ไขข้อมูลทริป</summary>
-      <form id="trip-form" class="form">${tripFormFields(t)}
-        <div class="actions"><button class="btn primary">บันทึก</button></div>
-      </form>
-      <div class="danger-zone">
-        <div><b>ลบทริปนี้</b><div class="muted">ลบแพลน การจอง ค่าใช้จ่าย และรายการของทั้งหมด กู้คืนไม่ได้</div></div>
-        <button type="button" class="btn danger" data-action="delete-trip">ลบทริป</button>
-      </div>
-    </details>
 
     <nav class="tabs main-tabs">
       ${TABS.map(([k, label, icon, short]) => `<button type="button" data-action="tab" data-tab="${k}"><span class="t-icon" aria-hidden="true">${icon}</span><span class="t-full">${label}</span><span class="t-short">${short}</span></button>`).join("")}
     </nav>
 
     <section data-panel="plan">
+      <div class="panel-head">
+        <h2>แพลนรายวัน</h2>
+        <button class="btn pdf-btn" type="button" data-action="pdf"><span aria-hidden="true">⬇︎</span> Export PDF</button>
+      </div>
       <div class="tabs" id="day-tabs"></div>
       <div id="plan-list"></div>
       <form id="item-form" class="card form">
@@ -535,9 +538,20 @@ function renderTripSkeleton() {
       <div id="pack-others"></div>
     </section>
 
-    <section data-panel="checklist">
+    <section data-panel="prep">
+      <div id="prep-info"></div>
       <div class="card">
-        <h3>เช็กลิสต์ก่อนเดินทาง <small class="muted" id="check-count"></small></h3>
+        <h3>✅ ความพร้อมของทริป</h3>
+        <div id="prep-ready"></div>
+      </div>
+      <div class="card">
+        <h3>🧍 เช็กลิสต์ของฉัน <small class="muted" id="prep-count"></small></h3>
+        <div id="prep-mine"></div>
+        <h4>ความคืบหน้าของทุกคน</h4>
+        <div id="prep-progress"></div>
+      </div>
+      <div class="card">
+        <h3>📋 เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
         <div id="check-list"></div>
         <form id="check-form" class="inline-form">
           <input name="text" required placeholder="เพิ่มรายการ">
@@ -548,7 +562,7 @@ function renderTripSkeleton() {
   </div>
   <div id="print-view" class="print-only"></div>`;
 
-  $("#me-select").value = getMe();
+  updateMeChip();
   const d = days[dayIdx];
   if (d) $("#item-form [name=date]").value = d;
   syncMeForms();
@@ -582,16 +596,17 @@ function syncMeForms() {
   if (paidBy && me) paidBy.value = me;
 }
 
-function renderAll() { renderPlan(); renderWishlist(); renderBookings(); renderMoney(); renderPacking(); renderChecklist(); }
+function renderAll() { renderPlan(); renderWishlist(); renderBookings(); renderMoney(); renderPacking(); renderChecklist(); renderPrep(); }
 
 function renderSection(s) {
   ({
-    items: () => { renderPlan(); renderMoney(); renderBookings(); },
+    items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); },
     wishlist: renderWishlist,
-    bookings: () => { renderBookings(); renderPlan(); },
+    bookings: () => { renderBookings(); renderPlan(); renderPrep(); },
     expenses: renderMoney,
     packing: renderPacking,
     checklist: renderChecklist,
+    prep: renderPrep,
   })[s]();
 }
 
@@ -1088,6 +1103,229 @@ function renderChecklist() {
     : `<p class="muted">ยังไม่มีรายการ</p>`;
 }
 
+/* ============================================================
+   ฉันคือใคร?
+   ============================================================ */
+function updateMeChip() {
+  const el = $("#me-name");
+  if (el) el.textContent = getMe() || "ยังไม่ได้เลือก";
+}
+
+function setMe(name) {
+  lsSet("me-" + trip.id, name);
+  updateMeChip();
+  syncMeForms();
+  renderMoney();
+  renderPacking();
+  renderPrep();
+}
+
+function showMePicker() {
+  if (!trip || document.querySelector(".me-picker")) return;
+  const me = getMe();
+  const wrap = document.createElement("div");
+  wrap.className = "modal-backdrop me-picker";
+  wrap.innerHTML = `
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mp-title">
+      <div class="m-icon" aria-hidden="true">👋</div>
+      <h3 id="mp-title">ฉันคือใคร?</h3>
+      <p class="muted">เลือกชื่อตัวเองในทริป “${esc(trip.name)}” เพื่อจ่ายเงิน จัดของ และติ๊กเช็กลิสต์ในชื่อของคุณ</p>
+      <div class="me-options">
+        ${members().map((m) => `<button type="button" class="me-option ${m === me ? "active" : ""}" data-m="${esc(m)}">${esc(m)}</button>`).join("")}
+      </div>
+      <button type="button" class="btn me-skip" data-skip="1">ดูอย่างเดียว ยังไม่เลือก</button>
+      <p class="muted small-note">เปลี่ยนทีหลังได้ที่ปุ่ม 👤 ด้านบน · เว็บจะจำไว้ในเครื่องนี้</p>
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => { document.removeEventListener("keydown", onKey); wrap.remove(); };
+  const onKey = (e) => { if (e.key === "Escape") { if (!getMe()) lsSet("me-skip-" + trip.id, "1"); close(); } };
+  document.addEventListener("keydown", onKey);
+  wrap.addEventListener("click", (e) => {
+    const opt = e.target.closest("[data-m]");
+    if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} 👋`); return; }
+    if (e.target.closest("[data-skip]")) { lsSet("me-skip-" + trip.id, "1"); close(); }
+  });
+  wrap.querySelector(".me-option")?.focus();
+}
+
+/* ============================================================
+   แก้ไขทริป (หน้าแยก)
+   ============================================================ */
+function openTripEdit(id) {
+  app.innerHTML = `<p class="muted">กำลังโหลด…</p>`;
+  let rendered = false;
+  unsubs.push(store.listenTrip(id, (t) => {
+    if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
+    trip = { members: [], ...t };
+    if (rendered) return;
+    rendered = true;
+    const back = `#/trip/${encodeURIComponent(id)}`;
+    app.innerHTML = `
+      <p><a href="${back}">← กลับไปที่ทริป</a></p>
+      <h1>แก้ไขทริป</h1>
+      ${modeBanner()}
+      <form id="trip-form" class="card form">${tripFormFields(trip)}
+        <div class="actions"><button class="btn primary">บันทึก</button><a class="btn" href="${back}">ยกเลิก</a></div>
+      </form>
+      <div class="card danger-card">
+        <div class="danger-zone">
+          <div><b>ลบทริปนี้</b><div class="muted">ลบแพลน การจอง ค่าใช้จ่าย และรายการของทั้งหมด กู้คืนไม่ได้</div></div>
+          <button type="button" class="btn danger" data-action="delete-trip">ลบทริป</button>
+        </div>
+      </div>`;
+  }));
+}
+
+/* ============================================================
+   เตรียมตัว / ตม.
+   ============================================================ */
+let IMMI = { countries: {}, default: null };
+const FALLBACK_DEST = { name: "ประเทศอื่น", risk: "unknown", riskReason: "ยังไม่มีข้อมูลเฉพาะประเทศ", entry: [], beforeFlight: [], upcoming: [], docs: [{ key: "passport", text: "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)" }], tips: [], sources: [] };
+const RISK = { low: ["ต่ำ", "low"], medium: ["ปานกลาง", "mid"], high: ["สูง", "high"], unknown: ["ยังไม่มีข้อมูล", "unk"] };
+
+function guessDest(country = "") {
+  const c = String(country).toLowerCase();
+  for (const [code, info] of Object.entries(IMMI.countries || {})) {
+    if ((info.match || []).some((m) => c.includes(String(m).toLowerCase()))) return code;
+  }
+  return "OTHER";
+}
+const destOf = (t = trip) => (t?.destCode && t.destCode !== "" ? t.destCode : guessDest(t?.country));
+const destInfo = (t = trip) => IMMI.countries?.[destOf(t)] || IMMI.default || FALLBACK_DEST;
+
+function destOptions(t = {}) {
+  const cur = t.destCode || guessDest(t.country);
+  const opts = Object.entries(IMMI.countries || {}).map(([code, i]) => [code, i.name]);
+  opts.push(["OTHER", "ประเทศอื่น / ยังไม่มีข้อมูล"]);
+  return opts.map(([c, n]) => `<option value="${c}" ${c === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
+}
+
+const prepItems = () => {
+  const i = destInfo();
+  return [
+    ...(i.beforeFlight || []).map((x) => ({ ...x, group: "ต้องทำก่อนบิน" })),
+    ...(i.docs || []).map((x) => ({ ...x, group: "เอกสารที่ต้องพก" })),
+  ];
+};
+const prepDone = (owner, key) => data.prep.some((p) => p.owner === owner && p.key === key && p.done);
+
+function togglePrep(key, done) {
+  const me = getMe();
+  if (!me) return;
+  const ex = data.prep.find((p) => p.owner === me && p.key === key);
+  if (ex) store.update(trip.id, "prep", ex.id, { done });
+  else store.add(trip.id, "prep", { owner: me, key, done, createdAt: Date.now() });
+}
+
+const flights = () => data.bookings.filter((b) => b.type === "เที่ยวบิน");
+
+function readinessChecks() {
+  const days = tripDays();
+  const info = destInfo();
+  const missing = tripNights().filter((d) => !hotelForNight(d).length);
+  const out = flights().some((b) => b.date === trip.startDate);
+  const ret = flights().some((b) => b.date === trip.endDate);
+  const checks = [
+    [out, "ตั๋วเครื่องบินขาไป", out ? "มีในการจองแล้ว" : `ยังไม่มีการจองประเภทเที่ยวบินวันที่ ${fmtDate(trip.startDate)}`],
+    [ret, "ตั๋วเครื่องบินขากลับ", ret ? "มีในการจองแล้ว" : `ยังไม่มีการจองประเภทเที่ยวบินวันที่ ${fmtDate(trip.endDate)} — ตม. มักขอดูตั๋วขากลับ`],
+    [!missing.length, "ที่พักครบทุกคืน", missing.length ? `ยังขาด ${missing.length} คืน: ${missing.map((d) => fmtDate(d)).join(", ")}` : `ครบ ${tripNights().length} คืน`],
+  ];
+  if (info.maxStayDays) {
+    const ok = days.length <= info.maxStayDays;
+    checks.push([ok, `อยู่ไม่เกินที่ได้รับอนุญาต (${info.maxStayDays} วัน)`, `ทริปนี้ ${days.length} วัน${ok ? "" : " — เกินเงื่อนไขฟรีวีซ่า ต้องขอวีซ่า"}`]);
+  }
+  return checks;
+}
+
+function renderPrep() {
+  const el = $("#prep-info");
+  if (!el) return;
+  const info = destInfo();
+  const [riskLabel, riskCls] = RISK[info.risk] || RISK.unknown;
+  const list = (arr) => (arr?.length ? `<ul class="immi-list">${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
+  el.innerHTML = `
+    <div class="card immi-card">
+      <div class="immi-head">
+        <div>
+          <h3>🛂 เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
+          <div class="muted">สำหรับพาสปอร์ตไทย · ท่องเที่ยวระยะสั้น${IMMI.updated ? ` · อัปเดต ${fmtDate(IMMI.updated, "year")}` : ""}</div>
+        </div>
+        <span class="risk risk-${riskCls}">ความเสี่ยง: ${riskLabel}</span>
+      </div>
+      <p>${esc(info.riskReason || "")}</p>
+      <p class="muted small-note">* ระดับความเสี่ยงประเมินจากข่าวและแหล่งข้อมูลด้านล่าง ไม่ใช่สถิติทางการ${destOf() === "OTHER" ? " · เลือกประเทศได้ที่ “แก้ไขทริป” หรือขอ Claude เพิ่มข้อมูลประเทศนี้" : ""}</p>
+      ${info.entry?.length ? `<h4>เงื่อนไขการเข้าประเทศ</h4>${list(info.entry)}` : ""}
+      ${info.beforeFlight?.length ? `<h4>ต้องทำก่อนบิน</h4><ul class="immi-list">${info.beforeFlight.map((b) => `
+        <li>${esc(b.text)}${b.when ? ` <span class="badge">${esc(b.when)}</span>` : ""}${b.link ? `<br><a href="${esc(b.link)}" target="_blank" rel="noopener">🔗 ${esc(b.link.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>` : ""}</li>`).join("")}</ul>` : ""}
+      ${info.upcoming?.length ? `<h4>กำลังจะเปลี่ยน</h4>${list(info.upcoming)}` : ""}
+      ${info.tips?.length ? `<h4>เคล็ดลับตอนเจอ ตม.</h4>${list(info.tips)}` : ""}
+      ${info.sources?.length ? `<details class="sources"><summary>แหล่งข้อมูล (${info.sources.length})</summary><ul>${info.sources.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("")}</ul></details>` : ""}
+    </div>`;
+
+  // ความพร้อมของทริป (เช็กอัตโนมัติจากข้อมูลในเว็บ)
+  $("#prep-ready").innerHTML = `
+    <ul class="ready-list">${readinessChecks().map(([ok, title, detail]) => `
+      <li class="${ok ? "ok" : "no"}"><span class="r-icon">${ok ? "✓" : "!"}</span><div><b>${esc(title)}</b><div class="muted">${esc(detail)}</div></div></li>`).join("")}</ul>
+    <div class="ready-actions">
+      <button type="button" class="btn primary" data-action="immi-pdf">🖨️ เอกสารโชว์ ตม. (PDF ภาษาอังกฤษ)</button>
+      <button type="button" class="btn" data-action="tab" data-tab="bookings">🎫 ไปที่การจอง</button>
+    </div>
+    <p class="muted small-note">เอกสารรวมตั๋วเครื่องบิน ที่พักทุกคืน และแพลนรายวัน เป็นภาษาอังกฤษ ปริ้นต์หรือเก็บในมือถือไว้ยื่นเวลา ตม. ถาม</p>`;
+
+  // เช็กลิสต์ของฉัน
+  const me = getMe();
+  const items = prepItems();
+  if (!me) {
+    $("#prep-mine").innerHTML = `<p class="muted">เลือกก่อนว่าคุณคือใคร เพื่อติ๊กเช็กลิสต์ของตัวเอง</p><button type="button" class="btn" data-action="pick-me">👤 เลือกชื่อ</button>`;
+    $("#prep-count").textContent = "";
+  } else {
+    const groups = [...new Set(items.map((x) => x.group))];
+    $("#prep-mine").innerHTML = groups.map((g) => `
+      <h4>${esc(g)}</h4>
+      <ul class="checks">${items.filter((x) => x.group === g).map((x) => `
+        <li><label><input type="checkbox" data-action="prep-toggle" data-key="${esc(x.key)}" ${prepDone(me, x.key) ? "checked" : ""}><span>${esc(x.text)}</span></label></li>`).join("")}</ul>`).join("");
+    $("#prep-count").textContent = `(${items.filter((x) => prepDone(me, x.key)).length}/${items.length})`;
+  }
+  $("#prep-progress").innerHTML = members().map((m) => {
+    const done = items.filter((x) => prepDone(m, x.key)).length;
+    const pct = items.length ? Math.round((done / items.length) * 100) : 0;
+    const st = !done ? `<span class="muted">ยังไม่เริ่ม</span>` : done === items.length ? `<span class="ok-text">พร้อมแล้ว ✓</span>` : `${done}/${items.length}`;
+    return `<div class="progress-row"><div class="pname">${esc(m)}${m === me ? " (ฉัน)" : ""}</div><div class="bar"><div style="width:${pct}%"></div></div><div class="pstat">${st}</div></div>`;
+  }).join("");
+}
+
+/* เอกสารโชว์ ตม. (ภาษาอังกฤษ) */
+const enDate = (iso, wd = true) => (iso ? new Date(iso + "T00:00:00").toLocaleDateString("en-GB", wd ? { weekday: "short", day: "numeric", month: "short", year: "numeric" } : { day: "numeric", month: "short", year: "numeric" }) : "");
+
+function buildImmiPrintView() {
+  const t = trip;
+  const days = tripDays();
+  const table = (head, rows) => `<table><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
+  const fl = flights().sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  const hs = hotels();
+  const others = data.bookings.filter((b) => b.type !== "เที่ยวบิน" && !isHotel(b));
+  $("#print-view").innerHTML = `
+    <h1>Travel Itinerary</h1>
+    <table class="kv"><tbody>
+      <tr><th>Purpose of visit</th><td>Tourism</td></tr>
+      <tr><th>Destination</th><td>${esc(destInfo().nameEn || t.country || "")}</td></tr>
+      <tr><th>Travel period</th><td>${enDate(t.startDate)} – ${enDate(t.endDate)} (${days.length} days, ${tripNights().length} nights)</td></tr>
+      <tr><th>Travelers</th><td>${members().map(esc).join(", ")} (${members().length} persons)</td></tr>
+    </tbody></table>
+    <h2>Flights</h2>
+    ${fl.length ? table(["Date", "Flight / Route", "Time", "Booking ref."], fl.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.time || "")}</td><td>${esc(b.ref || "")}</td></tr>`)) : "<p>—</p>"}
+    <h2>Accommodation</h2>
+    ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${isLink(h.place) ? "" : esc(h.place || "")}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(h.ref || "")}</td></tr>`)) : "<p>—</p>"}
+    ${others.length ? `<h2>Other reservations</h2>${table(["Date", "Details", "Booking ref."], others.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.ref || "")}</td></tr>`))}` : ""}
+    <h2>Daily plan</h2>
+    ${table(["Day", "Date", "Stay", "Plan"], days.map((d, i) => {
+      const acts = sortItems(data.items.filter((x) => x.date === d)).map((x) => `${x.time ? esc(x.time) + " " : ""}${esc(x.activity)}`);
+      const stay = hotelForNight(d).map((h) => esc(h.title)).join(", ");
+      return `<tr><td>${i + 1}</td><td>${enDate(d)}</td><td>${stay || (i === days.length - 1 ? "Return home" : "")}</td><td>${acts.join("<br>") || "Sightseeing"}</td></tr>`;
+    }))}
+    <p class="p-foot">Prepared for immigration inspection · ${enDate(todayISO(), false)}</p>`;
+}
+
 /* ---------- Export PDF ---------- */
 function buildPrintView() {
   const t = trip;
@@ -1145,10 +1383,10 @@ function flash(el) {
   el.classList.add("flash");
 }
 
-function exportPdf() {
-  buildPrintView();
+function exportPdf(mode) {
+  if (mode === "immi") buildImmiPrintView(); else buildPrintView();
   const old = document.title;
-  document.title = `แพลน-${trip.name}`;
+  document.title = mode === "immi" ? `Travel-Itinerary-${trip.name}` : `แพลน-${trip.name}`;
   window.print();
   setTimeout(() => (document.title = old), 1000);
 }
@@ -1205,6 +1443,8 @@ function onClick(e) {
     updateRate(trip.id, tripCur());
   }
   else if (action === "pdf") exportPdf();
+  else if (action === "immi-pdf") exportPdf("immi");
+  else if (action === "pick-me") showMePicker();
   else if (action === "delete-trip") deleteTrip();
 }
 
@@ -1292,11 +1532,8 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
-  if (el.id === "me-select") {
-    lsSet("me-" + trip.id, el.value);
-    syncMeForms();
-    renderMoney();
-    renderPacking();
+  if (el.dataset.action === "prep-toggle") {
+    togglePrep(el.dataset.key, el.checked);
   } else if (el.dataset.action === "toggle") {
     store.update(trip.id, el.dataset.sub, el.dataset.id, { done: el.checked });
   } else if (el.closest("#book-form")) {
@@ -1321,7 +1558,7 @@ function onSubmit(e) {
       if (!t) return;
       const id = store.createTrip({
         name: t.name, country: t.country, startDate: t.startDate, endDate: t.endDate,
-        members: t.members, currency: t.currency, createdAt: now,
+        members: t.members, currency: t.currency, destCode: t.destCode, createdAt: now,
       });
       if (t.useChecklist) DEFAULT_CHECKLIST.forEach((text, i) => store.add(id, "checklist", { text, done: false, createdAt: now + i }));
       if (t.currency !== "THB") updateRate(id, t.currency, true);
@@ -1337,6 +1574,7 @@ function onSubmit(e) {
       store.updateTrip(trip.id, t);
       if (curChanged) updateRate(trip.id, t.currency, true);
       toast("บันทึกข้อมูลทริปแล้ว");
+      location.hash = "#/trip/" + encodeURIComponent(trip.id);
       return;
     }
     case "item-form": {
@@ -1409,6 +1647,7 @@ async function init() {
     toast("เชื่อม Firebase ไม่ได้ — ใช้โหมดทดลองแทน");
     store = localStore();
   }
+  try { IMMI = await (await fetch("data/immigration.json", { cache: "no-cache" })).json(); } catch { /* ใช้ค่าสำรอง */ }
   app.addEventListener("click", onClick);
   app.addEventListener("change", onChange);
   app.addEventListener("input", onInput);

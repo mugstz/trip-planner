@@ -165,6 +165,48 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); 
 .day-hotel a { margin-left: 4px; font-size: .85rem; }
 .day-hotel .warn { font-weight: 600; }
 
+/* ---------- หัวทริป: ฉันคือใคร / แก้ไขทริป ---------- */
+.trip-title { min-width: 0; }
+.me-chip { display: inline-flex; align-items: center; gap: 8px; min-height: var(--ctl-h); padding: 4px 12px 4px 6px; border: 1px solid var(--line); background: var(--card); border-radius: 999px; font: inherit; cursor: pointer; color: var(--text); text-align: left; }
+.me-chip:hover { border-color: var(--accent); }
+.me-avatar { width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); display: grid; place-items: center; font-size: .95rem; }
+.me-text { display: flex; flex-direction: column; line-height: 1.15; }
+.me-text small { font-size: .7rem; color: var(--muted); }
+.me-text b { font-size: .95rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.me-caret { color: var(--muted); font-size: .8rem; }
+.me-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+.me-option { min-height: 52px; border: 1px solid var(--line); background: #fff; border-radius: 12px; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text); }
+.me-option:hover, .me-option.active { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.me-skip { width: 100%; }
+.small-note { font-size: .8rem; margin: 8px 0 0; }
+.panel-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin: 4px 0 4px; }
+.panel-head h2 { margin: 0; font-size: 1.15rem; }
+.danger-card .danger-zone { margin: 0; padding: 0; border: 0; }
+
+/* ---------- เตรียมตัว / ตม. ---------- */
+.immi-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
+.immi-head h3 { margin: 0; }
+.immi-card p { margin: 10px 0 0; }
+.immi-card h4 { margin-top: 16px; }
+.immi-list { margin: 0; padding-left: 20px; }
+.immi-list li { margin: 4px 0; }
+.immi-list a { font-size: .85rem; overflow-wrap: anywhere; }
+.risk { display: inline-block; border-radius: 999px; padding: 4px 12px; font-size: .85rem; font-weight: 700; white-space: nowrap; }
+.risk-low { background: #e3f4ea; color: var(--ok); }
+.risk-mid { background: #fff3c4; color: #8a6d00; }
+.risk-high { background: #fdecea; color: var(--neg); }
+.risk-unk { background: #eee; color: var(--muted); }
+.sources { margin-top: 14px; font-size: .88rem; }
+.sources summary { cursor: pointer; color: var(--muted); }
+.sources ul { padding-left: 20px; margin: 6px 0 0; }
+.ready-list { list-style: none; margin: 0; padding: 0; }
+.ready-list li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.ready-list li:last-child { border-bottom: none; }
+.r-icon { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .85rem; }
+.ready-list .ok .r-icon { background: #e3f4ea; color: var(--ok); }
+.ready-list .no .r-icon { background: #fdecea; color: var(--neg); }
+.ready-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
 /* ---------- ตาราง ---------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
@@ -285,6 +327,11 @@ th { background: #faf8f5; white-space: nowrap; }
   .converter input { flex: 1; width: auto; }
 
   .danger-zone { flex-direction: column; align-items: stretch; }
+  .head-actions { display: grid; grid-template-columns: 1fr auto; }
+  .me-chip { min-width: 0; }
+  .me-text b { max-width: none; }
+  .panel-head h2 { font-size: 1.05rem; }
+  .ready-actions .btn { flex: 1 1 100%; }
   .list-head h1 { font-size: 1.3rem; }
 
   .toast { bottom: calc(var(--nav-h) + 16px + env(safe-area-inset-bottom)); }
@@ -310,4 +357,6 @@ th { background: #faf8f5; white-space: nowrap; }
   #print-view tr, .p-day h3 { break-inside: avoid; }
   #print-view a { color: inherit; }
   .p-hotel { margin: 2px 0 6px; font-size: 10pt; }
+  #print-view table.kv th { width: 28%; text-align: left; }
+  .p-foot { margin-top: 18px; font-size: 9pt; color: #777; }
 }

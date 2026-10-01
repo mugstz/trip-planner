@@ -1,6 +1,6 @@
 // เก็บไฟล์เว็บไว้ในเครื่อง เพื่อให้เปิดได้ตอนไม่มีเน็ต
-const CACHE = "trip-planner-v2";
-const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json"];
+const CACHE = "trip-planner-v3";
+const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json", "./data/immigration.json"];
 const ALLOWED_HOSTS = ["www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
 self.addEventListener("install", (e) => {
