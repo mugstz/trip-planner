@@ -110,6 +110,19 @@ async function firebaseStore(cfg) {
     add: (t, s, data) => fs.addDoc(sub(t, s), data).catch(onErr),
     update: (t, s, id, patch) => fs.updateDoc(fs.doc(db, "trips", t, s, id), patch).catch(onErr),
     remove: (t, s, id) => fs.deleteDoc(fs.doc(db, "trips", t, s, id)).catch(onErr),
+    // ลบทริป: ต้องลบข้อมูลย่อยทุกหมวดก่อน แล้วค่อยลบตัวทริป
+    async deleteTrip(id) {
+      try {
+        const refs = [];
+        for (const s of SUBS) (await fs.getDocs(sub(id, s))).forEach((d) => refs.push(d.ref));
+        for (let i = 0; i < refs.length; i += 400) {
+          const batch = fs.writeBatch(db);
+          refs.slice(i, i + 400).forEach((r) => batch.delete(r));
+          await batch.commit();
+        }
+        await fs.deleteDoc(fs.doc(db, "trips", id));
+      } catch (e) { onErr(e); }
+    },
   };
 }
 
@@ -136,6 +149,7 @@ function localStore() {
     add(t, s, data) { bucket(t, s)[uid()] = clone(data); emit(); },
     update(t, s, id, patch) { const b = bucket(t, s); if (b[id]) Object.assign(b[id], clone(patch)); emit(); },
     remove(t, s, id) { delete bucket(t, s)[id]; emit(); },
+    deleteTrip(id) { delete db.trips[id]; delete db.subs[id]; emit(); },
   };
 }
 
@@ -312,6 +326,10 @@ function renderTripSkeleton() {
       <form id="trip-form" class="form">${tripFormFields(t)}
         <div class="actions"><button class="btn primary">บันทึก</button></div>
       </form>
+      <div class="danger-zone">
+        <div><b>ลบทริปนี้</b><div class="muted">ลบแพลน การจอง ค่าใช้จ่าย และรายการของทั้งหมด กู้คืนไม่ได้</div></div>
+        <button type="button" class="btn danger" data-action="delete-trip">ลบทริป</button>
+      </div>
     </details>
 
     <nav class="tabs main-tabs">
@@ -774,6 +792,18 @@ function onClick(e) {
     toast("บันทึกงบแล้ว");
   }
   else if (action === "pdf") exportPdf();
+  else if (action === "delete-trip") deleteTrip();
+}
+
+async function deleteTrip() {
+  const name = trip.name;
+  const typed = prompt(`พิมพ์ชื่อทริป “${name}” เพื่อยืนยันการลบ\n(ข้อมูลทั้งหมดของทริปนี้จะหายถาวร ทุกคนจะไม่เห็นอีก)`);
+  if (typed === null) return;
+  if (typed.trim() !== name) { toast("ชื่อไม่ตรง — ยังไม่ได้ลบ"); return; }
+  const id = trip.id;
+  location.hash = "#/";
+  await store.deleteTrip(id);
+  toast(`ลบทริป “${name}” แล้ว`);
 }
 
 function onChange(e) {
