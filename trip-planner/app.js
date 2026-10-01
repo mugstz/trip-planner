@@ -280,8 +280,10 @@ function rateRefText() {
   if (src === "manual") return `ใส่เอง${date ? ` ณ วันที่ ${fmtDate(date, "year")}` : ""}`;
   return `อ้างอิง: ${RATE_SOURCE_LABEL[src] || src || "-"}${date ? ` ณ วันที่ ${fmtDate(date, "year")}` : ""}`;
 }
+// เวลาจริงเป็นนาที: กิจกรรมที่ติ๊ก "คืนก่อนหน้า" (เช่น ไปสนามบิน 22:00 ก่อนไฟลท์ตี 1) = ลบ 1 วัน
+const effMin = (x) => { const t = /^\d{1,2}:\d{2}$/.test(x?.time || "") ? +x.time.split(":")[0] * 60 + +x.time.split(":")[1] : null; return t === null ? null : x.prevNight ? t - 1440 : t; };
 const sortItems = (list) =>
-  [...list].sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99") || num(a.order ?? 999) - num(b.order ?? 999) || byCreated(a, b));
+  [...list].sort((a, b) => (effMin(a) ?? 9999) - (effMin(b) ?? 9999) || num(a.order ?? 999) - num(b.order ?? 999) || byCreated(a, b));
 
 /* ============================================================
    เปลี่ยนหน้า
@@ -554,6 +556,7 @@ function renderTripSkeleton() {
         <div class="grid">
           <label>วันที่<select name="date">${dayOpts}</select></label>
           <label>เวลาถึง<input type="time" name="time"></label>
+          <label class="check wide prev-night"><input type="checkbox" name="prevNight"> เวลานี้เป็นของ <b>คืนก่อนหน้า</b> <small class="muted">(เช่น ไปสนามบิน 22:00 ก่อนไฟลท์ตี 1)</small></label>
           <label class="wide">กิจกรรม*<input name="activity" required placeholder="เช่น ปราสาทโอซาก้า"></label>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
           <div class="wide stay-field"><span class="field-label">อยู่ที่นี่ประมาณ</span>
@@ -890,10 +893,12 @@ const dirUrlItems = (a, b) => {
 function travelMinutes(prev, x) {
   const m = legsMinutes(x);
   if (m) return { min: m, est: null };
+  if (isFlightHop(prev, x)) return { min: 0, est: null };
   const a = itemCoords(prev), b = itemCoords(x);
   if (!a || !b) { queueItemGeocode(prev); queueItemGeocode(x); return { min: 0, est: null }; }
   const km = distKm(a, b);
   if (km < 0.05) return { min: 0, est: null };
+  if (km > 80) return { min: 0, est: null, far: km }; // ไกลเกิน (ข้ามเมือง/ข้ามประเทศ) — ประมาณแบบรถไฟในเมืองไม่ได้
   const est = { km, ...travelEstimate(km) };
   return { min: est.min, est };
 }
@@ -921,29 +926,43 @@ function hoursText(x) {
   return parts.join(" · ");
 }
 
+/* ช่วงนี้เป็นการบินไหม (ดูจากสายที่กรอก / การจองเที่ยวบินที่ลิงก์ไว้) — เวลาเครื่องลงยึดตามไฟลท์ + เวลาท้องถิ่นต่างกัน จึงไม่คำนวณเวลาถึงเอง */
+const FLIGHT_RE = /เครื่องบิน|บิน|flight|✈|airline|airways|air asia|airasia/i;
+const isFlightLeg = (l) => FLIGHT_RE.test(`${l.line || ""}`);
+const isFlightHop = (prev, x) => {
+  const bk = (i) => i?.bookingId && data.bookings.find((b) => b.id === i.bookingId);
+  const airport = (i) => /airport|สนามบิน|\((DMK|BKK|KIX|NRT|HND|ICN|GMP|CJU|PUS|TPE|HKG|SIN)\)/i.test(`${i?.activity || ""} ${i?.place || ""}`);
+  return legsOf(x).some(isFlightLeg) || FLIGHT_RE.test(x.transport || "") || isFlight(bk(x)) || isFlight(bk(prev)) ||
+    (airport(prev) && airport(x) && placeQuery(prev.place) !== placeQuery(x.place)) || /บิน|flight|แลนด์|landing/i.test(`${prev?.activity || ""} ${x.activity || ""}`) && airport(prev) && airport(x);
+};
+
 /* ลูกศรเชื่อมระหว่างกิจกรรม: สายรถไฟ / เวลาเดินทางประมาณจากระยะทาง + เวลาถึงโดยประมาณ */
 function connectorHtml(prev, x) {
   const legs = legsOf(x);
-  const { min, est } = travelMinutes(prev, x);
+  const { min, est, far } = travelMinutes(prev, x);
   const route = dirUrlItems(prev, x);
+  const flight = isFlightHop(prev, x);
   let eta = "";
-  const pt = toMin(prev?.time);
-  if (pt !== null && min) {
+  const pt = effMin(prev);
+  if (flight) {
+    eta = `<span class="muted">✈️ เวลาถึงยึดตามไฟลท์ (เวลาท้องถิ่นปลายทาง)</span>`;
+  } else if (pt !== null && min) {
     const arrive = pt + num(prev.stay) + min;
-    const target = toMin(x.time);
+    const target = effMin(x);
     const late = target !== null && arrive > target;
     eta = num(prev.stay)
-      ? `<span class="${late ? "warn" : "muted"}">${late ? "⚠️ อาจไม่ทัน — " : ""}ถึงประมาณ ${fromMin(arrive)}</span>`
+      ? `<span class="${late ? "warn" : "muted"}">${late ? "⚠️ อาจไม่ทัน — " : ""}ถึงประมาณ ${fromMin((arrive + 1440) % 1440)}</span>`
       : `<span class="muted">(ใส่ “อยู่ที่นี่ประมาณ” ของจุดก่อนหน้า เพื่อคำนวณเวลาถึง)</span>`;
   }
-  const empty = !legs.length && !x.transport && !est && !route;
+  const empty = !legs.length && !x.transport && !est && !route && !far;
   return `<li class="connector ${empty ? "is-empty" : ""}" aria-hidden="${empty}">
     <div class="conn-body">
     ${legs.length
-      ? `<ol class="legs">${legs.map((l) => `<li>🚃 ${esc(legText(l))}</li>`).join("")}</ol>`
+      ? `<ol class="legs">${legs.map((l) => `<li>${isFlightLeg(l) ? "✈️" : "🚃"} ${esc(legText(l))}</li>`).join("")}</ol>`
       : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
+    ${far && !flight && !legs.length ? `<div class="muted">ห่างกัน ~${Math.round(far).toLocaleString()} กม. — ไกลเกินจะประมาณให้ ใส่วิธีเดินทางเองในกิจกรรมนี้</div>` : ""}
     ${est ? `<div class="conn-est">${est.icon} ห่างกัน ~${fmtKm(est.km)} · ${est.mode} ~${est.min} นาที <small class="muted">(ประมาณจากระยะทาง)</small></div>` : ""}
-    ${legs.length || eta || route ? `<div class="conn-meta">${legs.length && legsMinutes(x) ? `<b>เดินทางรวม ${fmtDur(legsMinutes(x))}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทางจริง</a>` : ""}</div>` : ""}
+    ${legs.length || eta || route ? `<div class="conn-meta">${legs.length && legsMinutes(x) ? `<b>เดินทางรวม ${fmtDur(legsMinutes(x))}</b>` : ""}${eta}${route && !flight ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทางจริง</a>` : ""}</div>` : ""}
     </div>
   </li>`;
 }
@@ -958,7 +977,7 @@ function itemHtml(x) {
   return `
     <li class="row item-row st-${st || "none"}" id="item-${esc(x.id)}" data-id="${esc(x.id)}">
       <button type="button" class="drag-handle" aria-label="ลากเพื่อสลับลำดับ" title="ลากเพื่อสลับลำดับ">⋮⋮</button>
-      <div class="time">${esc(x.time) || "—"}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
+      <div class="time">${esc(x.time) || "—"}${x.prevNight && x.time ? `<small class="prev-tag">คืนก่อน</small>` : ""}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
       <div class="body">
         <div class="title">${st === "done" ? `<span class="st-badge done">✓ ไปแล้ว</span> ` : st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
         <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
@@ -990,11 +1009,14 @@ function setItemStatus(id, status) {
 // ลากสลับลำดับในวันเดียวกัน → เอาเวลาเดิมของวันนั้นมาเรียงใหม่ตามลำดับที่ลาก
 function reorderDay(ids) {
   const items = ids.map((id) => data.items.find((i) => i.id === id)).filter(Boolean);
-  const times = items.map((x) => x.time).filter(Boolean).sort();
+  const times = items.map(effMin).filter((m) => m !== null).sort((p, q) => p - q);
   items.forEach((x, i) => {
-    const time = times[i] || "";
+    const m = times[i];
+    const time = m === undefined ? "" : fromMin((m + 1440) % 1440);
+    const prevNight = m !== undefined && m < 0;
     const patch = {};
     if ((x.time || "") !== time) patch.time = time;
+    if (!!x.prevNight !== prevNight) patch.prevNight = prevNight;
     if (x.order !== i) patch.order = i;
     if (Object.keys(patch).length) store.update(trip.id, "items", x.id, patch);
   });
@@ -1074,6 +1096,7 @@ function startEdit(id) {
   ["date", "time", "activity", "place", "cost", "costCurrency", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
     .forEach((k) => (f[k].value = x[k] ?? ""));
   fillStay(form, x.stay);
+  f.prevNight.checked = !!x.prevNight;
   const closed = (x.closedDays || []).map(String);
   form.querySelectorAll("[name=closed]").forEach((cb) => (cb.checked = closed.includes(cb.value)));
   // รายการเก่าที่มีแค่ช่อง "การเดินทาง" → แปลงเป็นสายแรกให้
@@ -2327,7 +2350,7 @@ function buildPrintView() {
                 : esc(x.transport);
               const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
               const warns = hoursWarnings(x);
-              return `<tr><td>${esc(x.time) || "-"}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
+              return `<tr><td>${esc(x.time) || "-"}${x.prevNight && x.time ? "<br><small>(คืนก่อน)</small>" : ""}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
                 <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
                 <td>${esc(placeLabel(x.place, x.activity))}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
                 <td>${esc(x.note)}</td></tr>`;
@@ -2684,6 +2707,7 @@ function onSubmit(e) {
       const legs = readLegs();
       const rec = {
         date: f.date, time: f.time, activity: f.activity.trim(), place: f.place.trim(),
+        prevNight: !!f.prevNight && !!f.time,
         stay: Math.min(num(f.stayH), 23) * 60 + Math.min(num(f.stayM), 59), cost: num(f.cost), costCurrency: f.costCurrency || "THB", note: f.note.trim(),
         openTime: f.openTime, closeTime: f.closeTime, hoursNote: f.hoursNote.trim(),
         closedDays: new FormData(form).getAll("closed").map(Number),

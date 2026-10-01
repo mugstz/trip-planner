@@ -615,3 +615,5 @@ body.sheet-open .to-top { display: none; }
 .exp-share b { color: var(--accent-ink); }
 .settle-label { font-size: .82rem; margin-top: 8px; }
 .settle-row { margin-top: 4px; }
+.form label.prev-night { margin-top: -4px; font-size: .85rem; flex-wrap: wrap; }
+.row .time small.prev-tag { color: var(--accent-ink); font-weight: 700; }
