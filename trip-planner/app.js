@@ -5,9 +5,10 @@ import { FIREBASE_CONFIG } from "./firebase-config.js";
    ============================================================ */
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2";
 const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist"];
+// [key, ชื่อเต็ม, ไอคอน, ชื่อสั้น (แถบล่างในมือถือ)]
 const TABS = [
-  ["plan", "แพลน"], ["wishlist", "Wishlist"], ["bookings", "การจอง"],
-  ["money", "ค่าใช้จ่าย"], ["packing", "ของที่ต้องเตรียม"], ["checklist", "เช็กลิสต์"],
+  ["plan", "แพลน", "🗓️", "แพลน"], ["wishlist", "Wishlist", "⭐", "Wishlist"], ["bookings", "การจอง", "🎫", "การจอง"],
+  ["money", "ค่าใช้จ่าย", "💰", "ค่าใช้จ่าย"], ["packing", "ของที่ต้องเตรียม", "🎒", "ของเตรียม"], ["checklist", "เช็กลิสต์", "✅", "เช็กลิสต์"],
 ];
 const DEFAULT_CHECKLIST = [
   "พาสปอร์ต (อายุเหลือเกิน 6 เดือน)",
@@ -398,10 +399,11 @@ function renderTripSkeleton() {
         <div class="chips">${members().map((m) => `<span>${esc(m)}</span>`).join("")}</div>
       </div>
       <div class="head-actions">
-        <label class="me">ฉันคือ
-          <select id="me-select"><option value="">— เลือกชื่อ —</option>${memberOpts}</select>
+        <label class="me">
+          <span class="me-label">ฉันคือใคร?</span>
+          <select id="me-select"><option value="">— เลือกชื่อตัวเอง —</option>${memberOpts}</select>
         </label>
-        <button class="btn" type="button" data-action="pdf">⬇︎ Export PDF</button>
+        <button class="btn pdf-btn" type="button" data-action="pdf"><span aria-hidden="true">⬇︎</span> Export PDF</button>
       </div>
     </div>
 
@@ -417,7 +419,7 @@ function renderTripSkeleton() {
     </details>
 
     <nav class="tabs main-tabs">
-      ${TABS.map(([k, label]) => `<button type="button" data-action="tab" data-tab="${k}">${label}</button>`).join("")}
+      ${TABS.map(([k, label, icon, short]) => `<button type="button" data-action="tab" data-tab="${k}"><span class="t-icon" aria-hidden="true">${icon}</span><span class="t-full">${label}</span><span class="t-short">${short}</span></button>`).join("")}
     </nav>
 
     <section data-panel="plan">
@@ -508,7 +510,7 @@ function renderTripSkeleton() {
       <div class="card"><h3>ความคืบหน้าของทุกคน</h3><div id="pack-progress"></div></div>
       <div class="card">
         <h3>ของของฉัน</h3>
-        <p id="pack-need-me" class="muted">เลือก “ฉันคือ” ด้านบนก่อน เพื่อจัดรายการของตัวเอง</p>
+        <p id="pack-need-me" class="muted">เลือก “ฉันคือใคร?” ด้านบนก่อน เพื่อจัดรายการของตัวเอง</p>
         <div id="pack-mine"></div>
         <form id="pack-form" class="inline-form">
           <input name="name" required placeholder="เพิ่มของ เช่น เสื้อกันหนาว">
@@ -539,10 +541,20 @@ function renderTripSkeleton() {
   setTab(tab);
 }
 
-function setTab(name) {
+function setTab(name, fromUser = false) {
   tab = name;
-  app.querySelectorAll(".main-tabs button").forEach((b) => b.classList.toggle("active", b.dataset.tab === name));
+  app.querySelectorAll(".main-tabs button").forEach((b) => {
+    const on = b.dataset.tab === name;
+    b.classList.toggle("active", on);
+    b.setAttribute("aria-current", on ? "page" : "false");
+  });
   app.querySelectorAll("[data-panel]").forEach((p) => (p.hidden = p.dataset.panel !== name));
+  // กดเปลี่ยนแท็บแล้วเลื่อนไปต้นหมวด (เฉพาะตอนเลื่อนลงไปไกลแล้ว)
+  if (fromUser) {
+    const panel = app.querySelector(`[data-panel="${name}"]`);
+    const top = panel.getBoundingClientRect().top + scrollY - 120;
+    if (scrollY > top) scrollTo({ top: Math.max(top, 0) });
+  }
 }
 
 function syncMeForms() {
@@ -579,8 +591,12 @@ function renderPlan() {
   const days = tripDays();
   $("#day-tabs").innerHTML = days.map((d, i) => {
     const c = data.items.filter((x) => x.date === d).length;
-    return `<button type="button" class="${i === dayIdx ? "active" : ""}" data-action="day" data-i="${i}">วันที่ ${i + 1} · ${fmtDate(d)}${c ? ` (${c})` : ""}</button>`;
+    return `<button type="button" class="day-btn ${i === dayIdx ? "active" : ""}" data-action="day" data-i="${i}">
+      <span class="d-num">วันที่ ${i + 1}</span><span class="d-date">${fmtDate(d, "weekday")}</span>${c ? `<span class="d-count">${c}</span>` : ""}</button>`;
   }).join("");
+  // เลื่อนแท็บวันที่เลือกให้อยู่ตรงกลาง (ไม่เลื่อนทั้งหน้า)
+  const strip = $("#day-tabs"), act = strip.querySelector(".active");
+  if (act) strip.scrollLeft = act.offsetLeft - strip.clientWidth / 2 + act.clientWidth / 2;
   const d = days[dayIdx];
   const list = sortItems(data.items.filter((x) => x.date === d));
   const total = list.reduce((s, x) => s + toTHB(x.cost, x.costCurrency), 0);
@@ -841,8 +857,10 @@ function rateCardHtml() {
       <span>1 ${cur} =</span>
       <input type="number" id="rate-input" min="0" step="any" inputmode="decimal" value="${r || ""}" placeholder="เช่น 0.2133">
       <span>บาท</span>
-      <button type="button" class="btn small primary" data-action="save-rate">บันทึก</button>
-      <button type="button" class="btn small" data-action="fetch-rate">↻ ดึงเรตล่าสุด</button>
+      <div class="rate-btns">
+        <button type="button" class="btn small primary" data-action="save-rate">บันทึก</button>
+        <button type="button" class="btn small" data-action="fetch-rate">↻ ดึงเรตล่าสุด</button>
+      </div>
     </div>
     <p class="muted">${r
       ? `<span class="rate-ref ${trip.rateSource === "BOT" ? "bot" : ""}">${esc(rateRefText())}</span><br>ถ้าแลกเงินมาแล้ว ใส่เรตที่แลกจริงแทนได้`
@@ -1030,7 +1048,7 @@ function onClick(e) {
   if (!b || b.tagName === "INPUT") return;
   const { action, id, sub } = b.dataset;
   if (action === "import") importSample();
-  else if (action === "tab") setTab(b.dataset.tab);
+  else if (action === "tab") setTab(b.dataset.tab, true);
   else if (action === "day") {
     dayIdx = +b.dataset.i;
     renderPlan();
