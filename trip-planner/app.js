@@ -201,15 +201,32 @@ const curSelect = (name, selected) => {
   return `<select name="${name}" class="cur-select">${opts.map((c) => `<option value="${c}" ${c === selected ? "selected" : ""}>${c}</option>`).join("")}</select>`;
 };
 
+const todayISO = () => new Date(Date.now() + 7 * 3600e3).toISOString().slice(0, 10); // วันที่ตามเวลาไทย
+const RATE_SOURCE_LABEL = {
+  BOT: "ธนาคารแห่งประเทศไทย (อัตรากลางถัวเฉลี่ย)",
+  "ExchangeRate-API": "ExchangeRate-API (สำรอง — ธปท. ยังไม่มีข้อมูล)",
+  Frankfurter: "Frankfurter / ECB (สำรอง — ธปท. ยังไม่มีข้อมูล)",
+  manual: "ใส่เอง",
+};
+
 async function fetchRate(cur) {
-  // ที่มา 1: ExchangeRate-API (อัปเดตรายวัน) / ที่มา 2: Frankfurter (สำรอง)
+  // ที่มาหลัก: ธนาคารแห่งประเทศไทย — ไฟล์ data/bot-rates.json ที่ GitHub Actions อัปเดตทุกวันทำการ
+  try {
+    const j = await (await fetch("data/bot-rates.json", { cache: "no-cache" })).json();
+    const r = j.rates?.[cur];
+    if (r && num(r.mid)) return { rate: num(r.mid), source: "BOT", date: r.period };
+  } catch {}
+  // สำรอง 1: ExchangeRate-API / สำรอง 2: Frankfurter (ECB)
   try {
     const r = await (await fetch(`https://open.er-api.com/v6/latest/${cur}`)).json();
-    if (r.result === "success" && r.rates?.THB) return { rate: r.rates.THB, source: "ExchangeRate-API" };
+    if (r.result === "success" && r.rates?.THB) {
+      const date = r.time_last_update_unix ? new Date(r.time_last_update_unix * 1000 + 7 * 3600e3).toISOString().slice(0, 10) : todayISO();
+      return { rate: r.rates.THB, source: "ExchangeRate-API", date };
+    }
   } catch {}
   try {
     const r = await (await fetch(`https://api.frankfurter.dev/v1/latest?base=${cur}&symbols=THB`)).json();
-    if (r.rates?.THB) return { rate: r.rates.THB, source: "Frankfurter" };
+    if (r.rates?.THB) return { rate: r.rates.THB, source: "Frankfurter", date: r.date || todayISO() };
   } catch {}
   return null;
 }
@@ -219,8 +236,16 @@ async function updateRate(tripId, cur, silent = false) {
   if (!navigator.onLine) { if (!silent) toast("ออฟไลน์อยู่ — ดึงเรตไม่ได้ ใส่เรตเองได้"); return; }
   const r = await fetchRate(cur);
   if (!r) { if (!silent) toast("ดึงเรตไม่สำเร็จ — ใส่เรตเองได้"); return; }
-  store.updateTrip(tripId, { rate: r.rate, rateUpdated: new Date().toISOString().slice(0, 10), rateSource: r.source });
-  if (!silent) toast(`อัปเดตเรตแล้ว: 1 ${cur} = ${r.rate.toFixed(4)} บาท`);
+  store.updateTrip(tripId, { rate: r.rate, rateDate: r.date, rateUpdated: todayISO(), rateSource: r.source });
+  if (!silent) toast(`อัปเดตเรตแล้ว: 1 ${cur} = ${r.rate.toFixed(4)} บาท (${r.source === "BOT" ? "ธปท." : r.source})`);
+}
+
+// ข้อความอ้างอิงเรต เช่น "อ้างอิง: ธนาคารแห่งประเทศไทย (อัตรากลางถัวเฉลี่ย) ณ วันที่ 30 ก.ย. 2569"
+function rateRefText() {
+  const src = trip?.rateSource;
+  const date = trip?.rateDate || trip?.rateUpdated;
+  if (src === "manual") return `ใส่เอง${date ? ` ณ วันที่ ${fmtDate(date, "year")}` : ""}`;
+  return `อ้างอิง: ${RATE_SOURCE_LABEL[src] || src || "-"}${date ? ` ณ วันที่ ${fmtDate(date, "year")}` : ""}`;
 }
 const sortItems = (list) =>
   [...list].sort((a, b) => (a.time || "99:99").localeCompare(b.time || "99:99") || byCreated(a, b));
@@ -341,6 +366,10 @@ function openTrip(id) {
       const today = new Date().toISOString().slice(0, 10);
       const i = tripDays().indexOf(today);
       if (i >= 0) dayIdx = i;
+      // เรตอัตโนมัติ (ไม่ใช่ใส่เอง) → อัปเดตให้วันละครั้งตอนเปิดทริป
+      if (t.currency && t.currency !== "THB" && t.rateSource !== "manual" && t.rateUpdated !== todayISO()) {
+        updateRate(t.id, t.currency, true);
+      }
     }
     const sig = JSON.stringify([t.name, t.country, t.startDate, t.endDate, t.members, t.currency]);
     if (sig !== skeletonSig) { skeletonSig = sig; renderTripSkeleton(); }
@@ -816,7 +845,7 @@ function rateCardHtml() {
       <button type="button" class="btn small" data-action="fetch-rate">↻ ดึงเรตล่าสุด</button>
     </div>
     <p class="muted">${r
-      ? `${trip.rateSource === "manual" ? "ใส่เอง" : `ที่มา: ${esc(trip.rateSource || "")}`}${trip.rateUpdated ? ` · อัปเดต ${fmtDate(trip.rateUpdated, "year")}` : ""} · ถ้าแลกเงินมาแล้ว ใส่เรตที่แลกจริงแทนได้`
+      ? `<span class="rate-ref ${trip.rateSource === "BOT" ? "bot" : ""}">${esc(rateRefText())}</span><br>ถ้าแลกเงินมาแล้ว ใส่เรตที่แลกจริงแทนได้`
       : "ยังไม่มีเรต — กด “ดึงเรตล่าสุด” หรือใส่เรตเอง"}</p>
     <div class="converter">
       <span>แปลงเร็ว:</span>
@@ -965,7 +994,7 @@ function buildPrintView() {
       [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`))
         .map((b) => `<tr><td>${esc(b.type)}</td><td>${esc(b.title)}</td><td>${fmtDate(b.date)} ${esc(b.time)}</td><td>${esc(b.ref)}</td><td>${esc(b.place)}</td><td>${esc(b.note)}</td></tr>`)) : "<p>—</p>"}
     <h2>งบและค่าใช้จ่าย</h2>
-    ${isForeign() && rateOf(tripCur()) ? `<p>อัตราแลกเปลี่ยน: 1 ${tripCur()} = ${num(trip.rate).toFixed(4)} บาท${trip.rateUpdated ? ` (${fmtDate(trip.rateUpdated, "year")})` : ""}</p>` : ""}
+    ${isForeign() && rateOf(tripCur()) ? `<p>อัตราแลกเปลี่ยน: 1 ${tripCur()} = ${num(trip.rate).toFixed(4)} บาท — ${esc(rateRefText())}</p>` : ""}
     ${data.expenses.length ? table(["รายการ", "จำนวน", "จ่ายโดย", "วันที่"],
       [...data.expenses].sort(byCreated).map((e) => `<tr><td>${esc(e.title)}</td><td>${fmtWithTHB(e.amount, e.currency)}</td><td>${esc(e.paidBy)}</td><td>${e.date ? fmtDate(e.date) : ""}</td></tr>`)) : ""}
     ${settleHtml()}
@@ -1035,7 +1064,7 @@ function onClick(e) {
     const v = num($("#rate-input").value);
     if (!v) { toast("ใส่เรตเป็นตัวเลขก่อน"); return; }
     document.activeElement?.blur();
-    store.updateTrip(trip.id, { rate: v, rateUpdated: new Date().toISOString().slice(0, 10), rateSource: "manual" });
+    store.updateTrip(trip.id, { rate: v, rateDate: todayISO(), rateUpdated: todayISO(), rateSource: "manual" });
     toast("บันทึกเรตแล้ว");
   }
   else if (action === "fetch-rate") {
@@ -1168,7 +1197,7 @@ function onSubmit(e) {
       if (!t) return;
       delete t.useChecklist;
       const curChanged = t.currency !== tripCur();
-      if (curChanged) Object.assign(t, { rate: 0, rateUpdated: "", rateSource: "" });
+      if (curChanged) Object.assign(t, { rate: 0, rateDate: "", rateUpdated: "", rateSource: "" });
       store.updateTrip(trip.id, t);
       if (curChanged) updateRate(trip.id, t.currency, true);
       toast("บันทึกข้อมูลทริปแล้ว");
