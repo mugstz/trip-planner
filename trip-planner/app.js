@@ -415,11 +415,11 @@ function renderTripSkeleton() {
       </div>
       <div class="head-actions">
         <button type="button" class="me-chip" data-action="pick-me" title="เปลี่ยนว่าฉันคือใคร">
-          <span class="me-avatar" aria-hidden="true">👤</span>
+          <span class="me-avatar" aria-hidden="true" id="me-avatar"></span>
           <span class="me-text"><small>ฉันคือ</small><b id="me-name">—</b></span>
           <span class="me-caret" aria-hidden="true">▾</span>
         </button>
-        <a class="btn" href="#/trip/${encodeURIComponent(t.id)}/edit"><span aria-hidden="true">⚙️</span> แก้ไขทริป</a>
+        <a class="btn" href="#/trip/${encodeURIComponent(t.id)}/edit"><span aria-hidden="true"></span> แก้ไขทริป</a>
       </div>
     </div>
 
@@ -430,7 +430,7 @@ function renderTripSkeleton() {
     <section data-panel="plan">
       <div class="panel-head">
         <h2>แพลนรายวัน</h2>
-        <button class="btn pdf-btn" type="button" data-action="pdf"><span aria-hidden="true">⬇︎</span> Export PDF</button>
+        <button class="btn pdf-btn" type="button" data-action="pdf">Export PDF</button>
       </div>
       <div class="tabs" id="day-tabs"></div>
       <div id="plan-list"></div>
@@ -467,8 +467,8 @@ function renderTripSkeleton() {
 
     <section data-panel="wishlist">
       <div class="seg" role="tablist">
-        <button type="button" data-action="wish-view" data-v="mine" id="seg-mine">⭐ ของเรา</button>
-        <button type="button" data-action="wish-view" data-v="suggest" id="seg-suggest">✨ สถานที่แนะนำ</button>
+        <button type="button" data-action="wish-view" data-v="mine" id="seg-mine">ของเรา</button>
+        <button type="button" data-action="wish-view" data-v="suggest" id="seg-suggest">สถานที่แนะนำ</button>
       </div>
       <div id="suggest-view"></div>
       <div id="wish-mine">
@@ -483,7 +483,7 @@ function renderTripSkeleton() {
           </div>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="ใช้เปิดแผนที่"></label>
           <label class="wide">ลิงก์รีวิว / IG / TikTok<input type="url" name="link" placeholder="https://"></label>
-          <label class="wide">ใครแนะนำ / เจอจากไหน<input name="source" placeholder="เช่น เอิงแนะนำ, เพจ xxx, TikTok @xxx"></label>
+          <label class="wide">ใครแนะนำ / เจอจากไหน<input name="source" placeholder="เช่น พายแนะนำ, เพจ xxx, TikTok @xxx"></label>
           <label>งบโดยประมาณ (ต่อคน)
             <div class="amount-cur"><input type="number" name="budget" min="0" step="any" inputmode="decimal">${curSelect("budgetCurrency", tripCur())}</div></label>
           <label>เมนูเด็ด / ต้องลอง<input name="mustTry" placeholder="เช่น ราเมนต้นตำรับ + ไข่ต้ม"></label>
@@ -520,7 +520,9 @@ function renderTripSkeleton() {
           </fieldset>
           <label class="not-hotel">เวลา<input type="time" name="time"></label>
           <label>เลขการจอง<input name="ref"></label>
-          <label class="wide"><span class="hotel-only">ที่อยู่ / ชื่อบน Google Maps</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
+          <label class="wide hotel-only">ที่อยู่โรงแรม <small class="muted">(ภาษาอังกฤษ — ใช้ในเอกสารโชว์ ตม. และหาตำแหน่งที่พัก)</small>
+            <textarea name="address" rows="2" placeholder="เช่น 8-9 Namba-sennichimae, Chuo-ku, Osaka 542-0075"></textarea></label>
+          <label class="wide"><span class="hotel-only">ลิงก์ Google Maps / ชื่อบนแผนที่ (ไม่บังคับ)</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -566,17 +568,17 @@ function renderTripSkeleton() {
     <section data-panel="prep">
       <div id="prep-info"></div>
       <div class="card">
-        <h3>✅ ความพร้อมของทริป</h3>
+        <h3>ความพร้อมของทริป</h3>
         <div id="prep-ready"></div>
       </div>
       <div class="card">
-        <h3>🧍 เช็กลิสต์ของฉัน <small class="muted" id="prep-count"></small></h3>
+        <h3>เช็กลิสต์ของฉัน <small class="muted" id="prep-count"></small></h3>
         <div id="prep-mine"></div>
         <h4>ความคืบหน้าของทุกคน</h4>
         <div id="prep-progress"></div>
       </div>
       <div class="card">
-        <h3>📋 เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
+        <h3>เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
         <div id="check-list"></div>
         <form id="check-form" class="inline-form">
           <input name="text" required placeholder="เพิ่มรายการ">
@@ -637,7 +639,7 @@ function renderSection(s) {
 
 const delBtn = (sub, id) => `<button type="button" class="icon" data-action="del" data-sub="${sub}" data-id="${esc(id)}" title="ลบ">✕</button>`;
 const mapLink = (place) =>
-  place ? `<a href="${esc(mapUrl(place))}" target="_blank" rel="noopener">📍 ${isLink(place) ? "เปิดแผนที่" : esc(place)}</a>` : "";
+  place ? `<a href="${esc(mapUrl(place))}" target="_blank" rel="noopener">${isLink(place) ? "เปิดแผนที่" : esc(place)}</a>` : "";
 
 /* ---------- แพลนรายวัน ---------- */
 function renderPlan() {
@@ -714,9 +716,9 @@ function connectorHtml(prev, x) {
   }
   return `<li class="connector">
     ${legs.length
-      ? `<ol class="legs">${legs.map((l) => `<li>🚃 ${esc(legText(l))}</li>`).join("")}</ol>`
-      : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
-    <div class="conn-meta">${mins ? `<b>เดินทางรวม ${fmtDur(mins)}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทาง/เวลาใน Google Maps</a>` : ""}</div>
+      ? `<ol class="legs">${legs.map((l) => `<li>${esc(legText(l))}</li>`).join("")}</ol>`
+      : x.transport ? `<div>${esc(x.transport)}</div>` : ""}
+    <div class="conn-meta">${mins ? `<b>เดินทางรวม ${fmtDur(mins)}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาใน Google Maps</a>` : ""}</div>
   </li>`;
 }
 
@@ -729,8 +731,8 @@ function itemHtml(x) {
       <div class="time">${esc(x.time) || "—"}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
       <div class="body">
         <div class="title">${esc(x.activity)} ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
-        <div class="meta">${mapLink(x.place)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
-        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
+        <div class="meta">${mapLink(x.place)}${hrs ? `<span>เปิด ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>ค่าใช้จ่าย ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
+        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
       </div>
       <div class="row-actions">
@@ -802,8 +804,8 @@ function wishPlanDates(w) {
   return w.plannedDate ? [w.plannedDate] : []; // รายการเก่า
 }
 const linkLabel = (url = "") =>
-  /instagram\.com/i.test(url) ? "📷 IG" : /tiktok\.com/i.test(url) ? "🎵 TikTok" : /youtu/i.test(url) ? "▶️ YouTube" :
-  /facebook\.com|fb\.watch/i.test(url) ? "📘 Facebook" : /tabelog/i.test(url) ? "🍽️ Tabelog" : "🔗 รีวิว";
+  /instagram\.com/i.test(url) ? "IG" : /tiktok\.com/i.test(url) ? "TikTok" : /youtu/i.test(url) ? "YouTube" :
+  /facebook\.com|fb\.watch/i.test(url) ? "Facebook" : /tabelog/i.test(url) ? "Tabelog" : "ลิงก์รีวิว";
 
 function renderWishlist() {
   const el = $("#wish-list");
@@ -818,7 +820,7 @@ function renderWishlist() {
   list.sort((a, b) => (+!!a.dates.length - +!!b.dates.length) || (num(b.priority || 2) - num(a.priority || 2)) || byCreated(a, b));
 
   if (!all.length) {
-    el.innerHTML = `<p class="empty">ยังไม่มีที่อยากไป — กด “＋ เพิ่มที่อยากไป” เพื่อลิสต์ร้านหรือที่เที่ยวไว้ก่อน<br>หรือดูไอเดียจาก “✨ สถานที่แนะนำ”</p>`;
+    el.innerHTML = `<p class="empty">ยังไม่มีที่อยากไป — กด “＋ เพิ่มที่อยากไป” เพื่อลิสต์ร้านหรือที่เที่ยวไว้ก่อน<br>หรือดูไอเดียจาก “สถานที่แนะนำ”</p>`;
     return;
   }
   const dayOpts = days.map((d, i) => `<option value="${d}">วันที่ ${i + 1} · ${fmtDate(d, "weekday")}</option>`).join("");
@@ -826,7 +828,7 @@ function renderWishlist() {
     <div class="wish-summary">
       <div class="chip-row">
         <button type="button" class="fchip ${wishFilter === "all" ? "active" : ""}" data-action="wish-filter" data-v="all">ทั้งหมด ${all.length}</button>
-        <button type="button" class="fchip ${wishFilter === "todo" ? "active" : ""}" data-action="wish-filter" data-v="todo">🟠 ยังไม่ใส่แพลน ${todo.length}</button>
+        <button type="button" class="fchip ${wishFilter === "todo" ? "active" : ""}" data-action="wish-filter" data-v="todo">ยังไม่ใส่แพลน ${todo.length}</button>
         <button type="button" class="fchip ${wishFilter === "planned" ? "active" : ""}" data-action="wish-filter" data-v="planned">✓ ใส่แพลนแล้ว ${all.length - todo.length}</button>
       </div>
       ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
@@ -854,10 +856,10 @@ function renderWishlist() {
           <span class="badge">${esc(w.category || "อื่นๆ")}</span>
           ${mapLink(w.place || w.name)}
           ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
-          ${num(w.budget) ? `<span>💰 ~${fmtWithTHB(w.budget, w.budgetCurrency)}/คน</span>` : ""}
+          ${num(w.budget) ? `<span>งบ ~${fmtWithTHB(w.budget, w.budgetCurrency)}/คน</span>` : ""}
         </div>
-        ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
-        ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
+        ${w.mustTry ? `<div class="wish-line"><b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
+        ${w.source ? `<div class="wish-line muted">แนะนำโดย / เจอจาก: ${esc(w.source)}</div>` : ""}
         ${w.timeNeeded ? `<div class="wish-line">${timeHtml(w.timeNeeded)}</div>` : ""}
         ${(() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: w.place || w.name, access: w.access, pending: !c && (geoBusy || geoQueue.some((x) => x.id === w.id)) }); })()}
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
@@ -867,7 +869,7 @@ function renderWishlist() {
                <button type="button" class="btn small primary" data-action="to-plan" data-id="${esc(w.id)}">ยืนยัน</button>
                <button type="button" class="btn small" data-action="plan-cancel">ยกเลิก</button>
              </div>`
-          : `<button type="button" class="btn small plan-btn" data-action="plan-open" data-id="${esc(w.id)}">📅 ${w.dates.length ? "ใส่อีกวัน" : "ใส่ลงแพลน"}</button>`}
+          : `<button type="button" class="btn small plan-btn" data-action="plan-open" data-id="${esc(w.id)}">${w.dates.length ? "ใส่อีกวัน" : "ใส่ลงแพลน"}</button>`}
       </article>`;
     }).join("") : `<p class="empty">ไม่มีรายการตามตัวกรองนี้</p>`}`;
 }
@@ -935,9 +937,10 @@ function renderBookings() {
           <div class="body">
             <div class="title"><span class="badge">${esc(b.type)}</span> ${esc(b.title)}</div>
             ${isHotel(b)
-              ? `<div class="stay-line">🛬 เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → 🛫 เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
-                 <div class="meta">${mapLink(b.place || b.title)}</div>`
-              : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>`}
+              ? `<div class="stay-line">เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
+                 ${b.address ? `<div class="note">ที่อยู่: ${esc(b.address)}</div>` : `<div class="note warn-soft">ยังไม่ได้ใส่ที่อยู่โรงแรม — ใช้ในเอกสารโชว์ ตม.</div>`}
+                 <div class="meta">${mapLink(b.place || b.address || b.title)}</div>`
+              : `<div class="meta"><span>${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>`}
             ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
@@ -967,7 +970,7 @@ function hotelSummaryHtml() {
   const overlap = nights.filter((d) => hotelForNight(d).length > 1);
   const days = tripDays();
   return `<div class="card hotel-card">
-    <h3>🏨 ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
+    <h3>ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
     ${hs.length ? `<ul class="hotel-list">${hs.map((h) => `
       <li>
         <button type="button" class="hotel-name" data-action="goto-booking" data-id="${esc(h.id)}">${esc(h.title)}</button>
@@ -989,10 +992,10 @@ function dayHotelHtml(d) {
   const tonight = hotelForNight(d);
   const isLastDay = d === tripDays().at(-1);
   const parts = [];
-  out.forEach((h) => parts.push(`<div>🛫 เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
+  out.forEach((h) => parts.push(`<div>เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
   tonight.forEach((h) => parts.push(h.date === d
-    ? `<div>🛬 เช็คอิน <b>${esc(h.title)}</b>${h.time ? ` ตั้งแต่ ${esc(h.time)}` : ""} ${mapLink(h.place || h.title)}</div>`
-    : `<div>🏨 คืนนี้พักที่ <b>${esc(h.title)}</b> ${mapLink(h.place || h.title)}</div>`));
+    ? `<div>เช็คอิน <b>${esc(h.title)}</b>${h.time ? ` ตั้งแต่ ${esc(h.time)}` : ""} ${mapLink(h.place || h.title)}</div>`
+    : `<div>คืนนี้พักที่ <b>${esc(h.title)}</b> ${mapLink(h.place || h.title)}</div>`));
   if (!tonight.length && !isLastDay) parts.push(`<div class="warn">⚠️ คืนนี้ยังไม่มีที่พัก</div>`);
   return parts.length ? `<div class="day-hotel">${parts.join("")}</div>` : "";
 }
@@ -1015,7 +1018,7 @@ function startEditBooking(id) {
   editingBookingId = id;
   const form = $("#book-form");
   const f = form.elements;
-  ["type", "date", "time", "title", "ref", "place", "note"].forEach((k) => (f[k].value = b[k] ?? ""));
+  ["type", "date", "time", "title", "ref", "place", "note", "address"].forEach((k) => (f[k].value = b[k] ?? ""));
   if (isHotel(b)) {
     f.checkInDate.value = b.date || "";
     f.checkInTime.value = b.time || "";
@@ -1074,7 +1077,7 @@ function settleHtml() {
          <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th class="num">จ่ายไปแล้ว</th><th class="num">ส่วนต่าง</th></tr></thead>
          <tbody>${members().map((m) => { const d = paid[m] - share; return `<tr><td>${esc(m)}</td><td class="num">${money(paid[m])}</td><td class="num ${d < -0.005 ? "neg" : "pos"}">${d > 0.005 ? "+" : ""}${money(d)}</td></tr>`; }).join("")}</tbody></table></div>
          <h4>ใครต้องโอนให้ใคร</h4>
-         ${tx.length ? `<ul class="transfers">${tx.map((t) => `<li><b>${esc(t.from)}</b> โอนให้ <b>${esc(t.to)}</b> ${money(t.amt)}${thbToTrip(t.amt)}</li>`).join("")}</ul>` : `<p class="muted">ไม่มีใครต้องโอน 🎉</p>`}`
+         ${tx.length ? `<ul class="transfers">${tx.map((t) => `<li><b>${esc(t.from)}</b> โอนให้ <b>${esc(t.to)}</b> ${money(t.amt)}${thbToTrip(t.amt)}</li>`).join("")}</ul>` : `<p class="muted">ไม่มีใครต้องโอน </p>`}`
       : `<p class="muted">ยังไม่มีรายการค่าใช้จ่าย</p>`) +
     (planTotal ? `<p class="muted">ประมาณการค่าใช้จ่ายตามแพลน: ${money(planTotal)} (ตกคนละ ${money(planTotal / n)})</p>` : "");
 }
@@ -1218,6 +1221,8 @@ function renderChecklist() {
 function updateMeChip() {
   const el = $("#me-name");
   if (el) el.textContent = getMe() || "ยังไม่ได้เลือก";
+  const av = $("#me-avatar");
+  if (av) av.textContent = getMe() ? [...getMe().replace(/^[เแโใไ]/, "")][0] : "?";
 }
 
 function setMe(name) {
@@ -1236,14 +1241,14 @@ function showMePicker() {
   wrap.className = "modal-backdrop me-picker";
   wrap.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mp-title">
-      <div class="m-icon" aria-hidden="true">👋</div>
+      <div class="m-icon" aria-hidden="true"></div>
       <h3 id="mp-title">ฉันคือใคร?</h3>
       <p class="muted">เลือกชื่อตัวเองในทริป “${esc(trip.name)}” เพื่อจ่ายเงิน จัดของ และติ๊กเช็กลิสต์ในชื่อของคุณ</p>
       <div class="me-options">
         ${members().map((m) => `<button type="button" class="me-option ${m === me ? "active" : ""}" data-m="${esc(m)}">${esc(m)}</button>`).join("")}
       </div>
       <button type="button" class="btn me-skip" data-skip="1">ดูอย่างเดียว ยังไม่เลือก</button>
-      <p class="muted small-note">เปลี่ยนทีหลังได้ที่ปุ่ม 👤 ด้านบน · เว็บจะจำไว้ในเครื่องนี้</p>
+      <p class="muted small-note">เปลี่ยนทีหลังได้ที่ปุ่ม ด้านบน · เว็บจะจำไว้ในเครื่องนี้</p>
     </div>`;
   document.body.appendChild(wrap);
   const close = () => { document.removeEventListener("keydown", onKey); wrap.remove(); };
@@ -1251,7 +1256,7 @@ function showMePicker() {
   document.addEventListener("keydown", onKey);
   wrap.addEventListener("click", (e) => {
     const opt = e.target.closest("[data-m]");
-    if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} 👋`); return; }
+    if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} `); return; }
     if (e.target.closest("[data-skip]")) { lsSet("me-skip-" + trip.id, "1"); close(); }
   });
   wrap.querySelector(".me-option")?.focus();
@@ -1297,8 +1302,8 @@ let sgCity = "all";
 let sgCat = "all";
 let sgHotelId = "";
 const SG_CATS = [
-  ["all", "ทั้งหมด"], ["cafe", "☕ คาเฟ่"], ["photo", "📸 ถ่ายรูป"], ["food", "🍜 ของกิน"], ["shopping", "🛍️ ช้อปปิ้ง"],
-  ["kpop", "💚 ตามรอยศิลปิน"], ["nature", "🍁 ธรรมชาติ"], ["sight", "⛩️ วัด/ที่เที่ยว"], ["theme", "🎢 สวนสนุก"],
+  ["all", "ทั้งหมด"], ["cafe", "คาเฟ่"], ["photo", "ถ่ายรูป"], ["food", "ของกิน"], ["shopping", "ช้อปปิ้ง"],
+  ["kpop", "ตามรอยศิลปิน"], ["nature", "ธรรมชาติ"], ["sight", "วัด/ที่เที่ยว"], ["theme", "สวนสนุก"],
 ];
 const SG_TO_WISH = { cafe: "คาเฟ่", food: "ร้านอาหาร", shopping: "ช้อปปิ้ง", kpop: "ตามรอยศิลปิน", theme: "ที่เที่ยว", nature: "ที่เที่ยว", sight: "ที่เที่ยว", photo: "ที่เที่ยว" };
 const geoTried = new Set();
@@ -1311,10 +1316,10 @@ function distKm(a, b) {
 }
 // ประมาณเวลาเดินทาง: ใกล้ = เดิน, ไกล = รถไฟ (รวมเวลาเดินไปสถานี/เปลี่ยนสาย)
 function travelEstimate(km) {
-  if (km <= 1.2) return { mode: "เดิน", icon: "🚶", min: Math.max(3, Math.round(km * 13)) };
+  if (km <= 1.2) return { mode: "เดิน", icon: "", min: Math.max(3, Math.round(km * 13)) };
   // ในเมือง: รถไฟใต้ดิน/รถเมล์ + เดินไปสถานี ; ข้ามเมือง: รถไฟด่วน
   const raw = km <= 15 ? 12 + km * 2.4 : Math.max(48, 25 + km * 1.1);
-  return { mode: "รถไฟ/รถเมล์", icon: "🚃", min: Math.round(raw / 5) * 5 };
+  return { mode: "รถไฟ/รถเมล์", icon: "", min: Math.round(raw / 5) * 5 };
 }
 
 // ตำแหน่งที่พัก: จากพิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap
@@ -1338,7 +1343,7 @@ async function ensureHotelCoords(h) {
   if (!h || hotelCoords(h) || geoTried.has(h.id) || !navigator.onLine) return;
   geoTried.add(h.id);
   const country = destInfo().nameEn || trip.country || "";
-  const qs = [h.place && !isLink(h.place) ? h.place : "", `${h.title}, ${country}`, h.title].filter(Boolean);
+  const qs = [h.address || "", h.place && !isLink(h.place) ? h.place : "", `${h.title}, ${country}`, h.title].filter(Boolean);
   for (const q of qs) {
     const c = await geocode(q);
     if (c) { store.update(trip.id, "bookings", h.id, { lat: c.lat, lng: c.lng }); return; }
@@ -1358,8 +1363,8 @@ function currentHotel() {
 
 function hotelPickerHtml() {
   const { hs, hotel, hc } = currentHotel();
-  if (!hs.length) return `<p class="muted small-note">🏨 เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหนและเดินทางกี่นาที</p>`;
-  return `<label class="sg-hotel">📍 วัดระยะจากที่พัก
+  if (!hs.length) return `<p class="muted small-note">เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหนและเดินทางกี่นาที</p>`;
+  return `<label class="sg-hotel">วัดระยะจากที่พัก
       <select class="hotel-pick">${hs.map((h) => `<option value="${esc(h.id)}" ${h.id === sgHotelId ? "selected" : ""}>${esc(h.title)}</option>`).join("")}</select></label>
     ${hotel && !hc ? `<p class="muted small-note">${geoTried.has(hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — แก้ช่อง “ที่อยู่” ของที่พักเป็นชื่อหรือที่อยู่ภาษาอังกฤษ" : "กำลังหาตำแหน่งที่พัก…"}</p>` : ""}`;
 }
@@ -1380,13 +1385,13 @@ function travelBoxHtml({ coords, query, access, pending }) {
   const route = origin && dest ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit` : "";
   if (!access && !dist && !route) return "";
   return `<div class="travel-box">
-      <div class="tb-title">🚉 การเดินทาง</div>
+      <div class="tb-title">การเดินทาง</div>
       ${access ? `<div>${esc(access)}</div>` : ""}
       ${dist}
-      ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทาง/เวลาจริงจากที่พักใน Google Maps</a>` : ""}
+      ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">ดูเส้นทาง/เวลาจริงจากที่พักใน Google Maps</a>` : ""}
     </div>`;
 }
-const timeHtml = (t) => (t ? `<span class="time-need">⏱ เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
+const timeHtml = (t) => (t ? `<span class="time-need">เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
 
 // ตำแหน่งของรายการใน Wishlist: พิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap (ทีละรายการ ไม่เกิน 1 ครั้ง/วินาที)
 const wishCoords = (w) => (Number.isFinite(w?.lat) && Number.isFinite(w?.lng) ? { lat: w.lat, lng: w.lng } : coordsFromLink(w?.place));
@@ -1431,7 +1436,7 @@ function renderSuggest() {
   if (!box) return;
   const nMine = data.wishlist.length;
   if (!wishView) wishView = nMine ? "mine" : "suggest";
-  $("#seg-mine").innerHTML = `⭐ ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
+  $("#seg-mine").innerHTML = `ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
   $("#seg-mine").classList.toggle("active", wishView === "mine");
   $("#seg-suggest").classList.toggle("active", wishView === "suggest");
   $("#wish-mine").hidden = wishView !== "mine";
@@ -1480,8 +1485,8 @@ function renderSuggest() {
         </div>
         <div class="sg-tags">${p.cats.map((c) => `<span class="badge">${catLabel[c] || c}</span>`).join("")}${p.season ? `<span class="badge ${inSeason ? "ok" : ""}">${esc(p.season.label)}${inSeason ? " · ตรงช่วงทริป" : ""}</span>` : ""}</div>
         <p>${esc(p.desc)}</p>
-        ${p.kpop ? `<p class="sg-kpop">💚 ${esc(p.kpop)}</p>` : ""}
-        <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">📍 แผนที่</a></div>
+        ${p.kpop ? `<p class="sg-kpop">${esc(p.kpop)}</p>` : ""}
+        <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">แผนที่</a></div>
         ${travelBoxHtml({ coords: { lat: p.lat, lng: p.lng }, query: p.nameEn, access: p.access })}
         <div class="sg-src">อ้างอิง: ${p.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a> — ${esc(s.publisher)}${s.author ? ` (เขียนโดย ${esc(s.author)})` : ""}`).join("<br>")}</div>
       </article>`;
@@ -1557,7 +1562,7 @@ function renderPrep() {
     <div class="card immi-card">
       <div class="immi-head">
         <div>
-          <h3>🛂 เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
+          <h3>เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
           <div class="muted">สำหรับพาสปอร์ตไทย · ท่องเที่ยวระยะสั้น${IMMI.updated ? ` · อัปเดต ${fmtDate(IMMI.updated, "year")}` : ""}</div>
         </div>
         <span class="risk risk-${riskCls}">ความเสี่ยง: ${riskLabel}</span>
@@ -1566,7 +1571,7 @@ function renderPrep() {
       <p class="muted small-note">* ระดับความเสี่ยงประเมินจากข่าวและแหล่งข้อมูลด้านล่าง ไม่ใช่สถิติทางการ${destOf() === "OTHER" ? " · เลือกประเทศได้ที่ “แก้ไขทริป” หรือขอ Claude เพิ่มข้อมูลประเทศนี้" : ""}</p>
       ${info.entry?.length ? `<h4>เงื่อนไขการเข้าประเทศ</h4>${list(info.entry)}` : ""}
       ${info.beforeFlight?.length ? `<h4>ต้องทำก่อนบิน</h4><ul class="immi-list">${info.beforeFlight.map((b) => `
-        <li>${esc(b.text)}${b.when ? ` <span class="badge">${esc(b.when)}</span>` : ""}${b.link ? `<br><a href="${esc(b.link)}" target="_blank" rel="noopener">🔗 ${esc(b.link.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>` : ""}</li>`).join("")}</ul>` : ""}
+        <li>${esc(b.text)}${b.when ? ` <span class="badge">${esc(b.when)}</span>` : ""}${b.link ? `<br><a href="${esc(b.link)}" target="_blank" rel="noopener">${esc(b.link.replace(/^https?:\/\//, "").replace(/\/$/, ""))}</a>` : ""}</li>`).join("")}</ul>` : ""}
       ${info.upcoming?.length ? `<h4>กำลังจะเปลี่ยน</h4>${list(info.upcoming)}` : ""}
       ${info.tips?.length ? `<h4>เคล็ดลับตอนเจอ ตม.</h4>${list(info.tips)}` : ""}
       ${info.sources?.length ? `<details class="sources"><summary>แหล่งข้อมูล (${info.sources.length})</summary><ul>${info.sources.map((x) => `<li><a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.title)}</a></li>`).join("")}</ul></details>` : ""}
@@ -1577,8 +1582,8 @@ function renderPrep() {
     <ul class="ready-list">${readinessChecks().map(([ok, title, detail]) => `
       <li class="${ok ? "ok" : "no"}"><span class="r-icon">${ok ? "✓" : "!"}</span><div><b>${esc(title)}</b><div class="muted">${esc(detail)}</div></div></li>`).join("")}</ul>
     <div class="ready-actions">
-      <button type="button" class="btn primary" data-action="immi-pdf">🖨️ เอกสารโชว์ ตม. (PDF ภาษาอังกฤษ)</button>
-      <button type="button" class="btn" data-action="tab" data-tab="bookings">🎫 ไปที่การจอง</button>
+      <button type="button" class="btn primary" data-action="immi-pdf">เอกสารโชว์ ตม. (PDF ภาษาอังกฤษ)</button>
+      <button type="button" class="btn" data-action="tab" data-tab="bookings">ไปที่การจอง</button>
     </div>
     <p class="muted small-note">เอกสารรวมตั๋วเครื่องบิน ที่พักทุกคืน และแพลนรายวัน เป็นภาษาอังกฤษ ปริ้นต์หรือเก็บในมือถือไว้ยื่นเวลา ตม. ถาม</p>`;
 
@@ -1586,7 +1591,7 @@ function renderPrep() {
   const me = getMe();
   const items = prepItems();
   if (!me) {
-    $("#prep-mine").innerHTML = `<p class="muted">เลือกก่อนว่าคุณคือใคร เพื่อติ๊กเช็กลิสต์ของตัวเอง</p><button type="button" class="btn" data-action="pick-me">👤 เลือกชื่อ</button>`;
+    $("#prep-mine").innerHTML = `<p class="muted">เลือกก่อนว่าคุณคือใคร เพื่อติ๊กเช็กลิสต์ของตัวเอง</p><button type="button" class="btn" data-action="pick-me">เลือกชื่อ</button>`;
     $("#prep-count").textContent = "";
   } else {
     const groups = [...new Set(items.map((x) => x.group))];
@@ -1625,7 +1630,7 @@ function buildImmiPrintView() {
     <h2>Flights</h2>
     ${fl.length ? table(["Date", "Flight / Route", "Time", "Booking ref."], fl.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.time || "")}</td><td>${esc(b.ref || "")}</td></tr>`)) : "<p>—</p>"}
     <h2>Accommodation</h2>
-    ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${isLink(h.place) ? "" : esc(h.place || "")}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(h.ref || "")}</td></tr>`)) : "<p>—</p>"}
+    ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${esc(h.address || (isLink(h.place) ? "" : h.place || ""))}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(h.ref || "")}</td></tr>`)) : "<p>—</p>"}
     ${others.length ? `<h2>Other reservations</h2>${table(["Date", "Details", "Booking ref."], others.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.ref || "")}</td></tr>`))}` : ""}
     <h2>Daily plan</h2>
     ${table(["Day", "Date", "Stay", "Plan"], days.map((d, i) => {
@@ -1652,7 +1657,7 @@ function buildPrintView() {
         ...hotels().filter((h) => h.checkOutDate === d).map((h) => `เช็คเอาท์ ${esc(h.title)} ${esc(h.checkOutTime || "")}`),
         ...hotelForNight(d).map((h) => (h.date === d ? `เช็คอิน ${esc(h.title)} ${esc(h.time || "")}` : `พักที่ ${esc(h.title)}`)),
       ];
-      return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${ph.length ? `<p class="p-hotel">🏨 ${ph.join(" · ")}</p>` : ""}${list.length
+      return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${ph.length ? `<p class="p-hotel">${ph.join(" · ")}</p>` : ""}${list.length
         ? table(["เวลา", "กิจกรรม", "สถานที่", "เวลาเปิด–ปิด", "การเดินทางมาที่นี่", "ค่าใช้จ่าย", "หมายเหตุ"],
             list.map((x) => {
               const legs = legsOf(x);
@@ -1662,7 +1667,7 @@ function buildPrintView() {
               const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
               const warns = hoursWarnings(x);
               return `<tr><td>${esc(x.time) || "-"}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
-                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>🎫 ${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
+                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
                 <td>${isLink(x.place) ? "ลิงก์ Google Maps" : esc(x.place)}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
                 <td>${num(x.cost) ? fmtWithTHB(x.cost, x.costCurrency) : ""}</td><td>${esc(x.note)}</td></tr>`;
             }))
@@ -1700,11 +1705,11 @@ const PRINT_CSS = `
   body { margin: 0; font-family: -apple-system, "Sukhumvit Set", Thonburi, "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif; color: #222; font-size: 11pt; line-height: 1.45; background: #fff; }
   main { padding: 16px; max-width: 900px; margin: 0 auto; }
   h1 { font-size: 18pt; margin: 0 0 6px; }
-  h2 { font-size: 13.5pt; border-bottom: 2px solid #e0607e; padding-bottom: 2px; margin: 18px 0 8px; }
+  h2 { font-size: 13.5pt; border-bottom: 2px solid #C5B3D3; padding-bottom: 2px; margin: 18px 0 8px; }
   h3 { font-size: 11.5pt; margin: 10px 0 4px; }
   table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 6px; }
   th, td { text-align: left; vertical-align: top; padding: 4px 6px; border: 1px solid #ccc; }
-  th { background: #f6f3ef; }
+  th { background: #FBEFEF; }
   tr, h3 { break-inside: avoid; page-break-inside: avoid; }
   table.kv th { width: 28%; }
   ul { padding-left: 20px; margin: 4px 0; }
@@ -1713,7 +1718,7 @@ const PRINT_CSS = `
   .p-hotel { margin: 2px 0 6px; font-size: 10pt; }
   .p-foot { margin-top: 18px; font-size: 9pt; color: #777; }
   .bar { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 10px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 10.5pt; }
-  .bar button { font: inherit; font-weight: 700; background: #e0607e; color: #fff; border: 0; border-radius: 10px; padding: 10px 16px; }
+  .bar button { font: inherit; font-weight: 700; background: #C5B3D3; color: #2E2340; border: 0; border-radius: 10px; padding: 10px 16px; }
   @media print { .bar { display: none; } main { padding: 0; } }
 `;
 
@@ -1821,7 +1826,7 @@ function confirmDialog({ title, message, okText = "ลบ", requireText = "" }) 
     wrap.className = "modal-backdrop";
     wrap.innerHTML = `
       <div class="modal" role="alertdialog" aria-modal="true" aria-labelledby="m-title" aria-describedby="m-msg">
-        <div class="m-icon" aria-hidden="true">🗑️</div>
+        <div class="m-icon" aria-hidden="true"></div>
         <h3 id="m-title">${esc(title)}</h3>
         <p id="m-msg">${message}</p>
         ${requireText ? `<label class="m-req">พิมพ์ <b>${esc(requireText)}</b> เพื่อยืนยัน<input id="m-input" autocomplete="off"></label>` : ""}
@@ -1989,10 +1994,11 @@ function onSubmit(e) {
         time: hotel ? f.checkInTime : f.time,
         checkOutDate: hotel ? f.checkOutDate : "",
         checkOutTime: hotel ? f.checkOutTime : "",
+        address: hotel ? (f.address || "").trim() : "",
         lat: null, lng: null, // ให้หาพิกัดใหม่เมื่อแก้ชื่อ/ที่อยู่
       };
       if (!rec.title) return;
-      if (editingBookingId) { store.update(trip.id, "bookings", editingBookingId, rec); stopEditBooking(); }
+      if (editingBookingId) { geoTried.delete(editingBookingId); store.update(trip.id, "bookings", editingBookingId, rec); stopEditBooking(); }
       else { store.add(trip.id, "bookings", { ...rec, createdAt: now }); form.reset(); syncBookForm(); }
       toast("บันทึกแล้ว");
       return;
