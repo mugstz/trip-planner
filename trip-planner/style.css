@@ -94,6 +94,30 @@ input[type=checkbox] { width: auto; }
 .to-plan { display: flex; gap: 6px; margin-top: 6px; }
 .to-plan select { width: auto; padding: 4px 8px; font-size: .85rem; }
 
+/* ---------- เวลาเปิดปิด / สายรถไฟ ---------- */
+.form fieldset.sub { grid-column: 1 / -1; border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px 12px; margin: 0; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.form fieldset.sub legend { font-size: .85rem; color: var(--muted); padding: 0 4px; }
+.hours { display: flex; align-items: center; gap: 8px; }
+.hours input { flex: 1; }
+.days { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.form label.day { flex-direction: row; align-items: center; gap: 0; cursor: pointer; }
+.day input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.day span { display: inline-block; min-width: 38px; text-align: center; border: 1px solid var(--line); border-radius: 999px; padding: 2px 8px; color: var(--text); font-size: .85rem; }
+.day input:checked + span { background: var(--neg); border-color: var(--neg); color: #fff; }
+.day input:focus-visible + span { outline: 2px solid var(--accent); }
+.leg { display: grid; grid-template-columns: 2fr 1.3fr 1.3fr 70px 32px; gap: 6px; align-items: center; }
+.leg input { padding: 6px 8px; }
+.timeline .connector { list-style: none; margin: 0 0 0 26px; padding: 6px 0 6px 18px; border-left: 3px dotted var(--accent); font-size: .88rem; }
+.legs { margin: 0; padding-left: 18px; }
+.legs li { padding: 1px 0; }
+.conn-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 2px; }
+.row .time small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
+.badge.warn { background: #fdecea; color: var(--neg); }
+.warn { color: var(--neg); font-weight: 600; }
+.link-btn { display: block; border: none; background: #f3f0ff; color: #5b4bc4; border-radius: 8px; padding: 4px 10px; margin-top: 6px; font: inherit; font-size: .85rem; cursor: pointer; text-align: left; }
+.flash { animation: flash 1.6s ease-out; }
+@keyframes flash { 0%, 30% { background: #fff3c4; } 100% { background: transparent; } }
+
 /* ---------- ตาราง ---------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
@@ -134,6 +158,9 @@ th { background: #faf8f5; white-space: nowrap; }
   .head-actions { width: 100%; }
   .progress-row { grid-template-columns: 70px 1fr 90px; }
   .main-tabs { top: 49px; }
+  .leg { grid-template-columns: 1fr 1fr 64px 28px; padding-bottom: 6px; border-bottom: 1px dashed var(--line); }
+  .leg input[data-k=line] { grid-column: 1 / -1; }
+  .timeline .connector { margin-left: 20px; }
 }
 
 /* ---------- ตอนพิมพ์ / Export PDF ---------- */

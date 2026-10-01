@@ -23,6 +23,7 @@ const SUGGESTED_PACKING = [
   "ยาประจำตัว", "ร่มพับ", "รองเท้าเดินสบาย", "กระเป๋าผ้า", "ทิชชู่เปียก", "ลิปบาล์ม / ครีมทาผิว",
 ];
 const WISH_CATS = ["คาเฟ่", "ร้านอาหาร", "ช้อปปิ้ง", "ตามรอยศิลปิน", "ที่เที่ยว", "อื่นๆ"];
+const DAY_NAMES = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const BOOK_TYPES = ["เที่ยวบิน", "ที่พัก", "ตั๋ว/บัตรผ่าน", "รถ/รถไฟ", "อื่นๆ"];
 
 /* ============================================================
@@ -345,11 +346,23 @@ function renderTripSkeleton() {
         <h3 id="item-form-title">เพิ่มกิจกรรม</h3>
         <div class="grid">
           <label>วันที่<select name="date">${dayOpts}</select></label>
-          <label>เวลา<input type="time" name="time"></label>
+          <label>เวลาถึง<input type="time" name="time"></label>
           <label class="wide">กิจกรรม*<input name="activity" required placeholder="เช่น ปราสาทโอซาก้า"></label>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
-          <label>การเดินทาง<input name="transport" placeholder="เช่น JR Loop Line"></label>
+          <label>อยู่ที่นี่ประมาณ (นาที)<input type="number" name="stay" min="0" step="5" inputmode="numeric" placeholder="เช่น 90"></label>
           <label>ค่าใช้จ่าย (บาท)<input type="number" name="cost" min="0" step="any" inputmode="decimal"></label>
+          <fieldset class="sub">
+            <legend>เวลาเปิด–ปิด</legend>
+            <div class="hours"><input type="time" name="openTime" aria-label="เปิด"><span>–</span><input type="time" name="closeTime" aria-label="ปิด"></div>
+            <div class="days"><span class="muted">วันหยุด:</span>${DAY_NAMES.map((n, i) => `<label class="day"><input type="checkbox" name="closed" value="${i}"><span>${n}</span></label>`).join("")}</div>
+            <input name="hoursNote" placeholder="หมายเหตุ เช่น เข้าครั้งสุดท้าย 16:30 / หยุดวันนักขัตฤกษ์">
+          </fieldset>
+          <fieldset class="sub">
+            <legend>การเดินทางมาที่นี่ <small class="muted">(ต่อได้หลายสาย)</small></legend>
+            <div id="legs"></div>
+            <button type="button" class="btn small" data-action="add-leg">+ เพิ่มสาย / ต่อรถ</button>
+          </fieldset>
+          <label class="wide">ลิงก์กับการจอง<select name="bookingId"><option value="">— ไม่มี —</option></select></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -462,9 +475,9 @@ function renderAll() { renderPlan(); renderWishlist(); renderBookings(); renderM
 
 function renderSection(s) {
   ({
-    items: () => { renderPlan(); renderMoney(); },
+    items: () => { renderPlan(); renderMoney(); renderBookings(); },
     wishlist: renderWishlist,
-    bookings: renderBookings,
+    bookings: () => { renderBookings(); renderPlan(); },
     expenses: renderMoney,
     packing: renderPacking,
     checklist: renderChecklist,
@@ -487,20 +500,109 @@ function renderPlan() {
   const d = days[dayIdx];
   const list = sortItems(data.items.filter((x) => x.date === d));
   const total = list.reduce((s, x) => s + num(x.cost), 0);
+  const travelTotal = list.reduce((s, x) => s + legsMinutes(x), 0);
   el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + (list.length
-    ? `<ul class="rows">${list.map((x) => `
-        <li class="row">
-          <div class="time">${esc(x.time) || "—"}</div>
-          <div class="body">
-            <div class="title">${esc(x.activity)}</div>
-            <div class="meta">${mapLink(x.place)}${x.transport ? `<span>🚃 ${esc(x.transport)}</span>` : ""}${num(x.cost) ? `<span>💰 ${money(x.cost)}</span>` : ""}</div>
-            ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
-          </div>
-          <div class="row-actions">
-            <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
-          </div>
-        </li>`).join("")}</ul><p class="total">รวมวันนี้ ${money(total)}</p>`
+    ? `<ul class="rows timeline">${list.map((x, i) => connectorHtml(list[i - 1], x) + itemHtml(x)).join("")}</ul>
+       <p class="total">รวมวันนี้ ${money(total)}${travelTotal ? ` · เดินทางรวม ${fmtDur(travelTotal)}` : ""}</p>`
     : `<p class="empty">ยังไม่มีแพลนวันนี้ — เพิ่มด้านล่าง หรือดึงจากแท็บ Wishlist</p>`);
+}
+
+/* เวลา: "14:30" ↔ นาที */
+const toMin = (t) => (/^\d{1,2}:\d{2}$/.test(t || "") ? +t.split(":")[0] * 60 + +t.split(":")[1] : null);
+const fromMin = (m) => `${String(Math.floor(m / 60) % 24).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`;
+const fmtDur = (m) => (m >= 60 ? `${Math.floor(m / 60)} ชม.${m % 60 ? ` ${m % 60} นาที` : ""}` : `${m} นาที`);
+const legsOf = (x) => (Array.isArray(x.legs) ? x.legs : []);
+const legsMinutes = (x) => legsOf(x).reduce((s, l) => s + num(l.minutes), 0);
+const legText = (l) => `${l.line || "เดินทาง"}${l.from || l.to ? ` (${[l.from, l.to].filter(Boolean).join(" → ")})` : ""}${num(l.minutes) ? ` ${num(l.minutes)} นาที` : ""}`;
+const dirUrl = (from, to) =>
+  !from || !to || isLink(from) || isLink(to) ? "" :
+  `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(from)}&destination=${encodeURIComponent(to)}&travelmode=transit`;
+
+/* เช็กเวลาเปิดปิด: คืนคำเตือน (ถ้ามี) */
+function hoursWarnings(x) {
+  const warn = [];
+  const closed = Array.isArray(x.closedDays) ? x.closedDays.map(Number) : [];
+  if (x.date && closed.includes(new Date(x.date + "T00:00:00").getDay())) warn.push("ปิดวันนี้!");
+  const t = toMin(x.time), o = toMin(x.openTime), c = toMin(x.closeTime);
+  if (t !== null && o !== null && c !== null) {
+    const inside = c > o ? t >= o && t < c : t >= o || t < c; // รองรับร้านเปิดข้ามเที่ยงคืน
+    if (!inside) warn.push("นอกเวลาเปิด");
+    else if (c > o && num(x.stay) && t + num(x.stay) > c) warn.push(`ปิดก่อนออก (ปิด ${x.closeTime})`);
+  }
+  return warn;
+}
+
+function hoursText(x) {
+  const closed = Array.isArray(x.closedDays) ? x.closedDays.map(Number).sort() : [];
+  const parts = [];
+  if (x.openTime || x.closeTime) parts.push(`${x.openTime || "?"}–${x.closeTime || "?"}`);
+  if (closed.length) parts.push(`หยุด ${closed.map((i) => DAY_NAMES[i]).join(", ")}`);
+  if (x.hoursNote) parts.push(x.hoursNote);
+  return parts.join(" · ");
+}
+
+/* เส้นเชื่อมระหว่างกิจกรรม: สายรถไฟ + เวลาเดินทาง + เวลาถึงโดยประมาณ */
+function connectorHtml(prev, x) {
+  const legs = legsOf(x);
+  const mins = legsMinutes(x);
+  const route = prev ? dirUrl(prev.place, x.place) : "";
+  if (!legs.length && !route && !x.transport) return "";
+  let eta = "";
+  const pt = toMin(prev?.time);
+  if (prev && pt !== null && mins) {
+    const arrive = pt + num(prev.stay) + mins;
+    const target = toMin(x.time);
+    const late = target !== null && arrive > target;
+    eta = num(prev.stay)
+      ? `<span class="${late ? "warn" : "muted"}">${late ? "⚠️ อาจไม่ทัน — " : ""}ถึงประมาณ ${fromMin(arrive)}</span>`
+      : `<span class="muted">(ใส่ “อยู่ที่นี่ประมาณ” ของจุดก่อนหน้า เพื่อคำนวณเวลาถึง)</span>`;
+  }
+  return `<li class="connector">
+    ${legs.length
+      ? `<ol class="legs">${legs.map((l) => `<li>🚃 ${esc(legText(l))}</li>`).join("")}</ol>`
+      : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
+    <div class="conn-meta">${mins ? `<b>เดินทางรวม ${fmtDur(mins)}</b>` : ""}${eta}${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทาง/เวลาใน Google Maps</a>` : ""}</div>
+  </li>`;
+}
+
+function itemHtml(x) {
+  const warns = hoursWarnings(x);
+  const hrs = hoursText(x);
+  const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
+  return `
+    <li class="row" id="item-${esc(x.id)}">
+      <div class="time">${esc(x.time) || "—"}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
+      <div class="body">
+        <div class="title">${esc(x.activity)} ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
+        <div class="meta">${mapLink(x.place)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${money(x.cost)}</span>` : ""}</div>
+        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${bk.ref ? ` · ${esc(bk.ref)}` : ""} →</button>` : ""}
+        ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
+      </div>
+      <div class="row-actions">
+        <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
+      </div>
+    </li>`;
+}
+
+/* ช่องกรอกสายรถไฟ (หลายแถว) */
+const legRowHtml = (l = {}) => `
+  <div class="leg">
+    <input data-k="line" placeholder="สาย / ยานพาหนะ เช่น JR Loop Line, เดิน" value="${esc(l.line)}">
+    <input data-k="from" placeholder="ขึ้นที่" value="${esc(l.from)}">
+    <input data-k="to" placeholder="ลงที่" value="${esc(l.to)}">
+    <input data-k="minutes" type="number" min="0" inputmode="numeric" placeholder="นาที" value="${num(l.minutes) || ""}">
+    <button type="button" class="icon" data-action="del-leg" title="ลบสายนี้">✕</button>
+  </div>`;
+
+function setLegs(legs) { $("#legs").innerHTML = legs.map(legRowHtml).join(""); }
+
+function readLegs() {
+  return [...app.querySelectorAll("#legs .leg")].map((row) => {
+    const l = {};
+    row.querySelectorAll("[data-k]").forEach((inp) => (l[inp.dataset.k] = inp.value.trim()));
+    l.minutes = num(l.minutes);
+    return l;
+  }).filter((l) => l.line || l.from || l.to || l.minutes);
 }
 
 function startEdit(id) {
@@ -508,7 +610,12 @@ function startEdit(id) {
   if (!x) return;
   editingItemId = id;
   const f = $("#item-form");
-  ["date", "time", "activity", "place", "transport", "cost", "note"].forEach((k) => (f[k].value = x[k] ?? ""));
+  ["date", "time", "activity", "place", "stay", "cost", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
+    .forEach((k) => (f[k].value = x[k] ?? ""));
+  const closed = (x.closedDays || []).map(String);
+  f.querySelectorAll("[name=closed]").forEach((cb) => (cb.checked = closed.includes(cb.value)));
+  // รายการเก่าที่มีแค่ช่อง "การเดินทาง" → แปลงเป็นสายแรกให้
+  setLegs(legsOf(x).length ? legsOf(x) : x.transport ? [{ line: x.transport }] : []);
   $("#item-form-title").textContent = "แก้ไขกิจกรรม";
   $("#item-submit").textContent = "บันทึก";
   $("#item-cancel").hidden = false;
@@ -519,6 +626,7 @@ function stopEdit() {
   editingItemId = null;
   const f = $("#item-form");
   f.reset();
+  setLegs([]);
   f.date.value = tripDays()[dayIdx] || "";
   $("#item-form-title").textContent = "เพิ่มกิจกรรม";
   $("#item-submit").textContent = "เพิ่ม";
@@ -570,17 +678,31 @@ function renderBookings() {
   const el = $("#book-list");
   if (!el) return;
   const list = [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  // อัปเดตตัวเลือก "ลิงก์กับการจอง" ในฟอร์มแพลน (คงค่าที่เลือกไว้)
+  const sel = $("#item-form [name=bookingId]");
+  if (sel) {
+    const keep = sel.value;
+    sel.innerHTML = `<option value="">— ไม่มี —</option>` +
+      list.map((b) => `<option value="${esc(b.id)}">${esc(b.type)}: ${esc(b.title)}${b.date ? ` (${fmtDate(b.date)})` : ""}</option>`).join("");
+    sel.value = list.some((b) => b.id === keep) ? keep : "";
+  }
+  const days = tripDays();
   el.innerHTML = list.length
-    ? `<div class="card"><ul class="rows">${list.map((b) => `
-        <li class="row">
+    ? `<div class="card"><ul class="rows">${list.map((b) => {
+        const used = sortItems(data.items.filter((i) => i.bookingId === b.id))
+          .sort((p, q) => (p.date || "").localeCompare(q.date || ""));
+        return `
+        <li class="row" id="booking-${esc(b.id)}">
           <div class="body">
             <div class="title"><span class="badge">${esc(b.type)}</span> ${esc(b.title)}</div>
             <div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place)}</div>
             ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
+            ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
           </div>
           <div class="row-actions">${delBtn("bookings", b.id)}</div>
-        </li>`).join("")}</ul></div>`
+        </li>`;
+      }).join("")}</ul></div>`
     : `<p class="empty">ยังไม่มีข้อมูลการจอง</p>`;
 }
 
@@ -737,8 +859,19 @@ function buildPrintView() {
     ${days.map((d, i) => {
       const list = sortItems(data.items.filter((x) => x.date === d));
       return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${list.length
-        ? table(["เวลา", "กิจกรรม", "สถานที่", "การเดินทาง", "ค่าใช้จ่าย", "หมายเหตุ"],
-            list.map((x) => `<tr><td>${esc(x.time) || "-"}</td><td>${esc(x.activity)}</td><td>${esc(x.place)}</td><td>${esc(x.transport)}</td><td>${num(x.cost) ? money(x.cost) : ""}</td><td>${esc(x.note)}</td></tr>`))
+        ? table(["เวลา", "กิจกรรม", "สถานที่", "เวลาเปิด–ปิด", "การเดินทางมาที่นี่", "ค่าใช้จ่าย", "หมายเหตุ"],
+            list.map((x) => {
+              const legs = legsOf(x);
+              const travel = legs.length
+                ? legs.map((l) => esc(legText(l))).join("<br>→ ") + (legsMinutes(x) ? `<br><b>รวม ${fmtDur(legsMinutes(x))}</b>` : "")
+                : esc(x.transport);
+              const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
+              const warns = hoursWarnings(x);
+              return `<tr><td>${esc(x.time) || "-"}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
+                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>🎫 ${esc(bk.title)}${bk.ref ? ` (${esc(bk.ref)})` : ""}` : ""}</td>
+                <td>${isLink(x.place) ? "ลิงก์ Google Maps" : esc(x.place)}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
+                <td>${num(x.cost) ? money(x.cost) : ""}</td><td>${esc(x.note)}</td></tr>`;
+            }))
         : "<p>—</p>"}</div>`;
     }).join("")}
     <h2>การจอง</h2>
@@ -755,6 +888,14 @@ function buildPrintView() {
     ${members().map((m) => { const st = packStats(m); return `<h3>${esc(m)} (${st.done}/${st.total})</h3>${st.total ? `<ul>${st.list.map((p) => `<li>${p.done ? "☑" : "☐"} ${esc(p.name)}</li>`).join("")}</ul>` : "<p>—</p>"}`; }).join("")}
     <h2>เช็กลิสต์ก่อนเดินทาง</h2>
     <ul>${[...data.checklist].sort(byCreated).map((c) => `<li>${c.done ? "☑" : "☐"} ${esc(c.text)}</li>`).join("")}</ul>`;
+}
+
+function flash(el) {
+  if (!el) return;
+  el.scrollIntoView({ behavior: "smooth", block: "center" });
+  el.classList.remove("flash");
+  void el.offsetWidth; // รีสตาร์ตแอนิเมชัน
+  el.classList.add("flash");
 }
 
 function exportPdf() {
@@ -781,6 +922,23 @@ function onClick(e) {
   }
   else if (action === "edit-item") startEdit(id);
   else if (action === "cancel-edit") stopEdit();
+  else if (action === "add-leg") {
+    $("#legs").insertAdjacentHTML("beforeend", legRowHtml());
+    $("#legs .leg:last-child input").focus();
+  }
+  else if (action === "del-leg") b.closest(".leg").remove();
+  else if (action === "goto-booking") {
+    setTab("bookings");
+    flash(document.getElementById("booking-" + id));
+  }
+  else if (action === "goto-item") {
+    const it = data.items.find((i) => i.id === id);
+    const di = it ? tripDays().indexOf(it.date) : -1;
+    if (di >= 0) dayIdx = di;
+    setTab("plan");
+    renderPlan();
+    flash(document.getElementById("item-" + id));
+  }
   else if (action === "del") {
     if (confirm("ลบรายการนี้?")) { store.remove(trip.id, sub, id); if (id === editingItemId) stopEdit(); }
   }
@@ -847,13 +1005,17 @@ function onSubmit(e) {
       return;
     }
     case "item-form": {
+      const legs = readLegs();
       const rec = {
         date: f.date, time: f.time, activity: f.activity.trim(), place: f.place.trim(),
-        transport: f.transport.trim(), cost: num(f.cost), note: f.note.trim(),
+        stay: num(f.stay), cost: num(f.cost), note: f.note.trim(),
+        openTime: f.openTime, closeTime: f.closeTime, hoursNote: f.hoursNote.trim(),
+        closedDays: new FormData(form).getAll("closed").map(Number),
+        legs, transport: "", bookingId: f.bookingId || "",
       };
       if (!rec.activity) return;
       if (editingItemId) { store.update(trip.id, "items", editingItemId, rec); stopEdit(); }
-      else { store.add(trip.id, "items", { ...rec, createdAt: now }); form.reset(); form.date.value = rec.date; }
+      else { store.add(trip.id, "items", { ...rec, createdAt: now }); form.reset(); setLegs([]); form.date.value = rec.date; }
       const i = tripDays().indexOf(rec.date);
       if (i >= 0) { dayIdx = i; renderPlan(); }
       toast("บันทึกแล้ว");
