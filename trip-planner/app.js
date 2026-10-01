@@ -486,7 +486,7 @@ function renderTripSkeleton() {
           </div>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="ใช้เปิดแผนที่"></label>
           <label class="wide">ลิงก์รีวิว / IG / TikTok<input type="url" name="link" placeholder="https://"></label>
-          <label class="wide">ใครแนะนำ / เจอจากไหน<input name="source" placeholder="เช่น พายแนะนำ, เพจ xxx, TikTok @xxx"></label>
+          <label class="wide">ใครแนะนำ / เจอจากไหน<input name="source" placeholder="เช่น เอิงแนะนำ, เพจ xxx, TikTok @xxx"></label>
           <label>งบโดยประมาณ (ต่อคน)
             <div class="amount-cur"><input type="number" name="budget" min="0" step="any" inputmode="decimal">${curSelect("budgetCurrency", tripCur())}</div></label>
           <label>เมนูเด็ด / ต้องลอง<input name="mustTry" placeholder="เช่น ราเมนต้นตำรับ + ไข่ต้ม"></label>
