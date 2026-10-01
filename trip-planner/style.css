@@ -1,0 +1,43 @@
+:root {
+  --bg: #f7f5f2;
+  --card: #ffffff;
+  --text: #2b2b2b;
+  --muted: #777;
+  --accent: #e0607e;
+  --line: #e6e2dc;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: "Noto Sans Thai", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.6;
+}
+a { color: var(--accent); text-decoration: none; }
+.topbar { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 16px; }
+.logo { font-weight: 700; font-size: 1.1rem; }
+main { max-width: 960px; margin: 0 auto; padding: 16px; }
+
+/* หน้ารายการทริป */
+.trip-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 16px; }
+.trip-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; color: var(--text); }
+.trip-card:hover { border-color: var(--accent); }
+.trip-card h2 { margin: 0 0 4px; color: var(--accent); }
+.muted { color: var(--muted); font-size: .9rem; }
+
+/* หน้ารายละเอียด */
+.section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.section h2 { margin-top: 0; font-size: 1.15rem; }
+.chips span { display: inline-block; background: #fbe8ed; color: var(--accent); border-radius: 999px; padding: 2px 12px; margin: 0 6px 6px 0; font-size: .9rem; }
+.tabs { display: flex; gap: 8px; overflow-x: auto; margin-bottom: 12px; }
+.tabs button { border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 6px 14px; font-family: inherit; cursor: pointer; white-space: nowrap; }
+.tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .95rem; }
+th, td { text-align: left; padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { background: #faf8f5; white-space: nowrap; }
+td.num, th.num { text-align: right; white-space: nowrap; }
+.total-row td { font-weight: 700; }
+.checklist label { display: block; padding: 4px 0; cursor: pointer; }
+.checklist input:checked + span { text-decoration: line-through; color: var(--muted); }
