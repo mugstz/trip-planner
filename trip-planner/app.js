@@ -1342,7 +1342,7 @@ function renderBookings() {
                  ${b.address ? `<div class="note">ที่อยู่: ${esc(b.address)}</div>` : `<div class="note warn-soft">ยังไม่ได้ใส่ที่อยู่โรงแรม — ใช้ในเอกสารโชว์ ตม.</div>`}
                  <div class="meta">${mapLink(b.place || b.address || b.title, b.title)}</div>`
               : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place, b.title)}</div>`}
-            ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
+            ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
             ${b.ref ? `<div class="ref">เลขการจอง: <b>${esc(b.ref)}</b></div>` : ""}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
@@ -1463,6 +1463,13 @@ function stopEditBooking() {
 let editingExpenseId = null;
 const expShare = (e) => toTHB(e.amount, e.currency) / (members().length || 1);
 const isSettled = (e, m) => !!e.settled?.[m];
+// ส่วนแบ่งต่อคน: เงินต่างประเทศ + บาท (ถ้ารายการเป็นเงินบาท แสดงเงินปลายทางคู่ด้วย)
+function shareText(e) {
+  const n = members().length || 1;
+  const cur = e.currency || "THB";
+  if (cur !== "THB") return `${fmtCur(num(e.amount) / n, cur)}${rateOf(cur) ? ` ≈ ${money(expShare(e))}` : ""}`;
+  return `${money(expShare(e))}${isForeign() && rateOf(tripCur()) ? ` ≈ ${fmtCur(expShare(e) / rateOf(tripCur()), tripCur())}` : ""}`;
+}
 
 function settle() {
   const ms = members();
@@ -1563,7 +1570,7 @@ function updateExpensePreview() {
   const cur = f.elements.currency.value;
   const v = num(f.elements.amount.value);
   const n = members().length || 1;
-  out.textContent = v ? `${cur !== "THB" ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))} · ` : "ยังไม่มีเรต · ") : ""}${rateOf(cur) ? `หาร ${n} คน = คนละ ${money(toTHB(v, cur) / n)}` : ""}` : "";
+  out.textContent = v ? `${cur !== "THB" ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))} · ` : "ยังไม่มีเรต · ") : ""}หาร ${n} คน = คนละ ${shareText({ amount: v, currency: cur })}` : "";
 }
 
 function renderMoney() {
@@ -1585,9 +1592,10 @@ function renderMoney() {
         <li class="row exp-row ${others.length && done === others.length ? "all-settled" : ""}">
           <div class="body">
             <div class="title">${esc(e.title)} · <b>${fmtWithTHB(e.amount, e.currency)}</b></div>
-            <div class="meta"><span>💳 ${esc(e.paidBy)} จ่ายไปก่อน</span>${e.date ? `<span>📅 ${fmtDate(e.date)}</span>` : ""}<span>คนละ ${money(sh)}</span></div>
-            ${others.length ? `<div class="settle-row"><span class="muted">โอนคืน ${esc(e.paidBy)} แล้ว (${done}/${others.length}):</span>
-              ${others.map((m) => `<label class="settle-chip ${m === me ? "me" : ""}"><input type="checkbox" data-action="settle" data-id="${esc(e.id)}" data-m="${esc(m)}" ${isSettled(e, m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>` : ""}
+            <div class="meta"><span>💳 ${esc(e.paidBy)} จ่ายไปก่อน</span>${e.date ? `<span>📅 ${fmtDate(e.date)}</span>` : ""}</div>
+            <div class="exp-share">👥 คนละ <b>${shareText(e)}</b></div>
+            ${others.length ? `<div class="settle-label muted">โอนคืน ${esc(e.paidBy)} แล้ว (${done}/${others.length})</div><div class="settle-row">
+              ${others.map((m) => `<label class="settle-chip ${m === me ? "is-me" : ""}"><input type="checkbox" data-action="settle" data-id="${esc(e.id)}" data-m="${esc(m)}" ${isSettled(e, m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>` : ""}
           </div>
           <div class="row-actions">
             <button type="button" class="icon" data-action="edit-expense" data-id="${esc(e.id)}" title="แก้ไข">✎</button>${delBtn("expenses", e.id)}
