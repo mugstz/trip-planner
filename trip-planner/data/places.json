@@ -1,175 +1,563 @@
 {
   "updated": "2026-10-01",
-  "note": "สถานที่แนะนำที่ Claude คัดจากแหล่งข้อมูลที่ระบุไว้ในแต่ละรายการ — พิกัดเป็นค่าประมาณสำหรับคำนวณระยะทาง ตรวจเวลาเปิดปิดล่าสุดก่อนไป",
+  "note": "สถานที่แนะนำที่ Claude คัดจากแหล่งข้อมูลที่ระบุไว้ในแต่ละรายการ — time = เวลาที่ใช้เที่ยวที่นี่โดยประมาณ (ไม่รวมเดินทาง), access = สถานีใกล้สุด/วิธีไปโดยทั่วไป, พิกัดเป็นค่าประมาณ ตรวจเวลาเปิดปิดและเส้นทางล่าสุดก่อนไป",
   "places": [
     {
-      "id": "jp-osaka-dotonbori", "country": "JP", "city": "โอซาก้า",
-      "name": "โดทงโบริ & ป้ายกูลิโกะ", "nameEn": "Dotonbori, Osaka",
-      "cats": ["food", "shopping", "photo"], "lat": 34.6687, "lng": 135.5013, "time": "2–3 ชม. (สวยสุดตอนค่ำ)",
+      "id": "jp-osaka-dotonbori",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "โดทงโบริ & ป้ายกูลิโกะ",
+      "nameEn": "Dotonbori, Osaka",
+      "cats": [
+        "food",
+        "shopping",
+        "photo"
+      ],
+      "lat": 34.6687,
+      "lng": 135.5013,
+      "time": "2–3 ชม. (สวยสุดตอนค่ำ)",
       "desc": "ย่านริมคลองที่เป็นภาพจำของโอซาก้า ป้ายไฟ Glico Man ร้านทาโกะยากิ คุชิคัตสึ และของกินริมทางเต็มสองฝั่ง",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีนัมบะ (Osaka Metro สาย Midosuji) เดินประมาณ 5 นาที"
     },
     {
-      "id": "jp-osaka-kuromon", "country": "JP", "city": "โอซาก้า",
-      "name": "ตลาดคุโรมง", "nameEn": "Kuromon Ichiba Market, Osaka",
-      "cats": ["food"], "lat": 34.6652, "lng": 135.5067, "time": "1–1.5 ชม. (ไปช่วงสาย ร้านเปิดครบ)",
+      "id": "jp-osaka-kuromon",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "ตลาดคุโรมง",
+      "nameEn": "Kuromon Ichiba Market, Osaka",
+      "cats": [
+        "food"
+      ],
+      "lat": 34.6652,
+      "lng": 135.5067,
+      "time": "1–1.5 ชม. (ไปช่วงสาย ร้านเปิดครบ)",
       "desc": "ตลาดสดเก่าแก่ใกล้นัมบะ ขายซีฟู้ดย่าง ผลไม้ เนื้อวากิว และของกินพร้อมทาน",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีนิปปงบาชิ (Osaka Metro สาย Sakaisuji / Sennichimae) เดินประมาณ 2 นาที หรือจากนัมบะเดินประมาณ 10 นาที"
     },
     {
-      "id": "jp-osaka-shinsaibashi", "country": "JP", "city": "โอซาก้า",
-      "name": "ถนนช้อปปิ้งชินไซบาชิ", "nameEn": "Shinsaibashi-suji Shopping Street, Osaka",
-      "cats": ["shopping"], "lat": 34.6740, "lng": 135.5014, "time": "2–3 ชม.",
+      "id": "jp-osaka-shinsaibashi",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "ถนนช้อปปิ้งชินไซบาชิ",
+      "nameEn": "Shinsaibashi-suji Shopping Street, Osaka",
+      "cats": [
+        "shopping"
+      ],
+      "lat": 34.674,
+      "lng": 135.5014,
+      "time": "2–3 ชม.",
       "desc": "ถนนช้อปปิ้งหลังคาคลุมยาวต่อกับโดทงโบริ มีร้านแบรนด์ ร้านยา/เครื่องสำอาง และห้าง Daimaru",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีชินไซบาชิ (Osaka Metro สาย Midosuji) ออกมาเจอถนนช้อปปิ้งเลย หรือเดินต่อจากโดทงโบริ"
     },
     {
-      "id": "jp-osaka-amemura", "country": "JP", "city": "โอซาก้า",
-      "name": "อเมริกามูระ (อเมมูระ)", "nameEn": "Amerikamura, Osaka",
-      "cats": ["shopping", "cafe", "photo"], "lat": 34.6720, "lng": 135.4985, "time": "1.5–2 ชม.",
+      "id": "jp-osaka-amemura",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "อเมริกามูระ (อเมมูระ)",
+      "nameEn": "Amerikamura, Osaka",
+      "cats": [
+        "shopping",
+        "cafe",
+        "photo"
+      ],
+      "lat": 34.672,
+      "lng": 135.4985,
+      "time": "1.5–2 ชม.",
       "desc": "ย่านวัยรุ่น ร้านเสื้อผ้ามือสอง สตรีทแฟชั่น คาเฟ่ และมุมกราฟฟิตีถ่ายรูป เดินต่อจากชินไซบาชิได้",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีชินไซบาชิ (Osaka Metro สาย Midosuji) เดินประมาณ 5 นาที"
     },
     {
-      "id": "jp-osaka-nakazakicho", "country": "JP", "city": "โอซาก้า",
-      "name": "นากาซากิโจ ย่านคาเฟ่", "nameEn": "Nakazakicho, Osaka",
-      "cats": ["cafe", "photo", "shopping"], "lat": 34.7072, "lng": 135.5050, "time": "2 ชม.",
+      "id": "jp-osaka-nakazakicho",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "นากาซากิโจ ย่านคาเฟ่",
+      "nameEn": "Nakazakicho, Osaka",
+      "cats": [
+        "cafe",
+        "photo",
+        "shopping"
+      ],
+      "lat": 34.7072,
+      "lng": 135.505,
+      "time": "2 ชม.",
       "desc": "ย่านบ้านเก่าใกล้อุเมดะที่ถูกแปลงเป็นคาเฟ่เล็กๆ ร้านวินเทจ และแกลเลอรี บรรยากาศเรโทรเหมาะถ่ายรูป",
       "sources": [
-        { "title": "The Best Cafés In Nakazakicho, Osaka", "publisher": "Culture Trip", "url": "https://theculturetrip.com/asia/japan/osaka/articles/the-best-cafes-in-nakazakicho" },
-        { "title": "Nakazakicho Restaurants and Cafes: 9 Spots in Osaka", "publisher": "Osaka.com", "url": "https://www.osaka.com/eat/nakazakicho-restaurants-and-cafes-9-spots-in-osaka/" }
-      ]
+        {
+          "title": "The Best Cafés In Nakazakicho, Osaka",
+          "publisher": "Culture Trip",
+          "url": "https://theculturetrip.com/asia/japan/osaka/articles/the-best-cafes-in-nakazakicho"
+        },
+        {
+          "title": "Nakazakicho Restaurants and Cafes: 9 Spots in Osaka",
+          "publisher": "Osaka.com",
+          "url": "https://www.osaka.com/eat/nakazakicho-restaurants-and-cafes-9-spots-in-osaka/"
+        }
+      ],
+      "access": "สถานีนากาซากิโจ (Osaka Metro สาย Tanimachi) ติดย่าน หรือจากสถานีอุเมดะเดินประมาณ 10 นาที"
     },
     {
-      "id": "jp-osaka-castle", "country": "JP", "city": "โอซาก้า",
-      "name": "ปราสาทโอซาก้า & สวนปราสาท", "nameEn": "Osaka Castle",
-      "cats": ["sight", "nature", "photo"], "lat": 34.6873, "lng": 135.5262, "time": "2–3 ชม.",
-      "season": { "months": [11, 12], "label": "🍁 ใบไม้เปลี่ยนสี กลาง พ.ย.–ต้น ธ.ค." },
+      "id": "jp-osaka-castle",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "ปราสาทโอซาก้า & สวนปราสาท",
+      "nameEn": "Osaka Castle",
+      "cats": [
+        "sight",
+        "nature",
+        "photo"
+      ],
+      "lat": 34.6873,
+      "lng": 135.5262,
+      "time": "2–3 ชม.",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 ใบไม้เปลี่ยนสี กลาง พ.ย.–ต้น ธ.ค."
+      },
       "desc": "สัญลักษณ์ของโอซาก้า มีพิพิธภัณฑ์ในตัวปราสาทและจุดชมวิวชั้นบน สวนรอบปราสาทเป็นจุดชมใบไม้เปลี่ยนสีในเมือง",
       "sources": [
-        { "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" },
-        { "title": "Osaka in Autumn: Top 12 Fall Foliage Spots", "publisher": "MATCHA", "url": "https://matcha-jp.com/en/2692" }
-      ]
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        },
+        {
+          "title": "Osaka in Autumn: Top 12 Fall Foliage Spots",
+          "publisher": "MATCHA",
+          "url": "https://matcha-jp.com/en/2692"
+        }
+      ],
+      "access": "สถานีโอซาก้าโจโคเอ็น (JR Osaka Loop Line) หรือสถานีทานิมาจิ 4-โจเมะ (Osaka Metro) แล้วเดินในสวนถึงตัวปราสาทประมาณ 15–20 นาที"
     },
     {
-      "id": "jp-osaka-umeda-sky", "country": "JP", "city": "โอซาก้า",
-      "name": "อุเมดะสกายบิลดิ้ง (Floating Garden)", "nameEn": "Umeda Sky Building",
-      "cats": ["photo", "sight"], "lat": 34.7053, "lng": 135.4906, "time": "1–1.5 ชม. (แนะนำช่วงพระอาทิตย์ตก)",
+      "id": "jp-osaka-umeda-sky",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "อุเมดะสกายบิลดิ้ง (Floating Garden)",
+      "nameEn": "Umeda Sky Building",
+      "cats": [
+        "photo",
+        "sight"
+      ],
+      "lat": 34.7053,
+      "lng": 135.4906,
+      "time": "1–1.5 ชม. (แนะนำช่วงพระอาทิตย์ตก)",
       "desc": "ตึกแฝดเชื่อมกันด้านบน มีดาดฟ้าชมวิว 360 องศา ถ่ายรูปวิวเมืองตอนค่ำสวยมาก",
-      "sources": [{ "title": "Umeda Sky Building", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/spot/1092/" }]
+      "sources": [
+        {
+          "title": "Umeda Sky Building",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/spot/1092/"
+        }
+      ],
+      "access": "สถานีโอซาก้า (JR) / อุเมดะ (Osaka Metro สาย Midosuji) เดินประมาณ 10 นาที"
     },
     {
-      "id": "jp-osaka-shinsekai", "country": "JP", "city": "โอซาก้า",
-      "name": "ชินเซไก & หอซึเตนคาคุ", "nameEn": "Shinsekai, Osaka",
-      "cats": ["food", "photo"], "lat": 34.6525, "lng": 135.5063, "time": "1.5–2 ชม.",
+      "id": "jp-osaka-shinsekai",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "ชินเซไก & หอซึเตนคาคุ",
+      "nameEn": "Shinsekai, Osaka",
+      "cats": [
+        "food",
+        "photo"
+      ],
+      "lat": 34.6525,
+      "lng": 135.5063,
+      "time": "1.5–2 ชม.",
       "desc": "ย่านเรโทรยุคโชวะ ป้ายไฟจัดจ้าน ร้านคุชิคัตสึต้นตำรับ และหอคอยซึเตนคาคุ",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีเอบิสุโจ (Osaka Metro สาย Sakaisuji) หรือโดบุตสึเอ็นมาเอะ (สาย Midosuji) เดินประมาณ 3–5 นาที"
     },
     {
-      "id": "jp-osaka-harukas", "country": "JP", "city": "โอซาก้า",
-      "name": "อาเบโนะฮารุคัส 300", "nameEn": "Abeno Harukas, Osaka",
-      "cats": ["photo", "shopping"], "lat": 34.6459, "lng": 135.5135, "time": "1–2 ชม.",
+      "id": "jp-osaka-harukas",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "อาเบโนะฮารุคัส 300",
+      "nameEn": "Abeno Harukas, Osaka",
+      "cats": [
+        "photo",
+        "shopping"
+      ],
+      "lat": 34.6459,
+      "lng": 135.5135,
+      "time": "1–2 ชม.",
       "desc": "ตึกสูงที่สุดในโอซาก้า มีจุดชมวิวชั้นบนสุด ด้านล่างเป็นห้างและร้านอาหาร ใกล้ชินเซไก",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีเทนโนจิ (JR / Osaka Metro สาย Midosuji) หรือโอซาก้า-อาเบโนะบาชิ (Kintetsu) ติดตัวอาคาร"
     },
     {
-      "id": "jp-osaka-usj", "country": "JP", "city": "โอซาก้า",
-      "name": "ยูนิเวอร์แซล สตูดิโอ เจแปน", "nameEn": "Universal Studios Japan",
-      "cats": ["theme"], "lat": 34.6654, "lng": 135.4323, "time": "ทั้งวัน",
+      "id": "jp-osaka-usj",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "ยูนิเวอร์แซล สตูดิโอ เจแปน",
+      "nameEn": "Universal Studios Japan",
+      "cats": [
+        "theme"
+      ],
+      "lat": 34.6654,
+      "lng": 135.4323,
+      "time": "ทั้งวัน",
       "desc": "สวนสนุกธีมภาพยนตร์ มีโซน Super Nintendo World และ Harry Potter ควรซื้อตั๋วและ Express Pass ล่วงหน้า",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "JR Osaka Loop Line ไปสถานีนิชิคุโจ เปลี่ยนเป็น JR Yumesaki Line ลงสถานียูนิเวอร์แซลซิตี้ แล้วเดินประมาณ 5 นาที"
     },
     {
-      "id": "jp-osaka-kaiyukan", "country": "JP", "city": "โอซาก้า",
-      "name": "พิพิธภัณฑ์สัตว์น้ำไคยูคัง", "nameEn": "Osaka Aquarium Kaiyukan",
-      "cats": ["sight", "theme"], "lat": 34.6545, "lng": 135.4290, "time": "2–3 ชม.",
+      "id": "jp-osaka-kaiyukan",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "พิพิธภัณฑ์สัตว์น้ำไคยูคัง",
+      "nameEn": "Osaka Aquarium Kaiyukan",
+      "cats": [
+        "sight",
+        "theme"
+      ],
+      "lat": 34.6545,
+      "lng": 135.429,
+      "time": "2–3 ชม.",
       "desc": "อควาเรียมขนาดใหญ่ ไฮไลต์คือฉลามวาฬในแท็งก์กลาง อยู่ย่านอ่าวโอซาก้า ใกล้ชิงช้าสวรรค์เทมโปซัง",
-      "sources": [{ "title": "Ultimate must-see guide to Osaka", "publisher": "Japan National Tourism Organization (JNTO)", "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/" }]
+      "sources": [
+        {
+          "title": "Ultimate must-see guide to Osaka",
+          "publisher": "Japan National Tourism Organization (JNTO)",
+          "url": "https://www.japan.travel/en/au/guide/ultimate-must-see-guide-to-osaka/"
+        }
+      ],
+      "access": "สถานีโอซาก้าโค (Osaka Metro สาย Chuo) เดินประมาณ 5–10 นาที"
     },
     {
-      "id": "jp-osaka-minoo", "country": "JP", "city": "โอซาก้า (มิโนะ)",
-      "name": "สวนมิโนะ & น้ำตกมิโนะ", "nameEn": "Minoo Park, Osaka",
-      "cats": ["nature", "photo"], "lat": 34.8530, "lng": 135.4720, "time": "ครึ่งวัน (เดินป่าไป–กลับน้ำตก ~1.5 ชม.)",
-      "season": { "months": [11, 12], "label": "🍁 ใบไม้แดง กลาง พ.ย.–ต้น ธ.ค." },
+      "id": "jp-osaka-minoo",
+      "country": "JP",
+      "city": "โอซาก้า (มิโนะ)",
+      "name": "สวนมิโนะ & น้ำตกมิโนะ",
+      "nameEn": "Minoo Park, Osaka",
+      "cats": [
+        "nature",
+        "photo"
+      ],
+      "lat": 34.853,
+      "lng": 135.472,
+      "time": "ครึ่งวัน (เดินป่าไป–กลับน้ำตก ~1.5 ชม.)",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 ใบไม้แดง กลาง พ.ย.–ต้น ธ.ค."
+      },
       "desc": "หุบเขาใบไม้แดงทางเหนือของโอซาก้า เดินเลียบลำธารไปน้ำตก ระหว่างทางขายเทมปุระใบเมเปิลขึ้นชื่อ",
       "sources": [
-        { "title": "Osaka in Autumn: Top 12 Fall Foliage Spots", "publisher": "MATCHA", "url": "https://matcha-jp.com/en/2692" },
-        { "title": "Minoo Park", "publisher": "Japan Airlines × Japan Travel", "url": "https://jal.japantravel.com/places/osaka/minoo-park/561" }
-      ]
+        {
+          "title": "Osaka in Autumn: Top 12 Fall Foliage Spots",
+          "publisher": "MATCHA",
+          "url": "https://matcha-jp.com/en/2692"
+        },
+        {
+          "title": "Minoo Park",
+          "publisher": "Japan Airlines × Japan Travel",
+          "url": "https://jal.japantravel.com/places/osaka/minoo-park/561"
+        }
+      ],
+      "access": "รถไฟ Hankyu สาย Takarazuka จากอุเมดะ เปลี่ยนสาย Minoo ที่สถานีอิชิบาชิฮันไดมาเอะ ลงสถานีมิโนะ แล้วเดินขึ้นไปน้ำตกประมาณ 40 นาที"
     },
     {
-      "id": "jp-osaka-expo-park", "country": "JP", "city": "โอซาก้า (ซุอิตะ)",
-      "name": "สวนอนุสรณ์เอ็กซ์โป '70", "nameEn": "Expo '70 Commemorative Park, Suita",
-      "cats": ["nature", "photo"], "lat": 34.8094, "lng": 135.5323, "time": "2–3 ชม.",
-      "season": { "months": [11], "label": "🍁 ใบไม้เปลี่ยนสี ต้น–ปลาย พ.ย." },
+      "id": "jp-osaka-expo-park",
+      "country": "JP",
+      "city": "โอซาก้า (ซุอิตะ)",
+      "name": "สวนอนุสรณ์เอ็กซ์โป '70",
+      "nameEn": "Expo '70 Commemorative Park, Suita",
+      "cats": [
+        "nature",
+        "photo"
+      ],
+      "lat": 34.8094,
+      "lng": 135.5323,
+      "time": "2–3 ชม.",
+      "season": {
+        "months": [
+          11
+        ],
+        "label": "🍁 ใบไม้เปลี่ยนสี ต้น–ปลาย พ.ย."
+      },
       "desc": "สวนกว้างที่มีหอคอยแห่งดวงอาทิตย์ (Tower of the Sun) สวนญี่ปุ่น และต้นไม้เปลี่ยนสีช่วงปลายปี",
       "sources": [
-        { "title": "Osaka in Autumn: Top 12 Fall Foliage Spots", "publisher": "MATCHA", "url": "https://matcha-jp.com/en/2692" },
-        { "title": "Osaka Expo '70 Commemorative Park", "publisher": "Good Luck Trip (GLTJP)", "url": "https://www.gltjp.com/en/article/item/11778/" }
-      ]
+        {
+          "title": "Osaka in Autumn: Top 12 Fall Foliage Spots",
+          "publisher": "MATCHA",
+          "url": "https://matcha-jp.com/en/2692"
+        },
+        {
+          "title": "Osaka Expo '70 Commemorative Park",
+          "publisher": "Good Luck Trip (GLTJP)",
+          "url": "https://www.gltjp.com/en/article/item/11778/"
+        }
+      ],
+      "access": "Osaka Monorail ลงสถานีบัมปะกุคิเน็นโคเอ็น เดินประมาณ 5 นาที (ต่อโมโนเรลจากสถานีเซ็นริชูโอ ปลายสาย Midosuji)"
     },
     {
-      "id": "jp-osaka-koreatown", "country": "JP", "city": "โอซาก้า",
-      "name": "โคเรียทาวน์ สึรุฮาชิ / อิคุโนะ", "nameEn": "Osaka Korea Town, Ikuno",
-      "cats": ["kpop", "shopping", "food"], "lat": 34.6620, "lng": 135.5350, "time": "2 ชม.",
+      "id": "jp-osaka-koreatown",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "โคเรียทาวน์ สึรุฮาชิ / อิคุโนะ",
+      "nameEn": "Osaka Korea Town, Ikuno",
+      "cats": [
+        "kpop",
+        "shopping",
+        "food"
+      ],
+      "lat": 34.662,
+      "lng": 135.535,
+      "time": "2 ชม.",
       "kpop": "ร้านขายของ K-pop (โฟโต้การ์ด โปสเตอร์) และเครื่องสำอางเกาหลี",
       "desc": "ย่านเกาหลีใหญ่ที่สุดของโอซาก้า มีร้านของสะสม K-pop ร้านเครื่องสำอางเกาหลี และของกินเกาหลี เดินจากสถานีสึรุฮาชิประมาณ 7–13 นาที",
       "sources": [
-        { "title": "Popular K-Beauty and K-Pop Goodies in Osaka's Korea Town", "publisher": "Osaka Metro NiNE", "author": "Manju", "url": "https://metronine.osaka/en/article_tour/article-myfirstosaka-shopping-koreatown/" },
-        { "title": "Ikuno Korea Town", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Ikuno_Korea_Town" }
-      ]
+        {
+          "title": "Popular K-Beauty and K-Pop Goodies in Osaka's Korea Town",
+          "publisher": "Osaka Metro NiNE",
+          "author": "Manju",
+          "url": "https://metronine.osaka/en/article_tour/article-myfirstosaka-shopping-koreatown/"
+        },
+        {
+          "title": "Ikuno Korea Town",
+          "publisher": "Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Ikuno_Korea_Town"
+        }
+      ],
+      "access": "สถานีสึรุฮาชิ (JR Osaka Loop Line / Kintetsu / Osaka Metro สาย Sennichimae) เดินประมาณ 7–13 นาที"
     },
     {
-      "id": "jp-osaka-kyocera-dome", "country": "JP", "city": "โอซาก้า",
-      "name": "เคียวเซร่าโดมโอซาก้า", "nameEn": "Kyocera Dome Osaka",
-      "cats": ["kpop", "photo"], "lat": 34.6694, "lng": 135.4762, "time": "30–45 นาที (ถ่ายรูปด้านนอก)",
+      "id": "jp-osaka-kyocera-dome",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "เคียวเซร่าโดมโอซาก้า",
+      "nameEn": "Kyocera Dome Osaka",
+      "cats": [
+        "kpop",
+        "photo"
+      ],
+      "lat": 34.6694,
+      "lng": 135.4762,
+      "time": "30–45 นาที (ถ่ายรูปด้านนอก)",
       "kpop": "สนามที่ NCT 127 (มี Jaehyun) แสดงทัวร์ NEO CITY : JAPAN – THE MOMENTUM วันที่ 15 มี.ค. 2025 และ aespa (Karina, Winter) เปิดโดมทัวร์ญี่ปุ่นครั้งแรกที่นี่ 11–12 เม.ย. 2026",
       "desc": "โดมคอนเสิร์ตใหญ่ของโอซาก้า จุดตามรอยศิลปินที่มีหลักฐานการแสดงจริง เช็กว่าช่วงทริปมีงานแสดงหรือไม่",
       "sources": [
-        { "title": "NCT 127 4th Tour 'NEO CITY : JAPAN – THE MOMENTUM'", "publisher": "NCT Official Japan (nct-jp.net)", "url": "https://nct-jp.net/en/live/tour.php?id=1002713" },
-        { "title": "NCT 127 at Kyocera Dome Osaka, Mar 15, 2025", "publisher": "Concert Archives", "url": "https://www.concertarchives.org/concerts/nct-127-4th-tour-neo-city-japan-the-momentum-in-osaka" },
-        { "title": "First Japan Dome Tour for aespa Confirmed: Tokyo and Osaka", "publisher": "NiEW", "url": "https://niewmedia.com/en/news/2511aespadome/" },
-        { "title": "aespa, Kyocera Dome, Apr 11, 2026", "publisher": "JamBase", "url": "https://www.jambase.com/show/aespa-kyocera-dome-20260411" }
-      ]
+        {
+          "title": "NCT 127 4th Tour 'NEO CITY : JAPAN – THE MOMENTUM'",
+          "publisher": "NCT Official Japan (nct-jp.net)",
+          "url": "https://nct-jp.net/en/live/tour.php?id=1002713"
+        },
+        {
+          "title": "NCT 127 at Kyocera Dome Osaka, Mar 15, 2025",
+          "publisher": "Concert Archives",
+          "url": "https://www.concertarchives.org/concerts/nct-127-4th-tour-neo-city-japan-the-momentum-in-osaka"
+        },
+        {
+          "title": "First Japan Dome Tour for aespa Confirmed: Tokyo and Osaka",
+          "publisher": "NiEW",
+          "url": "https://niewmedia.com/en/news/2511aespadome/"
+        },
+        {
+          "title": "aespa, Kyocera Dome, Apr 11, 2026",
+          "publisher": "JamBase",
+          "url": "https://www.jambase.com/show/aespa-kyocera-dome-20260411"
+        }
+      ],
+      "access": "สถานีโดมุมาเอะชิโยซากิ (Osaka Metro สาย Nagahori Tsurumi-ryokuchi) ติดโดม หรือสถานีไทโช (JR Osaka Loop Line) เดินประมาณ 7 นาที"
     },
     {
-      "id": "jp-kyoto-tofukuji", "country": "JP", "city": "เกียวโต",
-      "name": "วัดโทฟุคุจิ", "nameEn": "Tofukuji Temple, Kyoto",
-      "cats": ["nature", "sight", "photo"], "lat": 34.9767, "lng": 135.7739, "time": "1–1.5 ชม. (ไปเช้า คนน้อยกว่า)",
-      "season": { "months": [11, 12], "label": "🍁 จุดชมใบไม้แดงอันดับต้นของเกียวโต ครึ่งหลัง พ.ย." },
+      "id": "jp-kyoto-tofukuji",
+      "country": "JP",
+      "city": "เกียวโต",
+      "name": "วัดโทฟุคุจิ",
+      "nameEn": "Tofukuji Temple, Kyoto",
+      "cats": [
+        "nature",
+        "sight",
+        "photo"
+      ],
+      "lat": 34.9767,
+      "lng": 135.7739,
+      "time": "1–1.5 ชม. (ไปเช้า คนน้อยกว่า)",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 จุดชมใบไม้แดงอันดับต้นของเกียวโต ครึ่งหลัง พ.ย."
+      },
       "desc": "สะพานไม้ทสึเท็นเคียวเหนือหุบเมเปิลเป็นภาพดังของเกียวโตช่วงใบไม้แดง คนเยอะมากช่วงพีค",
-      "sources": [{ "title": "Best autumn leaf viewing spots in Kyoto", "publisher": "japan-guide.com", "url": "https://www.japan-guide.com/e/e3953.html" }]
+      "sources": [
+        {
+          "title": "Best autumn leaf viewing spots in Kyoto",
+          "publisher": "japan-guide.com",
+          "url": "https://www.japan-guide.com/e/e3953.html"
+        }
+      ],
+      "access": "สถานีโทฟุคุจิ (JR Nara Line / Keihan) เดินประมาณ 10 นาที — จากโอซาก้านั่ง Keihan หรือ JR มาเกียวโตก่อน"
     },
     {
-      "id": "jp-kyoto-kiyomizu", "country": "JP", "city": "เกียวโต",
-      "name": "วัดคิโยมิสึเดระ", "nameEn": "Kiyomizudera Temple, Kyoto",
-      "cats": ["sight", "photo"], "lat": 34.9949, "lng": 135.7850, "time": "2 ชม. (รวมเดินถนนซันเนนซากะ)",
-      "season": { "months": [11, 12], "label": "🍁 ใบไม้แดง ปลาย พ.ย.–ต้น ธ.ค." },
+      "id": "jp-kyoto-kiyomizu",
+      "country": "JP",
+      "city": "เกียวโต",
+      "name": "วัดคิโยมิสึเดระ",
+      "nameEn": "Kiyomizudera Temple, Kyoto",
+      "cats": [
+        "sight",
+        "photo"
+      ],
+      "lat": 34.9949,
+      "lng": 135.785,
+      "time": "2 ชม. (รวมเดินถนนซันเนนซากะ)",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 ใบไม้แดง ปลาย พ.ย.–ต้น ธ.ค."
+      },
       "desc": "ระเบียงไม้บนเนินเขาชมวิวเมือง เดินต่อถนนเก่าซันเนนซากะ–นิเนนซากะ มีร้านขนมและคาเฟ่",
-      "sources": [{ "title": "Best autumn leaf viewing spots in Kyoto", "publisher": "japan-guide.com", "url": "https://www.japan-guide.com/e/e3953.html" }]
+      "sources": [
+        {
+          "title": "Best autumn leaf viewing spots in Kyoto",
+          "publisher": "japan-guide.com",
+          "url": "https://www.japan-guide.com/e/e3953.html"
+        }
+      ],
+      "access": "สถานีคิโยมิสึ-โกโจ (Keihan) เดินขึ้นเนินประมาณ 20–25 นาที หรือรถเมล์ลงป้าย Gojozaka / Kiyomizu-michi แล้วเดินประมาณ 10 นาที"
     },
     {
-      "id": "jp-kyoto-arashiyama", "country": "JP", "city": "เกียวโต",
-      "name": "อาราชิยามะ", "nameEn": "Arashiyama, Kyoto",
-      "cats": ["nature", "photo", "cafe"], "lat": 35.0094, "lng": 135.6668, "time": "ครึ่งวัน–ทั้งวัน",
-      "season": { "months": [11, 12], "label": "🍁 ภูเขาเปลี่ยนสี ครึ่งหลัง พ.ย." },
+      "id": "jp-kyoto-arashiyama",
+      "country": "JP",
+      "city": "เกียวโต",
+      "name": "อาราชิยามะ",
+      "nameEn": "Arashiyama, Kyoto",
+      "cats": [
+        "nature",
+        "photo",
+        "cafe"
+      ],
+      "lat": 35.0094,
+      "lng": 135.6668,
+      "time": "ครึ่งวัน–ทั้งวัน",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 ภูเขาเปลี่ยนสี ครึ่งหลัง พ.ย."
+      },
       "desc": "ป่าไผ่ สะพานโทเก็ตสึเคียว วัดหลายแห่ง และคาเฟ่ริมแม่น้ำ ภูเขาด้านหลังเปลี่ยนสีช่วงครึ่งหลังเดือน พ.ย.",
-      "sources": [{ "title": "Best autumn leaf viewing spots in Kyoto", "publisher": "japan-guide.com", "url": "https://www.japan-guide.com/e/e3953.html" }]
+      "sources": [
+        {
+          "title": "Best autumn leaf viewing spots in Kyoto",
+          "publisher": "japan-guide.com",
+          "url": "https://www.japan-guide.com/e/e3953.html"
+        }
+      ],
+      "access": "สถานีซางะ-อาราชิยามะ (JR Sagano Line) หรือสถานีอาราชิยามะ (Randen / Hankyu) เดินประมาณ 5–15 นาที"
     },
     {
-      "id": "jp-kyoto-eikando", "country": "JP", "city": "เกียวโต",
-      "name": "วัดเอคันโด", "nameEn": "Eikando Temple, Kyoto",
-      "cats": ["nature", "sight", "photo"], "lat": 35.0149, "lng": 135.7943, "time": "1–1.5 ชม. (มีเปิดช่วงค่ำพร้อมไฟ)",
-      "season": { "months": [11, 12], "label": "🍁 ใบไม้แดง ปลาย พ.ย.–ต้น ธ.ค." },
+      "id": "jp-kyoto-eikando",
+      "country": "JP",
+      "city": "เกียวโต",
+      "name": "วัดเอคันโด",
+      "nameEn": "Eikando Temple, Kyoto",
+      "cats": [
+        "nature",
+        "sight",
+        "photo"
+      ],
+      "lat": 35.0149,
+      "lng": 135.7943,
+      "time": "1–1.5 ชม. (มีเปิดช่วงค่ำพร้อมไฟ)",
+      "season": {
+        "months": [
+          11,
+          12
+        ],
+        "label": "🍁 ใบไม้แดง ปลาย พ.ย.–ต้น ธ.ค."
+      },
       "desc": "วัดที่ขึ้นชื่อเรื่องใบไม้แดงที่สุดแห่งหนึ่งของเกียวโต ช่วงฤดูใบไม้แดงเปิดชมกลางคืนพร้อมไฟส่อง",
-      "sources": [{ "title": "Best autumn leaf viewing spots in Kyoto", "publisher": "japan-guide.com", "url": "https://www.japan-guide.com/e/e3953.html" }]
+      "sources": [
+        {
+          "title": "Best autumn leaf viewing spots in Kyoto",
+          "publisher": "japan-guide.com",
+          "url": "https://www.japan-guide.com/e/e3953.html"
+        }
+      ],
+      "access": "รถเมล์ลงป้าย Nanzenji Eikando-michi เดินประมาณ 3 นาที หรือสถานีเคอาเกะ (Kyoto Subway สาย Tozai) เดินประมาณ 15 นาที"
     },
     {
-      "id": "jp-nara-park", "country": "JP", "city": "นารา",
-      "name": "สวนนารา & วัดโทไดจิ", "nameEn": "Nara Park",
-      "cats": ["nature", "sight", "photo"], "lat": 34.6851, "lng": 135.8430, "time": "ครึ่งวัน",
+      "id": "jp-nara-park",
+      "country": "JP",
+      "city": "นารา",
+      "name": "สวนนารา & วัดโทไดจิ",
+      "nameEn": "Nara Park",
+      "cats": [
+        "nature",
+        "sight",
+        "photo"
+      ],
+      "lat": 34.6851,
+      "lng": 135.843,
+      "time": "ครึ่งวัน",
       "desc": "สวนกว้างที่มีกวางเดินอิสระ ใกล้วัดโทไดจิ (พระใหญ่) และศาลเจ้าคาสุงะ ไปกลับจากโอซาก้าได้ในวันเดียว",
-      "sources": [{ "title": "Nara Park", "publisher": "Wikipedia", "url": "https://en.wikipedia.org/wiki/Nara_Park" }]
+      "sources": [
+        {
+          "title": "Nara Park",
+          "publisher": "Wikipedia",
+          "url": "https://en.wikipedia.org/wiki/Nara_Park"
+        }
+      ],
+      "access": "Kintetsu Nara Line จากโอซาก้า-นัมบะ ลงสถานีคินเท็ตสึนารา (ประมาณ 40 นาที) แล้วเดินประมาณ 5 นาที"
     }
   ]
 }

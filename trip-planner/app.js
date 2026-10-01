@@ -487,6 +487,8 @@ function renderTripSkeleton() {
           <label>งบโดยประมาณ (ต่อคน)
             <div class="amount-cur"><input type="number" name="budget" min="0" step="any" inputmode="decimal">${curSelect("budgetCurrency", tripCur())}</div></label>
           <label>เมนูเด็ด / ต้องลอง<input name="mustTry" placeholder="เช่น ราเมนต้นตำรับ + ไข่ต้ม"></label>
+          <label class="wide">ใช้เวลาเที่ยวที่นี่ประมาณ <small class="muted">(ไม่รวมเดินทาง)</small><input name="timeNeeded" placeholder="เช่น 1 ชม., 2–3 ชม., ครึ่งวัน"></label>
+          <label class="wide">การเดินทาง / สถานีใกล้สุด<input name="access" placeholder="เช่น สถานีนัมบะ (สาย Midosuji) เดิน 5 นาที"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -828,6 +830,7 @@ function renderWishlist() {
         <button type="button" class="fchip ${wishFilter === "planned" ? "active" : ""}" data-action="wish-filter" data-v="planned">✓ ใส่แพลนแล้ว ${all.length - todo.length}</button>
       </div>
       ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
+      ${hotelPickerHtml()}
     </div>
     ${list.length ? list.map((w) => {
       const prio = num(w.priority) || 2;
@@ -855,6 +858,8 @@ function renderWishlist() {
         </div>
         ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
         ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
+        ${w.timeNeeded ? `<div class="wish-line">${timeHtml(w.timeNeeded)}</div>` : ""}
+        ${(() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: w.place || w.name, access: w.access, pending: !c && (geoBusy || geoQueue.some((x) => x.id === w.id)) }); })()}
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
         ${picking
           ? `<div class="to-plan">
@@ -871,7 +876,7 @@ function wishToPlan(id) {
   const w = data.wishlist.find((x) => x.id === id);
   const sel = app.querySelector(`[data-role=wish-date][data-id="${CSS.escape(id)}"]`);
   if (!w || !sel) return;
-  const note = [w.mustTry ? `ต้องลอง: ${w.mustTry}` : "", w.note || ""].filter(Boolean).join(" · ");
+  const note = [w.access ? `การเดินทาง: ${w.access}` : "", w.mustTry ? `ต้องลอง: ${w.mustTry}` : "", w.note || ""].filter(Boolean).join(" · ");
   store.add(trip.id, "items", {
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
     transport: "", cost: num(w.budget), costCurrency: w.budgetCurrency || tripCur(), note, wishId: w.id, createdAt: Date.now(),
@@ -887,7 +892,7 @@ function openWishForm(w) {
   form.reset();
   editingWishId = w ? w.id : null;
   if (w) {
-    ["name", "category", "place", "link", "source", "budget", "mustTry", "note"].forEach((k) => (f[k].value = w[k] ?? ""));
+    ["name", "category", "place", "link", "source", "budget", "mustTry", "timeNeeded", "access", "note"].forEach((k) => (f[k].value = w[k] ?? ""));
     f.budgetCurrency.value = w.budgetCurrency || tripCur();
     const pr = String(num(w.priority) || 2);
     form.querySelectorAll("[name=priority]").forEach((r) => (r.checked = r.value === pr));
@@ -1341,6 +1346,73 @@ async function ensureHotelCoords(h) {
   renderSuggest(); // หาไม่เจอ → แสดงข้อความแนะนำ
 }
 
+// ที่พักที่ใช้วัดระยะ (ใช้ร่วมกันทั้ง "ของเรา" และ "สถานที่แนะนำ")
+function currentHotel() {
+  const hs = hotels();
+  if (!hs.some((h) => h.id === sgHotelId)) sgHotelId = hs[0]?.id || "";
+  const hotel = hs.find((h) => h.id === sgHotelId);
+  const hc = hotelCoords(hotel);
+  if (hotel && !hc) ensureHotelCoords(hotel);
+  return { hs, hotel, hc };
+}
+
+function hotelPickerHtml() {
+  const { hs, hotel, hc } = currentHotel();
+  if (!hs.length) return `<p class="muted small-note">🏨 เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหนและเดินทางกี่นาที</p>`;
+  return `<label class="sg-hotel">📍 วัดระยะจากที่พัก
+      <select class="hotel-pick">${hs.map((h) => `<option value="${esc(h.id)}" ${h.id === sgHotelId ? "selected" : ""}>${esc(h.title)}</option>`).join("")}</select></label>
+    ${hotel && !hc ? `<p class="muted small-note">${geoTried.has(hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — แก้ช่อง “ที่อยู่” ของที่พักเป็นชื่อหรือที่อยู่ภาษาอังกฤษ" : "กำลังหาตำแหน่งที่พัก…"}</p>` : ""}`;
+}
+
+// กล่อง "การเดินทาง": วิธีไป/สถานี + ระยะทางและเวลาจากที่พัก + ลิงก์เส้นทางจริง
+function travelBoxHtml({ coords, query, access, pending }) {
+  const { hotel, hc } = currentHotel();
+  let dist = "";
+  if (hotel && hc && coords) {
+    const km = distKm(hc, coords);
+    const est = travelEstimate(km);
+    dist = `<div class="sg-dist">${est.icon} จาก ${esc(hotel.title)} ~${km < 1 ? Math.round(km * 1000) + " ม." : km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></div>`;
+  } else if (hotel && !coords) {
+    dist = `<div class="muted small-note">${pending ? "กำลังหาตำแหน่งสถานที่…" : "คำนวณระยะทางไม่ได้ — ใส่ชื่อสถานที่ภาษาอังกฤษในช่อง “สถานที่”"}</div>`;
+  }
+  const origin = hotel ? (hc ? `${hc.lat},${hc.lng}` : hotel.place && !isLink(hotel.place) ? hotel.place : hotel.title) : "";
+  const dest = coords ? `${coords.lat},${coords.lng}` : query && !isLink(query) ? query : "";
+  const route = origin && dest ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(origin)}&destination=${encodeURIComponent(dest)}&travelmode=transit` : "";
+  if (!access && !dist && !route) return "";
+  return `<div class="travel-box">
+      <div class="tb-title">🚉 การเดินทาง</div>
+      ${access ? `<div>${esc(access)}</div>` : ""}
+      ${dist}
+      ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทาง/เวลาจริงจากที่พักใน Google Maps</a>` : ""}
+    </div>`;
+}
+const timeHtml = (t) => (t ? `<span class="time-need">⏱ เวลาเที่ยวที่นี่ ~${esc(t)} <small>(ไม่รวมเดินทาง)</small></span>` : "");
+
+// ตำแหน่งของรายการใน Wishlist: พิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap (ทีละรายการ ไม่เกิน 1 ครั้ง/วินาที)
+const wishCoords = (w) => (Number.isFinite(w?.lat) && Number.isFinite(w?.lng) ? { lat: w.lat, lng: w.lng } : coordsFromLink(w?.place));
+const geoQueue = [];
+let geoBusy = false;
+function queueWishGeocode(w) {
+  if (!w || wishCoords(w) || geoTried.has(w.id) || !navigator.onLine || isLink(w.place)) return;
+  geoTried.add(w.id);
+  geoQueue.push(w);
+  runGeoQueue();
+}
+async function runGeoQueue() {
+  if (geoBusy) return;
+  geoBusy = true;
+  while (geoQueue.length) {
+    const w = geoQueue.shift();
+    const country = destInfo().nameEn || trip?.country || "";
+    const q = w.place || w.name;
+    const c = (await geocode(`${q}, ${country}`)) || (await geocode(q));
+    if (c && trip) store.update(trip.id, "wishlist", w.id, { lat: c.lat, lng: c.lng });
+    else renderWishlist();
+    await new Promise((r) => setTimeout(r, 1100));
+  }
+  geoBusy = false;
+}
+
 function addSuggestToWishlist(id) {
   const p = (PLACES.places || []).find((x) => x.id === id);
   if (!p || data.wishlist.some((w) => w.suggestId === id)) return;
@@ -1348,7 +1420,7 @@ function addSuggestToWishlist(id) {
   const src = p.sources?.[0];
   store.add(trip.id, "wishlist", {
     name: p.name, category: SG_TO_WISH[cat] || "อื่นๆ", place: p.nameEn, link: src?.url || "",
-    note: `${p.season?.label ? p.season.label + " · " : ""}${p.time ? "ใช้เวลา " + p.time : ""}`.trim(),
+    note: p.season?.label || "", timeNeeded: p.time || "", access: p.access || "", lat: p.lat, lng: p.lng,
     plannedDate: "", planLinked: true, priority: 2, source: `สถานที่แนะนำ · ${src?.publisher || ""}`, suggestId: id, createdAt: Date.now(),
   });
   toast(`เพิ่ม “${p.name}” ใน Wishlist แล้ว`);
@@ -1376,11 +1448,7 @@ function renderSuggest() {
   if (sgCity !== "all" && !cities.includes(sgCity)) sgCity = "all";
 
   // ที่พักที่ใช้วัดระยะ
-  const hs = hotels();
-  if (!hs.some((h) => h.id === sgHotelId)) sgHotelId = hs[0]?.id || "";
-  const hotel = hs.find((h) => h.id === sgHotelId);
-  const hc = hotelCoords(hotel);
-  if (hotel && !hc) ensureHotelCoords(hotel);
+  const { hc } = currentHotel();
 
   let list = all.filter((p) => (sgCity === "all" || p.city.startsWith(sgCity)) && (sgCat === "all" || p.cats.includes(sgCat)));
   list = list.map((p) => ({ ...p, km: hc ? distKm(hc, p) : null }));
@@ -1388,11 +1456,7 @@ function renderSuggest() {
   const tripMonths = new Set(tripDays().map((d) => +d.slice(5, 7)));
   const catLabel = Object.fromEntries(SG_CATS);
 
-  const hotelBar = hs.length
-    ? `<label class="sg-hotel">📍 วัดระยะจากที่พัก
-         <select id="sg-hotel">${hs.map((h) => `<option value="${esc(h.id)}" ${h.id === sgHotelId ? "selected" : ""}>${esc(h.title)}</option>`).join("")}</select></label>
-       ${hotel && !hc ? `<p class="muted small-note">${geoTried.has(hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — แก้ช่อง “ที่อยู่” ของที่พักเป็นชื่อหรือที่อยู่ภาษาอังกฤษ" : "กำลังหาตำแหน่งที่พัก…"}</p>` : ""}`
-    : `<p class="muted small-note">🏨 เพิ่มที่พักในแท็บการจอง เพื่อดูว่าแต่ละที่ห่างจากที่พักแค่ไหน</p>`;
+  const hotelBar = hotelPickerHtml();
 
   box.innerHTML = `
     <div class="card sg-filters">
@@ -1402,9 +1466,7 @@ function renderSuggest() {
     </div>
     ${list.length ? list.map((p) => {
       const added = data.wishlist.find((w) => w.suggestId === p.id);
-      const est = p.km !== null ? travelEstimate(p.km) : null;
       const inSeason = p.season && p.season.months.some((m) => tripMonths.has(m));
-      const route = hotel ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(hc ? `${hc.lat},${hc.lng}` : hotel.place && !isLink(hotel.place) ? hotel.place : hotel.title)}&destination=${encodeURIComponent(`${p.lat},${p.lng}`)}&travelmode=transit` : "";
       return `
       <article class="card sg-card">
         <div class="sg-top">
@@ -1419,18 +1481,12 @@ function renderSuggest() {
         <div class="sg-tags">${p.cats.map((c) => `<span class="badge">${catLabel[c] || c}</span>`).join("")}${p.season ? `<span class="badge ${inSeason ? "ok" : ""}">${esc(p.season.label)}${inSeason ? " · ตรงช่วงทริป" : ""}</span>` : ""}</div>
         <p>${esc(p.desc)}</p>
         ${p.kpop ? `<p class="sg-kpop">💚 ${esc(p.kpop)}</p>` : ""}
-        <div class="sg-meta">
-          ${p.time ? `<span>⏱ ${esc(p.time)}</span>` : ""}
-          ${est ? `<span class="sg-dist">${est.icon} ห่างจากที่พัก ~${p.km < 1 ? Math.round(p.km * 1000) + " ม." : p.km.toFixed(1) + " กม."} · ${est.mode} ~${est.min} นาที <small>(ประมาณ)</small></span>` : ""}
-        </div>
-        <div class="sg-links">
-          <a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">📍 แผนที่</a>
-          ${route ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ เส้นทางจริงจากที่พัก</a>` : ""}
-        </div>
+        <div class="sg-meta">${timeHtml(p.time)}<a href="${esc(mapUrl(p.nameEn))}" target="_blank" rel="noopener">📍 แผนที่</a></div>
+        ${travelBoxHtml({ coords: { lat: p.lat, lng: p.lng }, query: p.nameEn, access: p.access })}
         <div class="sg-src">อ้างอิง: ${p.sources.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.title)}</a> — ${esc(s.publisher)}${s.author ? ` (เขียนโดย ${esc(s.author)})` : ""}`).join("<br>")}</div>
       </article>`;
     }).join("") : `<p class="empty">ไม่มีสถานที่ตรงกับตัวกรอง</p>`}
-    <p class="muted small-note">คัดโดย Claude จากแหล่งข้อมูลที่ระบุ · อัปเดต ${fmtDate(PLACES.updated, "year")} · ระยะทางและเวลาเป็นค่าประมาณ กด “เส้นทางจริงจากที่พัก” เพื่อดูเวลาใน Google Maps · ตรวจเวลาเปิดปิดก่อนไป</p>`;
+    <p class="muted small-note">คัดโดย Claude จากแหล่งข้อมูลที่ระบุ · อัปเดต ${fmtDate(PLACES.updated, "year")} · ระยะทางและเวลาเป็นค่าประมาณ กด “ดูเส้นทาง/เวลาจริง” เพื่อดูใน Google Maps · ตรวจเวลาเปิดปิดก่อนไป</p>`;
 }
 
 let IMMI = { countries: {}, default: null };
@@ -1637,12 +1693,56 @@ function flash(el) {
   el.classList.add("flash");
 }
 
+// หน้าพิมพ์แยก: เปิดหน้าใหม่ที่มีแค่เนื้อหา PDF (ไม่มีแอปทั้งตัว ไม่มีฟอนต์เว็บ ไม่มีอีโมจิ) → มือถือสร้าง PDF ได้เร็วกว่ามาก
+const PRINT_CSS = `
+  @page { size: A4; margin: 12mm; }
+  * { box-sizing: border-box; }
+  body { margin: 0; font-family: -apple-system, "Sukhumvit Set", Thonburi, "Leelawadee UI", "Noto Sans Thai", Tahoma, sans-serif; color: #222; font-size: 11pt; line-height: 1.45; background: #fff; }
+  main { padding: 16px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 18pt; margin: 0 0 6px; }
+  h2 { font-size: 13.5pt; border-bottom: 2px solid #e0607e; padding-bottom: 2px; margin: 18px 0 8px; }
+  h3 { font-size: 11.5pt; margin: 10px 0 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-bottom: 6px; }
+  th, td { text-align: left; vertical-align: top; padding: 4px 6px; border: 1px solid #ccc; }
+  th { background: #f6f3ef; }
+  tr, h3 { break-inside: avoid; page-break-inside: avoid; }
+  table.kv th { width: 28%; }
+  ul { padding-left: 20px; margin: 4px 0; }
+  .num { text-align: right; white-space: nowrap; }
+  .muted { color: #777; }
+  .p-hotel { margin: 2px 0 6px; font-size: 10pt; }
+  .p-foot { margin-top: 18px; font-size: 9pt; color: #777; }
+  .bar { position: sticky; top: 0; background: #fff; border-bottom: 1px solid #ddd; padding: 10px 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 10.5pt; }
+  .bar button { font: inherit; font-weight: 700; background: #e0607e; color: #fff; border: 0; border-radius: 10px; padding: 10px 16px; }
+  @media print { .bar { display: none; } main { padding: 0; } }
+`;
+
+function stripEmoji(html) {
+  return html.replace(/☑/g, "✓").replace(/☐/g, "○")
+    .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, (ch) => (ch === "✓" || ch === "★" ? ch : ""));
+}
+
 function exportPdf(mode) {
   if (mode === "immi") buildImmiPrintView(); else buildPrintView();
-  const old = document.title;
-  document.title = mode === "immi" ? `Travel-Itinerary-${trip.name}` : `แพลน-${trip.name}`;
-  window.print();
-  setTimeout(() => (document.title = old), 1000);
+  const title = mode === "immi" ? `Travel-Itinerary-${trip.name}` : `แพลน-${trip.name}`;
+  const body = stripEmoji($("#print-view").innerHTML);
+  const w = window.open("", "_blank");
+  if (!w) {
+    // บล็อกหน้าต่างใหม่ → พิมพ์ในหน้าเดิมแทน
+    const old = document.title;
+    document.title = title;
+    window.print();
+    setTimeout(() => (document.title = old), 1000);
+    return;
+  }
+  w.document.open();
+  w.document.write(`<!doctype html><html lang="th"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1"><title>${esc(title)}</title><style>${PRINT_CSS}</style></head>
+    <body><div class="bar"><button type="button" onclick="window.print()">พิมพ์ / บันทึกเป็น PDF</button>
+    <span class="muted">ถ้าหน้าต่างพิมพ์ไม่ขึ้นเอง กดปุ่มนี้ แล้วเลือก “บันทึกเป็น PDF” (iPhone: แชร์ → บันทึกไปยังไฟล์)</span></div>
+    <main>${body}</main>
+    <script>window.addEventListener("load", function () { setTimeout(function () { window.print(); }, 250); });<\/script></body></html>`);
+  w.document.close();
 }
 
 /* ============================================================
@@ -1798,9 +1898,10 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
-  if (el.id === "sg-hotel") {
+  if (el.classList.contains("hotel-pick")) {
     sgHotelId = el.value;
     renderSuggest();
+    renderWishlist();
   } else if (el.dataset.action === "prep-toggle") {
     togglePrep(el.dataset.key, el.checked);
   } else if (el.dataset.action === "toggle") {
@@ -1867,9 +1968,11 @@ function onSubmit(e) {
       const rec = {
         name: f.name.trim(), category: f.category, place: f.place.trim(), link: f.link.trim(), note: f.note.trim(),
         priority: num(f.priority) || 2, source: f.source.trim(), budget: num(f.budget), budgetCurrency: f.budgetCurrency || "THB",
-        mustTry: f.mustTry.trim(),
+        mustTry: f.mustTry.trim(), timeNeeded: f.timeNeeded.trim(), access: f.access.trim(),
       };
       if (!rec.name) return;
+      const old = editingWishId && data.wishlist.find((w) => w.id === editingWishId);
+      if (old && (old.place || "") !== rec.place) { rec.lat = null; rec.lng = null; geoTried.delete(old.id); } // เปลี่ยนสถานที่ → หาพิกัดใหม่
       if (editingWishId) store.update(trip.id, "wishlist", editingWishId, rec);
       else store.add(trip.id, "wishlist", { ...rec, plannedDate: "", planLinked: true, createdAt: now });
       wishFilter = "all";

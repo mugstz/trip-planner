@@ -257,6 +257,14 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); 
 .prio-opt input:checked + span { border-color: var(--accent); background: var(--accent-soft); box-shadow: 0 0 0 1px var(--accent); }
 .prio-opt input:focus-visible + span { outline: 2px solid var(--accent); }
 
+/* ---------- เวลาเที่ยว / การเดินทาง ---------- */
+.time-need { color: var(--text); }
+.time-need small { color: var(--muted); }
+.travel-box { margin-top: 10px; background: #f4f7fb; border: 1px solid #e1e8f2; border-radius: 10px; padding: 8px 12px; font-size: .88rem; display: flex; flex-direction: column; gap: 3px; overflow-wrap: anywhere; }
+.tb-title { font-weight: 700; font-size: .82rem; color: #3d5a80; }
+.travel-box .sg-dist { font-weight: 600; }
+.travel-box a { font-size: .85rem; }
+
 /* ---------- ตาราง ---------- */
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .92rem; }
