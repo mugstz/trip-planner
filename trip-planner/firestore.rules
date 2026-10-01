@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // อีเมลที่เข้าเว็บได้ — เพิ่ม/ลบตรงนี้ (ต้องตรงกับบัญชีใน Authentication)
+    function allowed() {
+      return request.auth != null && request.auth.token.email in [
+        'phacharaporn.sph@gmail.com',
+        'friend1@example.com',
+        'friend2@example.com'
+      ];
+    }
+
+    // ข้อมูลบัญชี (เช่น ในทริปนี้ฉันคือใคร) — เจ้าของบัญชีเท่านั้น
+    match /users/{uid} {
+      allow read, write: if allowed() && request.auth.uid == uid;
+    }
+
+    match /trips/{tripId} {
+      allow read, write: if allowed();
+
+      // ข้อมูลเตรียมผ่าน ตม. ส่วนตัว — เห็นเฉพาะเจ้าของบัญชี
+      match /private/{uid} {
+        allow read, write: if allowed() && request.auth.uid == uid;
+      }
+
+      // แพลน การจอง ค่าใช้จ่าย ฯลฯ — ทุกคนที่อยู่ในรายชื่อ
+      match /{sub}/{docId} {
+        allow read, write: if allowed() && sub != 'private';
+      }
+    }
+  }
+}

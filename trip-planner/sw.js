@@ -1,5 +1,5 @@
 // เก็บไฟล์เว็บไว้ในเครื่อง เพื่อให้เปิดได้ตอนไม่มีเน็ต
-const CACHE = "trip-planner-v6";
+const CACHE = "trip-planner-v7";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json", "./data/immigration.json", "./data/places.json"];
 const ALLOWED_HOSTS = ["www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com"];
 
