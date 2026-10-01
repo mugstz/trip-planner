@@ -1360,6 +1360,33 @@ let originSel = null;
 let originLoaded = false;
 let originEditing = false;
 let gpsBusy = false;
+let itemGeoBusy = false;
+
+// ใช้กิจกรรมในแพลนเป็นจุดเริ่มต้น: พิกัดจาก Wishlist ที่ลิงก์ไว้ → ลิงก์ Google Maps → พิกัดที่เคยหา → ค้นด้วย OpenStreetMap แล้วเก็บไว้
+async function setItemOrigin(itemId) {
+  const x = data.items.find((i) => i.id === itemId);
+  if (!x) return;
+  const label = `วันที่ ${tripDays().indexOf(x.date) + 1}${x.time ? " " + x.time : ""} · ${x.activity}`;
+  const w = x.wishId && data.wishlist.find((v) => v.id === x.wishId);
+  let c = (w && wishCoords(w)) || coordsFromLink(x.place) || (Number.isFinite(x.lat) && Number.isFinite(x.lng) ? { lat: x.lat, lng: x.lng } : null);
+  if (!c) {
+    if (!navigator.onLine) { toast("ออฟไลน์อยู่ — หาตำแหน่งไม่ได้"); return; }
+    itemGeoBusy = true;
+    renderSuggest(); renderWishlist();
+    const q = x.place && !isLink(x.place) ? x.place : x.activity;
+    const country = destInfo().nameEn || trip?.country || "";
+    c = (await geocode(`${q}, ${country}`)) || (await geocode(q));
+    itemGeoBusy = false;
+    if (c) store.update(trip.id, "items", x.id, { lat: c.lat, lng: c.lng });
+  }
+  if (!c) {
+    renderSuggest(); renderWishlist();
+    toast("หาตำแหน่งของกิจกรรมนี้ไม่เจอ — แก้ช่อง “สถานที่” ในแพลนเป็นชื่อภาษาอังกฤษหรือลิงก์ Google Maps");
+    return;
+  }
+  saveOrigin({ kind: "item", itemId: x.id, lat: c.lat, lng: c.lng, label });
+  toast(`วัดระยะจาก “${x.activity}” แล้ว`);
+}
 const originKey = () => "origin-" + trip?.id;
 function saveOrigin(o) {
   originSel = o;
@@ -1375,6 +1402,7 @@ function currentOrigin() {
   }
   let o = originSel;
   if (o?.kind === "hotel" && !hs.some((h) => h.id === o.id)) o = null;
+  if (o?.kind === "item" && !data.items?.some((i) => i.id === o.itemId)) o = null;
   if (!o && hs.length) o = { kind: "hotel", id: hs[0].id };
   if (!o) return { none: true, hs };
   if (o.kind === "hotel") {
@@ -1388,21 +1416,26 @@ function currentOrigin() {
 
 function originPickerHtml() {
   const o = currentOrigin();
-  const val = o.none ? "" : o.sel.kind === "hotel" ? "h:" + o.sel.id : "saved";
-  const opts = [
-    ...(o.none ? [["", "— เลือกจุดเริ่มต้น —"]] : []),
-    ...o.hs.map((h) => [`h:${h.id}`, `ที่พัก: ${h.title}`]),
-    ...(!o.none && o.sel.kind !== "hotel" ? [["saved", o.label]] : []),
-    ["gps", "ใช้ตำแหน่งปัจจุบันของฉัน (GPS)"],
-    ["custom", "พิมพ์สถานที่เอง…"],
-  ];
+  const val = o.none ? "" : o.sel.kind === "hotel" ? "h:" + o.sel.id : o.sel.kind === "item" ? "i:" + o.sel.itemId : o.sel.kind === "gps" ? "gps" : "saved";
+  // ตัวเลือกแบ่งกลุ่ม: ตำแหน่งปัจจุบัน · สถานที่ในแพลน · ที่พัก · อื่นๆ
+  const days = tripDays();
+  const planItems = [...data.items]
+    .filter((x) => x.place || x.activity)
+    .sort((a, b) => `${a.date}${a.time || "99:99"}`.localeCompare(`${b.date}${b.time || "99:99"}`));
+  const groups = [
+    ["📍 ตำแหน่งปัจจุบัน", [["gps", o.sel?.kind === "gps" ? `${o.label} — กดเพื่ออัปเดต` : "ใช้ตำแหน่งที่ฉันอยู่ตอนนี้ (GPS)"]]],
+    ["🗓️ สถานที่ในแพลน", planItems.map((x) => [`i:${x.id}`, `วันที่ ${days.indexOf(x.date) + 1}${x.time ? " " + x.time : ""} · ${x.activity}`])],
+    ["🏨 ที่พัก", o.hs.map((h) => [`h:${h.id}`, h.title])],
+    ["อื่นๆ", [...(!o.none && ["custom", "place"].includes(o.sel.kind) ? [["saved", o.label]] : []), ["custom", "พิมพ์สถานที่เอง…"]]],
+  ].filter(([, list]) => list.length);
   let status = "";
   if (gpsBusy) status = "กำลังหาตำแหน่งปัจจุบัน…";
+  else if (itemGeoBusy) status = "กำลังหาตำแหน่งของสถานที่ในแพลน…";
   else if (o.hotel && !o.coords) status = geoTried.has(o.hotel.id) ? "⚠️ หาตำแหน่งที่พักไม่เจอ — เพิ่ม “ที่อยู่โรงแรม” ภาษาอังกฤษในการจอง หรือเลือกพิมพ์สถานที่เอง" : "กำลังหาตำแหน่งที่พัก…";
   else if (o.none) status = "เพิ่มที่พักในแท็บการจอง หรือเลือก GPS / พิมพ์สถานที่เอง เพื่อดูระยะทางและเวลาเดินทาง";
   return `<div class="origin-box">
       <label class="sg-hotel">วัดระยะจาก
-        <select class="origin-pick">${opts.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`).join("")}</select></label>
+        <select class="origin-pick">${o.none ? `<option value="" selected>— เลือกจุดเริ่มต้น —</option>` : ""}${groups.map(([g, list]) => `<optgroup label="${esc(g)}">${list.map(([v, l]) => `<option value="${esc(v)}" ${v === val ? "selected" : ""}>${esc(l)}</option>`).join("")}</optgroup>`).join("")}</select></label>
       ${originEditing ? `<div class="inline-form origin-form">
           <input class="origin-input" placeholder="ชื่อสถานที่ / ที่อยู่ภาษาอังกฤษ หรือวางลิงก์ Google Maps">
           <button type="button" class="btn primary" data-action="origin-set">ใช้ที่นี่</button>
@@ -1997,6 +2030,7 @@ function onChange(e) {
   if (el.classList.contains("origin-pick")) {
     const v = el.value;
     if (v.startsWith("h:")) { originEditing = false; saveOrigin({ kind: "hotel", id: v.slice(2) }); }
+    else if (v.startsWith("i:")) { originEditing = false; setItemOrigin(v.slice(2)); }
     else if (v === "gps") { originEditing = false; useGps(); }
     else if (v === "custom") {
       originEditing = true;
@@ -2059,7 +2093,12 @@ function onSubmit(e) {
         legs, transport: "", bookingId: f.bookingId || "",
       };
       if (!rec.activity) return;
-      if (editingItemId) { store.update(trip.id, "items", editingItemId, rec); stopEdit(); }
+      if (editingItemId) {
+        const old = data.items.find((i) => i.id === editingItemId);
+        if (old && (old.place || "") !== rec.place) { rec.lat = null; rec.lng = null; }
+        store.update(trip.id, "items", editingItemId, rec);
+        stopEdit();
+      }
       else { store.add(trip.id, "items", { ...rec, createdAt: now }); form.reset(); setLegs([]); form.date.value = rec.date; }
       const i = tripDays().indexOf(rec.date);
       if (i >= 0) { dayIdx = i; renderPlan(); }
