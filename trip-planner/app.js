@@ -265,6 +265,7 @@ function cleanup() {
   dayIdx = 0;
   tab = "plan";
   firstTripLoad = true;
+  wishView = null;
 }
 
 function route() {
@@ -1190,7 +1191,7 @@ function openTripEdit(id) {
    สถานที่แนะนำ (data/places.json) + ระยะทางจากที่พัก
    ============================================================ */
 let PLACES = { places: [] };
-let wishView = "mine";
+let wishView = null; // null = เลือกให้อัตโนมัติ (ยังไม่มี Wishlist → เปิดสถานที่แนะนำ)
 let sgCity = "all";
 let sgCat = "all";
 let sgHotelId = "";
@@ -1261,6 +1262,7 @@ function renderSuggest() {
   const box = $("#suggest-view");
   if (!box) return;
   const nMine = data.wishlist.length;
+  if (!wishView) wishView = nMine ? "mine" : "suggest";
   $("#seg-mine").innerHTML = `⭐ ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
   $("#seg-mine").classList.toggle("active", wishView === "mine");
   $("#seg-suggest").classList.toggle("active", wishView === "suggest");

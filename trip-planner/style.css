@@ -208,9 +208,10 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent); 
 .ready-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 /* ---------- Wishlist: ของเรา / สถานที่แนะนำ ---------- */
-.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; background: #ece8e2; padding: 4px; border-radius: 12px; margin: 4px 0 14px; }
-.seg button { border: none; background: transparent; border-radius: 9px; min-height: 38px; font: inherit; font-size: .92rem; color: var(--muted); cursor: pointer; }
-.seg button.active { background: var(--card); color: var(--text); font-weight: 700; box-shadow: 0 1px 3px rgba(0, 0, 0, .1); }
+.seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 14px; }
+.seg button { border: 2px solid var(--line); background: var(--card); border-radius: 12px; min-height: 46px; font: inherit; font-size: .95rem; font-weight: 600; color: var(--text); cursor: pointer; }
+.seg button.active { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 700; box-shadow: 0 2px 6px rgba(224, 96, 126, .3); }
+.seg button.active .seg-n { background: #fff; color: var(--accent); }
 .seg-n { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent); color: #fff; font-size: .72rem; line-height: 20px; margin-left: 4px; }
 .chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; scrollbar-width: none; }
 .chip-row::-webkit-scrollbar { display: none; }
