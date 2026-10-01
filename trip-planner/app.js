@@ -33,7 +33,9 @@ const $ = (s, el = document) => el.querySelector(s);
 const esc = (s = "") => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 const num = (v) => (Number.isFinite(+v) ? +v : 0);
 const money = (n) => num(n).toLocaleString("th-TH", { maximumFractionDigits: 2 }) + " ฿";
-const mapUrl = (q) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
+// ใส่ได้ทั้งชื่อสถานที่ (ค้นใน Google Maps ให้) หรือวางลิงก์ Google Maps มาตรงๆ
+const isLink = (s) => /^https?:\/\//i.test(String(s || "").trim());
+const mapUrl = (q) => (isLink(q) ? String(q).trim() : "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q));
 const formData = (form) => Object.fromEntries(new FormData(form));
 const DATE_FMT = {
   short: { day: "numeric", month: "short" },
@@ -345,7 +347,7 @@ function renderTripSkeleton() {
           <label>วันที่<select name="date">${dayOpts}</select></label>
           <label>เวลา<input type="time" name="time"></label>
           <label class="wide">กิจกรรม*<input name="activity" required placeholder="เช่น ปราสาทโอซาก้า"></label>
-          <label class="wide">สถานที่ (ใช้เปิด Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
+          <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
           <label>การเดินทาง<input name="transport" placeholder="เช่น JR Loop Line"></label>
           <label>ค่าใช้จ่าย (บาท)<input type="number" name="cost" min="0" step="any" inputmode="decimal"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
@@ -364,7 +366,7 @@ function renderTripSkeleton() {
         <div class="grid">
           <label class="wide">ชื่อ*<input name="name" required placeholder="เช่น ร้านคาเฟ่ที่ศิลปินเคยมา"></label>
           <label>หมวด<select name="category">${WISH_CATS.map((c) => `<option>${c}</option>`).join("")}</select></label>
-          <label>สถานที่ (ใช้เปิด Google Maps)<input name="place"></label>
+          <label>สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place"></label>
           <label class="wide">ลิงก์ (IG / รีวิว)<input type="url" name="link" placeholder="https://"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
@@ -382,7 +384,7 @@ function renderTripSkeleton() {
           <label class="wide">รายละเอียด*<input name="title" required placeholder="เช่น Thai AirAsia FD xxx DMK→KIX"></label>
           <label>เวลา<input type="time" name="time"></label>
           <label>เลขการจอง<input name="ref"></label>
-          <label class="wide">สถานที่ (ใช้เปิด Google Maps)<input name="place"></label>
+          <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions"><button class="btn primary">เพิ่ม</button></div>
@@ -470,7 +472,8 @@ function renderSection(s) {
 }
 
 const delBtn = (sub, id) => `<button type="button" class="icon" data-action="del" data-sub="${sub}" data-id="${esc(id)}" title="ลบ">✕</button>`;
-const mapLink = (place) => (place ? `<a href="${mapUrl(place)}" target="_blank" rel="noopener">📍 ${esc(place)}</a>` : "");
+const mapLink = (place) =>
+  place ? `<a href="${esc(mapUrl(place))}" target="_blank" rel="noopener">📍 ${isLink(place) ? "เปิดแผนที่" : esc(place)}</a>` : "";
 
 /* ---------- แพลนรายวัน ---------- */
 function renderPlan() {
