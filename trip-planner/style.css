@@ -633,3 +633,12 @@ body.sheet-open .to-top { display: none; }
 .back-btn { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px 0 10px; margin: 2px 0 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); color: var(--text); font-size: .9rem; font-weight: 600; }
 .back-btn span { font-size: 1.3rem; line-height: 1; color: var(--accent-ink); margin-top: -2px; }
 .back-btn:hover { border-color: var(--accent); background: var(--accent-soft); }
+
+/* หัวทริป: ระยะห่างเท่ากันทุกบรรทัด (ปุ่มกลับ → ชื่อทริป → วันที่ → รายชื่อ) */
+.back-btn { margin: 0 0 14px; padding: 0 14px; gap: 6px; min-height: 36px; }
+.back-btn span { font-size: 1rem; margin-top: 0; font-weight: 700; }
+.trip-head > div:first-child { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.trip-head h1 { margin: 0; line-height: 1.25; }
+.trip-head .muted { line-height: 1.4; }
+.trip-head .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 0; }
+.trip-head .chips span { margin: 0; padding: 3px 12px; line-height: 1.4; }
