@@ -928,3 +928,14 @@ body.pdf-mode { overflow: hidden; }
 .me-chip.locked .me-caret { display: none; }
 .me-chip.locked { cursor: default; }
 .admin-tag, .tc-admin { font-size: .75rem; font-weight: 700; color: #8a6d00; background: var(--yellow-bg); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+/* ปุ่มแท็กซี่: ใหญ่ ชัด เห็นว่ากดได้ */
+.taxi-cta { display: flex; align-items: center; gap: 12px; width: 100%; margin: 10px 0 2px; padding: 12px 14px; border: none; border-radius: 14px; background: var(--accent); color: var(--on-accent); font: inherit; text-align: left; cursor: pointer; box-shadow: 0 4px 14px rgba(245, 175, 175, .55); transition: transform .1s, box-shadow .1s; }
+.taxi-cta:hover { background: var(--accent-hover); }
+.taxi-cta:active { transform: scale(.98); box-shadow: 0 2px 6px rgba(245, 175, 175, .5); }
+.taxi-cta .tc-ic { font-size: 1.8rem; line-height: 1; flex: 0 0 auto; }
+.taxi-cta .tc-txt { flex: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.taxi-cta .tc-txt b { font-size: 1.05rem; }
+.taxi-cta .tc-txt small { font-size: .8rem; opacity: .85; line-height: 1.35; }
+.taxi-cta .tc-go { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .55); font-size: 1.4rem; font-weight: 700; line-height: 1; }
+.sh-local[data-action] { cursor: pointer; }
+@media (prefers-color-scheme: dark) { .taxi-cta { box-shadow: none; } .taxi-cta .tc-go { background: rgba(0, 0, 0, .2); } }

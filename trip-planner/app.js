@@ -2885,10 +2885,14 @@ function renderSos() {
     ${h ? `<div class="sos-hotel">
         <div class="sh-label">🏨 ที่พัก${tripDays().includes(todayISO()) ? "คืนนี้" : "คืนแรก"}</div>
         <div class="sh-name">${esc(h.title)}</div>
-        ${h.addressLocal ? `<div class="sh-local">${esc(h.addressLocal)}</div>` : ""}
+        ${h.addressLocal ? `<div class="sh-local" data-action="taxi-card" data-id="${esc(h.id)}" role="button" tabindex="0">${esc(h.addressLocal)}</div>` : ""}
         ${h.address ? `<div class="sh-en">${esc(h.address)}</div>` : `<div class="warn-soft small-note">ยังไม่มีที่อยู่ — เพิ่มในแท็บการจอง</div>`}
+        <button type="button" class="taxi-cta" data-action="taxi-card" data-id="${esc(h.id)}">
+          <span class="tc-ic" aria-hidden="true">🚕</span>
+          <span class="tc-txt"><b>แสดงให้คนขับแท็กซี่</b><small>แตะเพื่อเปิดชื่อและที่อยู่โรงแรมตัวใหญ่เต็มจอ แล้วยื่นมือถือให้คนขับดู</small></span>
+          <span class="tc-go" aria-hidden="true">›</span>
+        </button>
         <div class="sh-btns">
-          <button type="button" class="btn small primary" data-action="taxi-card" data-id="${esc(h.id)}">🚕 แสดงให้คนขับแท็กซี่</button>
           ${h.phone ? `<a class="btn small" href="${telHref(h.phone)}">📞 โทรหาโรงแรม</a>` : ""}
           <a class="btn small" href="${esc(mapUrl(h.address || h.place || h.title))}" target="_blank" rel="noopener">📍 แผนที่</a>
         </div>
