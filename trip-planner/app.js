@@ -138,7 +138,16 @@ async function firebaseStore(cfg) {
     // trips/{id}/private/{uid}: ข้อมูลส่วนตัว (เตรียมผ่าน ตม.) — Rules ให้อ่าน/เขียนได้เฉพาะเจ้าของบัญชี
     listenPrivate: (t, cb) => fs.onSnapshot(fs.doc(db, "trips", t, "private", auth.currentUser.uid), (d) => cb(d.exists() ? d.data() : {}), onErr),
     setPrivate: (t, patch) => fs.setDoc(fs.doc(db, "trips", t, "private", auth.currentUser.uid), patch, { merge: true }).catch(onErr),
-    listenTrips: (cb) => fs.onSnapshot(fs.collection(db, "trips"), (s) => cb(list(s)), onErr),
+    // ทริปของฉัน: Rules ใหม่ให้อ่านได้เฉพาะทริปที่มีอีเมลเรา → ใช้ query ตามอีเมล ; ถ้ายังเป็น Rules เก่า (อ่านได้ทุกทริป) ก็ดึงทั้งหมดได้
+    listenTrips(cb) {
+      const email = (auth.currentUser?.email || "").toLowerCase();
+      let un = null;
+      const byMember = () => fs.onSnapshot(fs.query(fs.collection(db, "trips"), fs.where("emails", "array-contains", email)), (s) => cb(list(s)), onErr);
+      un = fs.onSnapshot(fs.collection(db, "trips"), (s) => cb(list(s)), (e) => {
+        if (e.code === "permission-denied") { un = byMember(); } else onErr(e);
+      });
+      return () => un?.();
+    },
     listenTrip: (id, cb) =>
       fs.onSnapshot(fs.doc(db, "trips", id), (d) => cb(d.exists() ? { id: d.id, ...d.data() } : null), onErr),
     createTrip(data) {
@@ -229,8 +238,29 @@ let priv = {};           // ข้อมูลส่วนตัวของฉ�
 const tripDays = () => daysBetween(trip?.startDate, trip?.endDate);
 const members = () => trip?.members || [];
 const useAccount = () => store?.mode === "firebase";
+const myEmail = () => (currentUser?.email || "").toLowerCase();
+// ผู้ดูแล: เห็นทุกทริป (ต้องใส่อีเมลเดียวกันใน firestore.rules ส่วน isAdmin ด้วย)
+const ADMIN_EMAILS = ["mugstz@gmail.com"];
+const isAdmin = () => useAccount() && ADMIN_EMAILS.includes(myEmail());
+const isMemberOf = (t) => Array.isArray(t?.emails) && t.emails.includes(myEmail());
+// ชื่อในทริปที่ผูกกับอีเมลบัญชีนี้ (trip.memberEmails = { ชื่อ: อีเมล })
+const boundName = (t = trip) => {
+  const m = t?.memberEmails, e = myEmail();
+  if (!m || !e) return "";
+  return Object.keys(m).find((k) => String(m[k] || "").toLowerCase() === e && (t.members || []).includes(k)) || "";
+};
+const meLocked = () => useAccount() && !!boundName();
+// ทริปนี้เราเข้าได้ไหม (ทริปเก่าที่ยังไม่ผูกอีเมล = ทุกคนในรายชื่อ Rules เข้าได้)
+const canSeeTrip = (t) => !useAccount() || isAdmin() || !Array.isArray(t?.emails) || !t.emails.length || t.emails.includes(myEmail());
+// ผู้ดูแลที่ไม่ได้อยู่ในทริปนั้น → ดูอย่างเดียวในฐานะผู้ดูแล (ไม่มีชื่อในทริป)
+const adminGuest = () => isAdmin() && trip && Array.isArray(trip.emails) && trip.emails.length && !isMemberOf(trip);
 // ฉันคือใคร: โหมดล็อกอิน → จำไว้ในบัญชี (ใช้ได้ทุกเครื่อง) / โหมดทดลอง → จำในเครื่อง
-const getMe = () => { const m = useAccount() ? userDoc?.me?.[trip?.id] : lsGet("me-" + trip?.id); return members().includes(m) ? m : ""; };
+const getMe = () => {
+  if (useAccount() && boundName()) return boundName();
+  if (adminGuest()) return "";
+  const m = useAccount() ? userDoc?.me?.[trip?.id] : lsGet("me-" + trip?.id);
+  return members().includes(m) ? m : "";
+};
 const byCreated = (a, b) => num(a.createdAt) - num(b.createdAt);
 
 /* ---------- สกุลเงิน: ทุกอย่างแปลงเป็นบาทเพื่อหารเงิน ---------- */
@@ -406,7 +436,7 @@ function renderUserBox() {
   const el = document.getElementById("user-box");
   if (!el) return;
   el.innerHTML = currentUser
-    ? `<span class="user-email" title="${esc(currentUser.email || "")}">${esc(currentUser.email || "")}</span>
+    ? `${isAdmin() ? `<span class="admin-tag" title="ผู้ดูแล เห็นทุกทริป">👑 ผู้ดูแล</span>` : ""}<span class="user-email" title="${esc(currentUser.email || "")}">${esc(currentUser.email || "")}</span>
        <button type="button" class="btn small" id="logout-btn">ออกจากระบบ</button>`
     : "";
 }
@@ -460,7 +490,7 @@ function renderList() {
   unsubs.push(store.listenTrips((list) => {
     const grid = $("#trip-grid");
     if (!grid) return;
-    list.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""));
+    list = list.filter(canSeeTrip).sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""));
     grid.innerHTML = list.length
       ? list.map((t, i) => {
           const cd = countdown(t);
@@ -470,7 +500,8 @@ function renderList() {
             <div class="tc-body">
               <h2>${esc(t.name)}</h2>
               <div class="muted">${esc(t.country)}${t.country ? " · " : ""}${fmtDate(t.startDate)} – ${fmtDate(t.endDate, "year")}</div>
-              <div class="tc-meta"><span>👥 ${(t.members || []).length} คน</span><span>🗓️ ${daysBetween(t.startDate, t.endDate).length} วัน</span></div>
+              <div class="tc-meta"><span>👥 ${(t.members || []).length} คน</span><span>🗓️ ${daysBetween(t.startDate, t.endDate).length} วัน</span>${boundName(t) ? `<span>🙋 ${esc(boundName(t))}</span>` : isAdmin() && (t.emails || []).length ? `<span class="tc-admin">👑 ดูในฐานะผู้ดูแล</span>` : ""}</div>
+              ${useAccount() && !(t.emails || []).length ? `<div class="tc-warn">⚠️ ยังไม่ได้ผูกอีเมลสมาชิก — เข้า “แก้ไขทริป” เพื่อตั้งค่า</div>` : ""}
             </div>
           </a>`;
         }).join("")
@@ -523,7 +554,32 @@ function tripFormFields(t = {}) {
         <select name="currency">${CURRENCIES.map(([c, n]) => `<option value="${c}" ${c === (t.currency || "THB") ? "selected" : ""}>${c} · ${n}</option>`).join("")}</select></label>
       <label class="wide">ผู้ร่วมทริป* <small class="muted">(คั่นด้วยจุลภาค หรือขึ้นบรรทัดใหม่)</small>
         <textarea name="members" rows="3" required placeholder="เอิง, มิว, พาย, เบ้น">${esc((t.members || []).join(", "))}</textarea></label>
+      ${useAccount() ? `<fieldset class="sub email-set">
+        <legend>อีเมลที่ใช้ login ของแต่ละคน</legend>
+        <small class="muted">เข้าทริปได้เฉพาะอีเมลที่ใส่ไว้ และ “ฉันคือใคร” จะล็อกเป็นชื่อตามอีเมลนี้ ; ต้องตรงกับบัญชีใน Firebase Authentication</small>
+        <div id="email-fields" data-map="${esc(JSON.stringify(t.memberEmails || defaultEmailMap(t)))}"></div>
+      </fieldset>` : ""}
     </div>`;
+}
+// ค่าเริ่มต้น: ทริปใหม่ → อีเมลเราที่ชื่อแรก ; ทริปเก่า → อีเมลเราที่ชื่อที่เคยเลือก "ฉันคือใคร"
+function defaultEmailMap(t) {
+  if (!t.members) return { __me: myEmail() };
+  const prev = userDoc?.me?.[t.id];
+  return prev && t.members.includes(prev) ? { [prev]: myEmail() } : {};
+}
+// ช่องอีเมลตามรายชื่อผู้ร่วมทริป (อัปเดตทันทีที่พิมพ์ชื่อ)
+function renderEmailFields(form) {
+  const box = form?.querySelector("#email-fields");
+  if (!box) return;
+  let map = {};
+  try { map = JSON.parse(box.dataset.map || "{}"); } catch {}
+  box.querySelectorAll("[data-em]").forEach((i) => (map[i.dataset.em] = i.value));
+  box.dataset.map = JSON.stringify(map);
+  const names = [...new Set(form.elements.members.value.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
+  // ทริปใหม่: ใส่อีเมลเราให้ชื่อแรกไว้ก่อน (แก้ได้)
+  const noneYet = !Object.keys(map).some((k) => k !== "__me" && map[k]);
+  box.innerHTML = names.length ? names.map((n, i) => `<label class="em-row"><span>${esc(n)}</span><input type="email" data-em="${esc(n)}" value="${esc(map[n] ?? (i === 0 && noneYet ? map.__me || "" : ""))}" placeholder="อีเมลของ ${esc(n)}" autocomplete="off" inputmode="email"></label>`).join("")
+    : `<p class="muted small-note">ใส่รายชื่อผู้ร่วมทริปก่อน</p>`;
 }
 
 function readTripForm(form) {
@@ -531,10 +587,21 @@ function readTripForm(form) {
   const memberList = [...new Set(f.members.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
   if (!f.name.trim() || !f.startDate || !f.endDate || !memberList.length) { toast("กรอกช่องที่มี * ให้ครบ"); return null; }
   if (f.endDate < f.startDate) { toast("วันกลับต้องไม่ก่อนวันไป"); return null; }
-  return { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, currency: f.currency || "THB", destCode: f.destCode || "OTHER", members: memberList, useChecklist: f.useChecklist };
+  const out = { name: f.name.trim(), country: f.country.trim(), startDate: f.startDate, endDate: f.endDate, currency: f.currency || "THB", destCode: f.destCode || "OTHER", members: memberList, useChecklist: f.useChecklist };
+  if (useAccount() && form.querySelector("#email-fields")) {
+    const memberEmails = {};
+    form.querySelectorAll("[data-em]").forEach((i) => { const v = i.value.trim().toLowerCase(); if (v && memberList.includes(i.dataset.em)) memberEmails[i.dataset.em] = v; });
+    const bad = Object.values(memberEmails).find((v) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
+    if (bad) { toast(`อีเมลไม่ถูกต้อง: ${bad}`); return null; }
+    const emails = [...new Set(Object.values(memberEmails))];
+    if (!emails.includes(myEmail()) && !isAdmin()) { toast(`ต้องใส่อีเมลของคุณ (${myEmail()}) ให้กับชื่อของคุณด้วย ไม่งั้นจะเข้าทริปนี้ไม่ได้`); return null; }
+    Object.assign(out, { memberEmails, emails });
+  }
+  return out;
 }
 
 function renderCreate() {
+  setTimeout(() => renderEmailFields($("#create-form")), 0);
   app.innerHTML = `
     <a class="back-btn" href="#/"><span aria-hidden="true">‹</span> ทริปทั้งหมด</a>
     <h1>Create plan</h1>
@@ -547,11 +614,16 @@ function renderCreate() {
 }
 
 /* ---------- หน้า: รายละเอียดทริป ---------- */
+const noAccessHtml = () => `<div class="login-wrap"><div class="card login-card"><div class="login-logo" aria-hidden="true">🔒</div>
+  <h1>คุณไม่ได้อยู่ในทริปนี้</h1><p class="muted">ทริปนี้เปิดได้เฉพาะสมาชิกที่ผูกอีเมลไว้ — ให้เจ้าของทริปเพิ่มอีเมล ${esc(myEmail())} ใน “แก้ไขทริป”</p>
+  <a class="btn primary" href="#/">กลับไปทริปของฉัน</a></div></div>`;
+
 function openTrip(id) {
   app.innerHTML = skelTrip();
   SUBS.forEach((s) => (data[s] = []));
   unsubs.push(store.listenTrip(id, (t) => {
     if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
+    if (!canSeeTrip(t)) { app.innerHTML = noAccessHtml(); return; }
     trip = { members: [], ...t };
     if (firstTripLoad) {
       firstTripLoad = false;
@@ -568,7 +640,7 @@ function openTrip(id) {
     if (sig !== skeletonSig) { skeletonSig = sig; renderTripSkeleton(); }
     renderAll();
     // ยังไม่ได้เลือกว่าเป็นใคร → ถามก่อนเข้าทริป
-    if (first && !getMe() && !lsGet("me-skip-" + t.id)) showMePicker();
+    if (first && !getMe() && !adminGuest() && !lsGet("me-skip-" + t.id)) showMePicker();
   }));
   SUBS.forEach((s) => unsubs.push(store.listen(id, s, (list) => {
     data[s] = list;
@@ -2261,8 +2333,9 @@ function renderChecklist() {
    ฉันคือใคร?
    ============================================================ */
 function updateMeChip() {
+  document.querySelector(".me-chip")?.classList.toggle("locked", meLocked() || !!adminGuest());
   const el = $("#me-name");
-  if (el) el.textContent = getMe() || "ยังไม่ได้เลือก";
+  if (el) el.textContent = getMe() || (adminGuest() ? "👑 ผู้ดูแล" : "ยังไม่ได้เลือก");
   const av = $("#me-avatar");
   if (av) av.textContent = getMe() ? [...getMe().replace(/^[เแโใไ]/, "")][0] : "?";
 }
@@ -2283,6 +2356,8 @@ function setMe(name) {
 
 function showMePicker() {
   if (!trip || document.querySelector(".me-picker")) return;
+  if (meLocked()) { toast(`คุณคือ ${getMe()} — ผูกกับบัญชี ${myEmail()}`); return; }
+  if (adminGuest()) { toast("👑 ดูในฐานะผู้ดูแล — คุณไม่ได้อยู่ในรายชื่อทริปนี้"); return; }
   const me = getMe();
   const wrap = document.createElement("div");
   wrap.className = "modal-backdrop me-picker";
@@ -2325,10 +2400,12 @@ function openTripEdit(id) {
   let rendered = false;
   unsubs.push(store.listenTrip(id, (t) => {
     if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
+    if (!canSeeTrip(t)) { app.innerHTML = noAccessHtml(); return; }
     trip = { members: [], ...t };
     if (rendered) return;
     rendered = true;
     const back = `#/trip/${encodeURIComponent(id)}`;
+    setTimeout(() => renderEmailFields($("#trip-form")), 0);
     app.innerHTML = `
       <a class="back-btn" href="${back}"><span aria-hidden="true">‹</span> กลับไปที่ทริป</a>
       <h1>แก้ไขทริป</h1>
@@ -3515,6 +3592,7 @@ function onChange(e) {
 
 function onInput(e) {
   const el = e.target;
+  if (el.name === "members" && el.form) { renderEmailFields(el.form); return; }
   if (el.id === "conv-input") updateConverter();
   else if (el.closest("#expense-form")) updateExpensePreview();
 }
@@ -3532,6 +3610,7 @@ function onSubmit(e) {
       const id = store.createTrip({
         name: t.name, country: t.country, startDate: t.startDate, endDate: t.endDate,
         members: t.members, currency: t.currency, destCode: t.destCode, createdAt: now,
+        ...(t.emails ? { memberEmails: t.memberEmails, emails: t.emails } : {}),
       });
       if (t.useChecklist) DEFAULT_CHECKLIST.forEach((text, i) => store.add(id, "checklist", { text, done: false, createdAt: now + i }));
       if (t.currency !== "THB") updateRate(id, t.currency, true);

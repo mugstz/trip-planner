@@ -2,31 +2,43 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // อีเมลที่เข้าเว็บได้ — เพิ่ม/ลบตรงนี้ (ต้องตรงกับบัญชีใน Authentication)
+    // บัญชีที่เข้าเว็บได้ — เพิ่ม/ลบอีเมลตรงนี้ (ต้องมีบัญชีใน Authentication ก่อน)
     function allowed() {
       return request.auth != null && request.auth.token.email in [
-        'phacharaporn.sph@gmail.com',
-        'friend1@example.com',
-        'friend2@example.com'
+        'mugstz@gmail.com',
+        'boontarika.psj@gmail.com'
       ];
     }
+    function me() { return request.auth.token.email.lower(); }
 
-    // ข้อมูลบัญชี (เช่น ในทริปนี้ฉันคือใคร) — เจ้าของบัญชีเท่านั้น
+    // ผู้ดูแล — เห็นและแก้ได้ทุกทริป (ยกเว้นข้อมูลส่วนตัวของแต่ละคน)
+    // ต้องตรงกับ ADMIN_EMAILS ใน app.js
+    function isAdmin() {
+      return allowed() && me() in ['mugstz@gmail.com'];
+    }
+
+    // ข้อมูลบัญชี — เจ้าของเท่านั้น
     match /users/{uid} {
       allow read, write: if allowed() && request.auth.uid == uid;
     }
 
     match /trips/{tripId} {
-      allow read, write: if allowed();
+      // เป็นสมาชิกทริปนี้ไหม (ดูจากอีเมลที่ผูกไว้ใน "แก้ไขทริป")
+      function isMember() {
+        return me() in get(/databases/$(database)/documents/trips/$(tripId)).data.emails;
+      }
 
-      // ข้อมูลเตรียมผ่าน ตม. ส่วนตัว — เห็นเฉพาะเจ้าของบัญชี
+      allow read, update, delete: if isAdmin() || (allowed() && me() in resource.data.emails);
+      allow create: if isAdmin() || (allowed() && me() in request.resource.data.emails);
+
+      // ข้อมูลส่วนตัว (ตม. งบ ลิสต์ช้อป) — เจ้าของบัญชีเท่านั้น
       match /private/{uid} {
         allow read, write: if allowed() && request.auth.uid == uid;
       }
 
-      // แพลน การจอง ค่าใช้จ่าย ฯลฯ — ทุกคนที่อยู่ในรายชื่อ
+      // แพลน การจอง ค่าใช้จ่าย ฯลฯ — สมาชิกทริปเท่านั้น
       match /{sub}/{docId} {
-        allow read, write: if allowed() && sub != 'private';
+        allow read, write: if sub != 'private' && (isAdmin() || (allowed() && isMember()));
       }
     }
   }
