@@ -916,3 +916,5 @@ body.pdf-mode { overflow: hidden; }
   body.pdf-mode .pdf-doc { padding: 0; overflow: visible; }
 }
 @media screen { .pdf-doc table:not(.kv) { min-width: 720px; } }
+.pdf-render table:not(.kv) { min-width: 0 !important; }
+.pdf-bar .btn:disabled { opacity: .7; }

@@ -3108,9 +3108,9 @@ function showPdfOverlay(title, body) {
     <div class="pdf-bar">
       <button type="button" class="btn small" data-pdf="back">‹ กลับ</button>
       <b class="pdf-title">${esc(title)}</b>
-      <button type="button" class="btn small primary" data-pdf="print">พิมพ์ / บันทึก PDF</button>
+      <button type="button" class="btn small primary" data-pdf="print">บันทึก PDF</button>
     </div>
-    <p class="pdf-tip">กด “พิมพ์ / บันทึก PDF” แล้วเลือกบันทึกเป็น PDF (iPhone: ถ้าเมนูพิมพ์ไม่ขึ้น ให้เปิดเว็บใน Safari แล้วกด Export PDF แทน)</p>
+    <p class="pdf-tip">กด “บันทึก PDF” แล้วเลือก “บันทึกไปยังไฟล์” หรือส่งต่อทาง LINE / อีเมลได้เลย</p>
     <div class="pdf-doc">${body}</div>`;
   document.body.appendChild(ov);
   document.body.classList.add("pdf-mode");
@@ -3129,8 +3129,97 @@ function showPdfOverlay(title, body) {
   ov.addEventListener("click", (e) => {
     const a = e.target.closest("[data-pdf]")?.dataset.pdf;
     if (a === "back") close(false);
-    else if (a === "print") window.print();
+    else if (a === "print") savePdfFile(title, ov.querySelector(".pdf-doc"), e.target.closest("[data-pdf]"));
   });
+}
+
+/* ---------- สร้างไฟล์ PDF ในเครื่อง (ใช้ในแอปที่ติดตั้ง — iPhone สั่งพิมพ์จากแอปไม่ได้) ----------
+   html2canvas วาดทีละส่วน → jsPDF จัดหน้า A4 → แชร์/บันทึกไฟล์ (ตัวหนังสือในไฟล์เป็นภาพ อ่านได้ปกติ) */
+const loadScript = (src) => new Promise((res, rej) => {
+  if (document.querySelector(`script[src="${src}"]`)?.dataset.ok) return res();
+  const s = document.createElement("script");
+  s.src = src;
+  s.onload = () => { s.dataset.ok = "1"; res(); };
+  s.onerror = () => { s.remove(); rej(new Error("load " + src)); };
+  document.head.appendChild(s);
+});
+async function savePdfFile(title, doc, btn) {
+  if (!doc) return;
+  const label = btn?.textContent;
+  const busy = (t) => { if (btn) { btn.disabled = !!t; btn.textContent = t || label; } };
+  try {
+    busy("กำลังสร้าง PDF…");
+    await Promise.all([
+      window.html2canvas ? 0 : loadScript("https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"),
+      window.jspdf ? 0 : loadScript("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"),
+    ]);
+    // วาดบนกระดาษกว้าง 794px (= A4 ที่ 96 dpi) นอกจอ
+    const W = 794;
+    const host = document.createElement("div");
+    host.className = "pdf-doc pdf-render";
+    host.style.cssText = `position:fixed;left:-10000px;top:0;width:${W}px;padding:0;background:#fff`;
+    host.innerHTML = doc.innerHTML;
+    document.body.appendChild(host);
+    await document.fonts?.ready;
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
+    const M = 10, PW = 210 - M * 2, PH = 297 - M * 2;
+    const mmPerPx = PW / W;
+    let y = M;
+    const blocks = [...host.children];
+    for (let i = 0; i < blocks.length; i++) {
+      const el = blocks[i];
+      const cs = getComputedStyle(el);
+      const gapTop = parseFloat(cs.marginTop) || 0, gapBot = parseFloat(cs.marginBottom) || 0;
+      const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: "#ffffff", logging: false, windowWidth: W });
+      const hPx = canvas.height / 2;
+      let hMm = hPx * mmPerPx;
+      y += gapTop * mmPerPx;
+      // หัวข้อไม่ค้างท้ายหน้า: ถ้าเป็นหัวข้อแล้วที่เหลือน้อย ขึ้นหน้าใหม่
+      const isHead = /^H[1-3]$/.test(el.tagName);
+      if (y + hMm > M + PH || (isHead && y + hMm + 25 > M + PH)) { if (y > M + 1) { pdf.addPage(); y = M; } }
+      if (hMm <= PH) {
+        pdf.addImage(canvas.toDataURL("image/jpeg", 0.92), "JPEG", M, y, PW, hMm);
+        y += hMm + gapBot * mmPerPx;
+      } else {
+        // ส่วนที่ยาวเกิน 1 หน้า (ตารางยาว) → ตัดเป็นช่วงๆ
+        const slicePx = Math.floor((PH / mmPerPx) * 2);
+        for (let off = 0; off < canvas.height; off += slicePx) {
+          const h = Math.min(slicePx, canvas.height - off);
+          const c = document.createElement("canvas");
+          c.width = canvas.width; c.height = h;
+          c.getContext("2d").drawImage(canvas, 0, off, canvas.width, h, 0, 0, canvas.width, h);
+          if (off > 0 || y > M + 1) { pdf.addPage(); y = M; }
+          const hh = (h / 2) * mmPerPx;
+          pdf.addImage(c.toDataURL("image/jpeg", 0.92), "JPEG", M, y, PW, hh);
+          y += hh;
+        }
+        y += gapBot * mmPerPx;
+      }
+    }
+    host.remove();
+    // ชื่อไฟล์เป็นภาษาอังกฤษ (บางเครื่องไม่รับชื่อไฟล์ภาษาไทย แล้วตั้งเป็น "download")
+    const name = `${title.startsWith("Travel-Itinerary") ? "Travel-Itinerary" : "Trip-Plan"}-${trip?.startDate || todayISO()}.pdf`;
+    const blob = pdf.output("blob");
+    const file = new File([blob], name, { type: "application/pdf" });
+    busy("");
+    if (navigator.canShare?.({ files: [file] })) {
+      try { await navigator.share({ files: [file], title }); return; }
+      catch (e) { if (e.name === "AbortError") return; }
+    }
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 4000);
+    toast("บันทึก PDF แล้ว");
+  } catch (e) {
+    console.error(e);
+    document.querySelector(".pdf-render")?.remove();
+    busy("");
+    toast(navigator.onLine ? "สร้าง PDF ไม่สำเร็จ ลองใหม่อีกครั้ง" : "ต้องต่ออินเทอร์เน็ตครั้งแรกเพื่อโหลดตัวสร้าง PDF");
+  }
 }
 
 function exportPdf(mode) {
