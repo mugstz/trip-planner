@@ -522,7 +522,7 @@ function openTrip(id) {
   })));
   unsubs.push(store.listenPrivate(id, (p) => {
     priv = p || {};
-    if (skeletonSig) { renderPrep(); syncBookForm(); renderMyBudget(); }
+    if (skeletonSig) { renderPrep(); syncBookForm(); renderMyBudget(); renderShopping(); }
   }));
 }
 
@@ -1786,7 +1786,7 @@ function myBudgetStats() {
   const me = getMe();
   const shared = data.expenses.filter((e) => splitOf(e).includes(me)).reduce((s, e) => s + expShare(e), 0);
   const own = myExpList().reduce((s, x) => s + toTHB(x.amount, x.currency), 0);
-  const shop = (data.shopping || []).filter((x) => x.owner === me && x.bought).reduce((s, x) => s + toTHB(num(x.price) * (num(x.qty) || 1), x.currency), 0);
+  const shop = shopList().filter((x) => x.bought).reduce((s, x) => s + toTHB(num(x.price) * (num(x.qty) || 1), x.currency), 0);
   return { shared, own, shop, total: shared + own + shop };
 }
 function renderMyBudget() {
@@ -1941,7 +1941,8 @@ function renderShopping() {
   $("#seg-shop").classList.toggle("active", packView === "shop");
   $("#pack-view").hidden = packView !== "pack";
   box.hidden = packView !== "shop";
-  const nMine = (data.shopping || []).filter((x) => x.owner === getMe()).length;
+  migrateShop();
+  const nMine = getMe() ? shopList().length : 0;
   $("#seg-shop").innerHTML = `🛍️ ของที่อยากซื้อ${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
   if (packView !== "shop") return;
   const me = getMe();
@@ -1949,7 +1950,7 @@ function renderShopping() {
   const tf = info.taxFree;
   const cur = tripCur();
   const lineTotal = (x) => num(x.price) * (num(x.qty) || 1);
-  const mine = (data.shopping || []).filter((x) => x.owner === me).sort(byCreated);
+  const mine = me ? [...shopList()].sort(byCreated) : [];
   const shops = [...new Set(mine.map((x) => (x.shop || "").trim() || "ไม่ระบุร้าน"))];
   const totalTHB = mine.reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
   const boughtTHB = mine.filter((x) => x.bought).reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
@@ -1962,6 +1963,7 @@ function renderShopping() {
   };
   box.innerHTML = `
     ${!me ? `<div class="card"><p class="muted">เลือก “ฉันคือใคร?” ก่อน เพื่อจดของที่อยากซื้อของตัวเอง</p><button type="button" class="btn" data-action="pick-me">เลือกชื่อ</button></div>` : `
+    <p class="private-note">🔒 ลิสต์นี้เห็นเฉพาะคุณ — เพื่อนในทริปมองไม่เห็น</p>
     <button type="button" class="btn add-btn add-wish-btn" data-action="shop-new">＋ เพิ่มของที่อยากซื้อ</button>
     ${mine.length ? `<div class="card shop-sum">
         <div><span class="muted">รวมทั้งหมด</span><b>${money(totalTHB)}</b>${thbToTrip(totalTHB)}</div>
@@ -1978,22 +1980,40 @@ function renderShopping() {
             <span class="doc-text"><span class="doc-main">${esc(x.name)}${num(x.qty) > 1 ? ` ×${num(x.qty)}` : ""}</span>
             ${num(x.price) ? `<small class="doc-why">${fmtWithTHB(lineTotal(x), x.currency || cur)}</small>` : ""}
             ${x.note ? `<small class="doc-why">${esc(x.note)}</small>` : ""}</span></label>
-            <span class="row-actions"><button type="button" class="icon" data-action="shop-edit" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("shopping", x.id)}</span></li>`).join("")}</ul>
+            <span class="row-actions"><button type="button" class="icon" data-action="shop-edit" data-id="${esc(x.id)}" title="แก้ไข">✎</button><button type="button" class="icon" data-action="shop-del" data-id="${esc(x.id)}" title="ลบ">✕</button></span></li>`).join("")}</ul>
       </div>`;
     }).join("")}`}
     ${tf ? `<details class="card tf-card" ${mine.length ? "" : "open"}><summary>🧾 Tax-free ญี่ปุ่น (ระบบใหม่ตั้งแต่ ${fmtDate(tf.from, "year")})</summary>
       <ul class="immi-list">${tf.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
       <p class="muted small-note">ที่มา: <a href="${esc(tf.source)}" target="_blank" rel="noopener">${esc(tf.source.replace(/^https?:\/\//, "").split("/")[0])}</a> — เกณฑ์ “ถึง Tax-free” ในหน้านี้คิดจากราคารวมภาษี ¥${Math.ceil(tf.min * 1.1).toLocaleString()} ต่อร้าน</p>
     </details>` : ""}
-    ${(() => {
-      const others = members().filter((m) => m !== me && (data.shopping || []).some((x) => x.owner === m));
-      return others.length ? `<details class="card"><summary>ดูลิสต์ของเพื่อน (${others.length} คน)</summary>${others.map((m) => {
-        const l = data.shopping.filter((x) => x.owner === m);
-        return `<h4>${esc(m)} <small class="muted">${l.filter((x) => x.bought).length}/${l.length}</small></h4><ul class="checks readonly">${l.map((x) => `<li class="${x.bought ? "done" : ""}">${x.bought ? "✓" : "○"} ${esc(x.name)}${x.shop ? ` <small class="muted">· ${esc(x.shop)}</small>` : ""}</li>`).join("")}</ul>`;
-      }).join("")}</details>` : "";
-    })()}`;
+    `;
 }
 
+// เก็บใน private/{uid}.shop[] — เห็นเฉพาะเจ้าของบัญชี
+const shopList = () => (Array.isArray(priv.shop) ? priv.shop : []);
+const saveShop = (list) => store.setPrivate(trip.id, { shop: list });
+async function delShop(id) {
+  const x = shopList().find((v) => v.id === id);
+  if (!x || !(await confirmDialog({ title: "ลบจากลิสต์ช้อป?", message: `จะลบ <b>“${esc(x.name)}”</b>` }))) return;
+  saveShop(shopList().filter((v) => v.id !== id));
+  if (id === editingShopId) closeShopForm();
+  toast("ลบแล้ว");
+}
+// ย้ายรายการเก่าที่เคยเก็บแบบแชร์ (shopping) มาเป็นส่วนตัว
+let shopMigrating = false;
+function migrateShop() {
+  const me = getMe();
+  if (!me || shopMigrating) return;
+  const old = (data.shopping || []).filter((x) => x.owner === me);
+  if (!old.length) return;
+  shopMigrating = true;
+  const ids = new Set(shopList().map((x) => x.id));
+  const add = old.filter((x) => !ids.has(x.id)).map(({ owner, ...x }) => x);
+  saveShop([...shopList(), ...add]);
+  old.forEach((x) => store.remove(trip.id, "shopping", x.id));
+  setTimeout(() => (shopMigrating = false), 1500);
+}
 let editingShopId = null;
 function openShopForm(x) {
   const form = $("#shop-form");
@@ -2003,7 +2023,7 @@ function openShopForm(x) {
   if (x) ["name", "shop", "price", "qty", "note"].forEach((k) => (f[k].value = x[k] ?? ""));
   f.currency.value = x?.currency || tripCur();
   const dl = $("#shop-names");
-  dl.innerHTML = [...new Set((data.shopping || []).map((s) => s.shop).filter(Boolean))].map((s) => `<option value="${esc(s)}">`).join("");
+  dl.innerHTML = [...new Set(shopList().map((s) => s.shop).filter(Boolean))].map((s) => `<option value="${esc(s)}">`).join("");
   $("#shop-form-title").textContent = x ? "แก้ไขของที่อยากซื้อ" : "เพิ่มของที่อยากซื้อ";
   openSheet("sheet-shop", x ? null : "[name=name]");
 }
@@ -2877,7 +2897,8 @@ function onClick(e) {
   else if (action === "item-new") newItem();
   else if (action === "pack-view") { packView = b.dataset.v; renderShopping(); }
   else if (action === "shop-new") openShopForm(null);
-  else if (action === "shop-edit") openShopForm(data.shopping.find((x) => x.id === id));
+  else if (action === "shop-edit") openShopForm(shopList().find((x) => x.id === id));
+  else if (action === "shop-del") delShop(id);
   else if (action === "taxi-card") showTaxiCard(id);
   else if (action === "split-all") { document.querySelectorAll("#expense-form [name=splitWith]").forEach((c) => (c.checked = true)); updateExpensePreview(); }
   else if (action === "budget-del") delMyExp(b.dataset.id);
@@ -3097,7 +3118,7 @@ function onChange(e) {
       toast(el.checked ? `✓ ${el.dataset.m} โอนคืน ${e.paidBy} แล้ว (${e.title})` : "ยกเลิกติ๊กแล้ว");
     }
   } else if (el.dataset.action === "shop-bought") {
-    store.update(trip.id, "shopping", el.dataset.id, { bought: el.checked });
+    saveShop(shopList().map((x) => (x.id === el.dataset.id ? { ...x, bought: el.checked } : x)));
   } else if (el.name === "splitWith") {
     updateExpensePreview();
   } else if (el.id === "budget-input") {
@@ -3240,8 +3261,8 @@ function onSubmit(e) {
     case "shop-form": {
       const rec = { name: f.name.trim(), shop: f.shop.trim(), price: num(f.price), currency: f.currency || tripCur(), qty: Math.max(1, num(f.qty) || 1), note: f.note.trim() };
       if (!rec.name || !getMe()) return;
-      if (editingShopId) store.update(trip.id, "shopping", editingShopId, rec);
-      else store.add(trip.id, "shopping", { ...rec, owner: getMe(), bought: false, createdAt: now });
+      if (editingShopId) saveShop(shopList().map((x) => (x.id === editingShopId ? { ...x, ...rec } : x)));
+      else saveShop([...shopList(), { ...rec, id: now.toString(36), bought: false, createdAt: now }]);
       closeShopForm();
       toast("บันทึกแล้ว");
       return;

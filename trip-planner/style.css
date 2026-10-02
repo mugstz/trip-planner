@@ -743,3 +743,4 @@ details.card > summary { cursor: pointer; font-weight: 600; }
 .ck > :first-child:focus-visible { outline: 2px solid var(--accent-ink); border-radius: 6px; }
 .immi-card.ck > .immi-head { padding-right: 38px; }
 .ck.collapsed .sos-sub { display: none; }
+.private-note { margin: 0 0 10px; font-size: .85rem; color: var(--rose-ink); background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; }
