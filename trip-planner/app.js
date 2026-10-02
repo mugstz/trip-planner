@@ -519,13 +519,15 @@ function renderTripSkeleton() {
   const memberOpts = members().map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
   app.innerHTML = `
   <div class="screen">
-    <a class="back-btn" href="#/"><span aria-hidden="true">‹</span> ทริปทั้งหมด</a>
     ${modeBanner()}
-    <div class="trip-head">
-      <div>
-        <h1>${esc(t.name)}</h1>
-        <div class="muted">${esc(t.country)}${t.country ? " · " : ""}${fmtDate(t.startDate)} – ${fmtDate(t.endDate, "year")} · ${days.length} วัน</div>
-        <div class="chips">${members().map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+    <div class="trip-head card">
+      <div class="th-main">
+        <a class="th-back" href="#/" title="ทริปทั้งหมด" aria-label="กลับไปหน้าทริปทั้งหมด"><span aria-hidden="true">‹</span></a>
+        <div class="th-info">
+          <h1>${esc(t.name)}</h1>
+          <div class="th-meta">${t.country ? `${esc(t.country)} · ` : ""}${fmtDate(t.startDate)} – ${fmtDate(t.endDate, "year")} · ${days.length} วัน</div>
+          <div class="chips">${members().map((m) => `<span>${esc(m)}</span>`).join("")}</div>
+        </div>
       </div>
       <div class="head-actions">
         <button type="button" class="me-chip head-btn" data-action="pick-me" title="เปลี่ยนว่าฉันคือใคร">
