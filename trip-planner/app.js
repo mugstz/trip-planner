@@ -510,7 +510,7 @@ function renderList() {
   }));
 }
 
-const FLAG = { JP: "🇯🇵", KR: "🇰🇷" };
+const FLAG = { JP: "🇯🇵", KR: "🇰🇷", TH: "🇹🇭", CN: "🇨🇳", HK: "🇭🇰", TW: "🇹🇼", SG: "🇸🇬", MY: "🇲🇾", VN: "🇻🇳" };
 // นับถอยหลังวันเดินทาง (ใช้วันที่ของเครื่อง)
 function countdown(t) {
   const today = localToday();
@@ -548,7 +548,7 @@ function tripFormFields(t = {}) {
       <label class="wide">ประเทศ / เมือง<input name="country" value="${esc(t.country)}" placeholder="เช่น ญี่ปุ่น"></label>
       <label>วันไป*<input type="date" name="startDate" required value="${esc(t.startDate)}"></label>
       <label>วันกลับ*<input type="date" name="endDate" required value="${esc(t.endDate)}"></label>
-      <label class="wide">ข้อมูล ตม. ของประเทศปลายทาง
+      <label class="wide">ประเทศปลายทาง <small class="muted">(ใช้กับข้อมูล ตม. เบอร์ฉุกเฉิน และสกุลเงิน)</small>
         <select name="destCode">${destOptions(t)}</select></label>
       <label class="wide">สกุลเงินที่ใช้ในทริป
         <select name="currency">${CURRENCIES.map(([c, n]) => `<option value="${c}" ${c === (t.currency || "THB") ? "selected" : ""}>${c} · ${n}</option>`).join("")}</select></label>
@@ -2335,10 +2335,11 @@ function renderShopping() {
   const boughtTHB = mine.filter((x) => x.bought).reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
   const tfLine = (list) => {
     if (!tf) return "";
-    const yen = list.filter((x) => (x.currency || cur) === "JPY").reduce((s, x) => s + lineTotal(x), 0);
-    if (!yen) return "";
-    const need = Math.ceil(tf.min * 1.1);
-    return yen >= need ? `<span class="tf ok">✓ ถึงเกณฑ์ Tax-free (ซื้อวันเดียวกัน)</span>` : `<span class="tf">อีก ¥${(need - yen).toLocaleString()} ถึง Tax-free</span>`;
+    const tc = tf.currency || "JPY";
+    const amt = list.filter((x) => (x.currency || cur) === tc).reduce((s, x) => s + lineTotal(x), 0);
+    if (!amt) return "";
+    const need = Math.ceil(tf.min * (1 + num(tf.plusTax)));
+    return amt >= need ? `<span class="tf ok">✓ ถึงเกณฑ์ Tax-free (ซื้อวันเดียวกัน)</span>` : `<span class="tf">อีก ${fmtCur(need - amt, tc)} ถึง Tax-free</span>`;
   };
   box.innerHTML = `
     ${!me ? `<div class="card"><p class="muted">เลือก “ฉันคือใคร?” ก่อน เพื่อจดของที่อยากซื้อของตัวเอง</p><button type="button" class="btn" data-action="pick-me">เลือกชื่อ</button></div>` : `
@@ -2362,9 +2363,9 @@ function renderShopping() {
             <span class="row-actions"><button type="button" class="icon" data-action="shop-edit" data-id="${esc(x.id)}" title="แก้ไข">✎</button><button type="button" class="icon" data-action="shop-del" data-id="${esc(x.id)}" title="ลบ">✕</button></span></li>`).join("")}</ul>
       </div>`;
     }).join("")}`}
-    ${tf ? `<details class="card tf-card" ${mine.length ? "" : "open"}><summary>🧾 Tax-free ญี่ปุ่น (ระบบใหม่ตั้งแต่ ${fmtDate(tf.from, "year")})</summary>
+    ${tf ? `<details class="card tf-card" ${mine.length ? "" : "open"}><summary>🧾 Tax-free / คืนภาษี · ${esc(info.name)}${tf.from ? ` (ระบบใหม่ตั้งแต่ ${fmtDate(tf.from, "year")})` : ""}</summary>
       <ul class="immi-list">${tf.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
-      <p class="muted small-note">ที่มา: <a href="${esc(tf.source)}" target="_blank" rel="noopener">${esc(tf.source.replace(/^https?:\/\//, "").split("/")[0])}</a> — เกณฑ์ “ถึง Tax-free” ในหน้านี้คิดจากราคารวมภาษี ¥${Math.ceil(tf.min * 1.1).toLocaleString()} ต่อร้าน</p>
+      <p class="muted small-note">ที่มา: <a href="${esc(tf.source)}" target="_blank" rel="noopener">${esc(tf.source.replace(/^https?:\/\//, "").split("/")[0])}</a> — เกณฑ์ “ถึง Tax-free” ในหน้านี้คิดจาก ${fmtCur(Math.ceil(tf.min * (1 + num(tf.plusTax))), tf.currency || "JPY")} ต่อร้าน (ราคาที่จ่ายจริง)</p>
     </details>` : ""}
     `;
 }
@@ -2864,7 +2865,7 @@ const destInfo = (t = trip) => IMMI.countries?.[destOf(t)] || IMMI.default || FA
 
 function destOptions(t = {}) {
   const cur = t.destCode || guessDest(t.country);
-  const opts = Object.entries(IMMI.countries || {}).map(([code, i]) => [code, i.name]);
+  const opts = Object.entries(IMMI.countries || {}).map(([code, i]) => [code, `${FLAG[code] ? FLAG[code] + " " : ""}${i.name}`]);
   opts.push(["OTHER", "ประเทศอื่น / ยังไม่มีข้อมูล"]);
   return opts.map(([c, n]) => `<option value="${c}" ${c === cur ? "selected" : ""}>${esc(n)}</option>`).join("");
 }
@@ -2913,6 +2914,11 @@ function readinessChecks() {
     [ret ? "ok" : "no", "ตั๋วเครื่องบินขากลับของฉัน", ret ? mine.filter((b) => b.date === trip.endDate).map((b) => b.title).join(", ") : `ยังไม่มีเที่ยวบินวันที่ ${fmtDate(trip.endDate)} ที่ติ๊กชื่อ ${me} — ตม. มักขอดูตั๋วขากลับ`],
     [missing.length ? "no" : "ok", "ที่พักครบทุกคืน", missing.length ? `ยังขาด ${missing.length} คืน: ${missing.map((d) => fmtDate(d)).join(", ")}` : `ครบ ${tripNights().length} คืน`],
   ];
+  if (info.domestic) { // เที่ยวในประเทศ: อาจขับรถไป ไม่ต้องมีไฟลท์ / ไม่มีพาสปอร์ต / ไม่ต้องเลือกอาชีพ
+    const req = prepItems().filter((x) => x.level === "required");
+    const left = req.filter((x) => !myCheck(x.key));
+    return [checks[2], ...(req.length ? [[left.length ? "no" : "ok", "เอกสารที่ “ต้องมี” ครบ", left.length ? `ยังไม่ได้ติ๊ก: ${left.map((x) => x.text.split(" (")[0]).join(", ")}` : `ครบ ${req.length} รายการ`]] : [])];
+  }
   if (info.maxStayDays) {
     const ok = days.length <= info.maxStayDays;
     checks.push([ok ? "ok" : "no", `อยู่ไม่เกินที่ได้รับอนุญาต (${info.maxStayDays} วัน)`, `ทริปนี้ ${days.length} วัน${ok ? "" : " — เกินเงื่อนไขฟรีวีซ่า ต้องขอวีซ่า"}`]);
@@ -2950,7 +2956,12 @@ function privateFormHtml() {
   </form>`;
 }
 
-const telHref = (n) => "tel:" + String(n || "").replace(/[^\d+]/g, "");
+// เบอร์ที่มีข้อความต่อท้าย (ต่อ 110 / ext. / (ฉุกเฉิน…)) → ใช้เฉพาะเบอร์หลัก, "(+86) 021" → "+8621"
+const telHref = (n) => {
+  let s = String(n || "").split(/\s*(?:ต่อ|ext\.?|กด|\/|,|\((?=[^\d+]))/i)[0];
+  s = s.replace(/^\(?\+(\d{1,3})(?!\d)\)?[\s-]*0/, "+$1");
+  return "tel:" + s.replace(/[^\d+]/g, "");
+};
 // ที่พักคืนนี้ (ก่อน/หลังทริป → คืนแรก)
 function hotelNow() {
   const t = todayISO();
@@ -2988,10 +2999,10 @@ function renderSos() {
           ${h.phone ? `<a class="btn small" href="${telHref(h.phone)}">📞 โทรหาโรงแรม</a>` : ""}
           <a class="btn small" href="${esc(mapUrl(h.address || h.place || h.title))}" target="_blank" rel="noopener">📍 แผนที่</a>
         </div>
-        ${!h.addressLocal && destOf() !== "OTHER" ? `<p class="muted small-note">เพิ่ม “ที่อยู่ภาษาท้องถิ่น” ในการจองที่พัก คนขับแท็กซี่จะอ่านง่ายกว่าภาษาอังกฤษ</p>` : ""}
+        ${!h.addressLocal && destOf() !== "OTHER" && !info.domestic ? `<p class="muted small-note">เพิ่ม “ที่อยู่ภาษาท้องถิ่น” ในการจองที่พัก คนขับแท็กซี่จะอ่านง่ายกว่าภาษาอังกฤษ</p>` : ""}
       </div>` : `<p class="muted">ยังไม่มีที่พัก — เพิ่มในแท็บการจอง</p>`}
     ${info.emergency?.length ? `<h4>เบอร์ฉุกเฉิน${esc(info.name ? " · " + info.name : "")}</h4><ul class="tel-list">${info.emergency.map((x) => row(x.label, x.number, x.note)).join("")}</ul>` : ""}
-    ${c || th ? `<h4>สถานทูต / กงสุลไทย</h4><ul class="tel-list">
+    ${!info.domestic && (c || th) ? `<h4>สถานทูต / กงสุลไทย</h4><ul class="tel-list">
       ${c ? row(c.name, c.phone, `${c.address} · ${c.hours || ""}`) : ""}
       ${th ? row(th.label, th.number, th.note) : ""}</ul>` : ""}
     <h4>ประกันและผู้ติดต่อของฉัน <span class="lock-note">🔒 เห็นเฉพาะคุณ</span></h4>
@@ -3007,7 +3018,7 @@ function showTaxiCard(id) {
   wrap.className = "taxi-full";
   wrap.innerHTML = `<button type="button" class="m-close" aria-label="ปิด">✕</button>
     <div class="tx-in">
-      <div class="tx-hint">${destOf() === "JP" ? "このホテルまでお願いします" : "Please take me to this hotel"}</div>
+      ${(() => { const hint = destInfo().taxiHint ?? "Please take me to this hotel"; return hint ? `<div class="tx-hint">${esc(hint)}</div>` : ""; })()}
       <div class="tx-name">${esc(h.title)}</div>
       ${h.addressLocal ? `<div class="tx-local">${esc(h.addressLocal)}</div>` : ""}
       ${h.address ? `<div class="tx-en">${esc(h.address)}</div>` : ""}
@@ -3051,7 +3062,11 @@ function renderPrepInner() {
   const info = destInfo();
   const [riskLabel, riskCls] = RISK[info.risk] || RISK.unknown;
   const list = (arr) => (arr?.length ? `<ul class="immi-list">${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
-  el.innerHTML = `
+  el.innerHTML = info.domestic ? `
+    <div class="card immi-card ck" data-ck="immi">
+      <div class="immi-head"><div><h3>🏠 เที่ยวในประเทศ</h3><div class="muted">ไม่ต้องผ่าน ตม. ไม่ต้องใช้พาสปอร์ต</div></div><span class="risk risk-low">ไม่ต้องผ่าน ตม.</span></div>
+      <ul class="immi-list"><li>บินในประเทศ: พกบัตรประชาชนตัวจริง (หรือบัตรประชาชนดิจิทัลในแอป ThaID ถ้าสายการบินรับ) ไปเช็กอิน</li><li>เช็กอินที่พักส่วนใหญ่ใช้บัตรประชาชน</li><li>ค่าใช้จ่ายทั้งหมดเป็นเงินบาท ไม่ต้องแลกเงิน</li></ul>
+    </div>` : `
     <div class="card immi-card ck" data-ck="immi">
       <div class="immi-head">
         <div>
@@ -3081,7 +3096,7 @@ function renderPrepInner() {
     <ul class="ready-list">${readinessChecks().map(([st, title, detail]) => `
       <li class="${st}"><span class="r-icon">${icon[st]}</span><div><b>${esc(title)}</b><div class="muted">${esc(detail)}</div></div></li>`).join("")}</ul>
     <div class="ready-actions">
-      <button type="button" class="btn primary" data-action="immi-pdf">🖨️ เอกสารโชว์ ตม. ของ ${esc(me)} (PDF อังกฤษ)</button>
+      ${destInfo().domestic ? "" : `<button type="button" class="btn primary" data-action="immi-pdf">🖨️ เอกสารโชว์ ตม. ของ ${esc(me)} (PDF อังกฤษ)</button>`}
       <button type="button" class="btn" data-action="tab" data-tab="bookings">ไปที่การจอง</button>
     </div>
     <p class="muted small-note">เอกสารมีชื่อ อาชีพ ไฟลท์ของคุณ ที่พักทุกคืน และแพลนรายวัน เป็นภาษาอังกฤษ ปริ้นต์หรือเก็บในมือถือไว้ยื่นเวลา ตม. ถาม</p>`;
@@ -3089,7 +3104,7 @@ function renderPrepInner() {
   const items = prepItems();
   const lv = LEVELS();
   const groups = [...new Set(items.map((x) => x.group))];
-  $("#prep-mine").innerHTML = (priv.status ? "" : `<p class="warn-soft small-note">เลือก “อาชีพ / สถานะ” ด้านบน เพื่อดูว่าต้องใช้หนังสือรับรองการทำงานหรือเอกสารอื่นเพิ่มไหม</p>`) +
+  $("#prep-mine").innerHTML = (priv.status || destInfo().domestic ? "" : `<p class="warn-soft small-note">เลือก “อาชีพ / สถานะ” ด้านบน เพื่อดูว่าต้องใช้หนังสือรับรองการทำงานหรือเอกสารอื่นเพิ่มไหม</p>`) +
     groups.map((g) => `
       <h4>${esc(g)}</h4>
       <ul class="checks doc-checks">${items.filter((x) => x.group === g).map((x) => `
@@ -3646,6 +3661,13 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
+  // ฟอร์มทริป: พิมพ์ชื่อประเทศ → เลือกประเทศปลายทางให้ / เลือกประเทศ → ตั้งสกุลเงินให้
+  if ((el.name === "country" || el.name === "destCode") && el.form?.elements.destCode && el.form?.elements.currency) {
+    const fe = el.form.elements;
+    if (el.name === "country") { const g = guessDest(el.value); if (g !== "OTHER" && fe.destCode.value === "OTHER") fe.destCode.value = g; }
+    const cur = IMMI.countries?.[fe.destCode.value]?.currency;
+    if (cur && CURRENCIES.some((c) => c[0] === cur)) fe.currency.value = cur;
+  }
   if (el.classList.contains("origin-pick")) {
     const v = el.value;
     if (v.startsWith("h:")) { originEditing = false; saveOrigin({ kind: "hotel", id: v.slice(2) }); }

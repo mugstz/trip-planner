@@ -1,484 +1,2369 @@
 {
-  "updated": "2026-10-02",
-  "note": "ข้อมูลสรุปสำหรับผู้ถือหนังสือเดินทางไทย (ท่องเที่ยวระยะสั้น) — Claude ค้นและอัปเดตให้เมื่อขอ ตรวจสอบกับแหล่งทางการอีกครั้งก่อนเดินทาง",
-  "countries": {
-    "JP": {
-      "name": "ญี่ปุ่น",
-      "nameEn": "Japan",
-      "match": [
-        "ญี่ปุ่น",
-        "japan",
-        "โอซาก้า",
-        "โตเกียว",
-        "เกียวโต",
-        "ฮอกไกโด",
-        "ฟุกุโอกะ"
-      ],
-      "risk": "low",
-      "riskReason": "คนไทยได้ฟรีวีซ่าและส่วนใหญ่ผ่าน ตม. ตามปกติ แต่ยังถูกเรียกสอบถามหรือปฏิเสธได้ถ้าเอกสารไม่สอดคล้องกัน หรือมีพฤติกรรมน่าสงสัยว่าจะไปทำงาน",
-      "entry": [
-        "ฟรีวีซ่า ท่องเที่ยว/เยี่ยมญาติ พำนักได้ไม่เกิน 15 วันต่อครั้ง (มาตรการปัจจุบันมีผลถึง 30 มิ.ย. 2570)",
-        "ฟรีวีซ่าใช้ได้เฉพาะพาสปอร์ตแบบ e-Passport (เล่มที่มีชิป) — ถ้าไม่ใช่ต้องขอวีซ่า",
-        "ห้ามทำงานหรือรับค่าจ้างระหว่างพำนัก",
-        "พาสปอร์ตแนะนำให้มีอายุเหลือไม่น้อยกว่า 6 เดือน (สายการบินบางแห่งตรวจ)"
-      ],
-      "maxStayDays": 15,
-      "beforeFlight": [
-        {
-          "key": "jp-vjw",
-          "text": "ลงทะเบียน Visit Japan Web (ตรวจคนเข้าเมือง + ศุลกากร) แล้วบันทึก QR code ไว้ในมือถือ",
-          "link": "https://www.vjw.digital.go.jp/",
-          "when": "1–2 วันก่อนบิน",
-          "level": "recommended",
-          "why": "ไม่บังคับ (กรอกบัตรกระดาษบนเครื่องแทนได้) แต่ช่วยให้ผ่านด่านเร็วขึ้น"
-        }
-      ],
-      "upcoming": [
-        "ญี่ปุ่นมีแผนเริ่มระบบ JESTA (ขออนุญาตเดินทางล่วงหน้าออนไลน์) ในปีงบประมาณ 2028 และคนไทยต้องขอด้วย — ทริปนี้ยังไม่ต้องทำ"
-      ],
-      "docs": [
-        {
-          "key": "passport",
-          "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
-          "level": "required",
-          "why": "ใช้ยื่นทุกด่าน ต้องเป็น e-Passport"
-        },
-        {
-          "key": "return-ticket",
-          "text": "ตั๋วเครื่องบินขากลับ (ปริ้นต์หรือเปิดในมือถือได้)",
-          "level": "required",
-          "why": "ตม. ต้องเห็นว่าจะออกจากญี่ปุ่นภายใน 15 วัน"
-        },
-        {
-          "key": "hotel-all",
-          "text": "หลักฐานการจองที่พักครบทุกคืน",
-          "level": "recommended",
-          "why": "ใช้ตอบว่าพักที่ไหน และใส่ใน Visit Japan Web"
-        },
-        {
-          "key": "itinerary",
-          "text": "แพลนเที่ยวคร่าวๆ (เอกสารโชว์ ตม. ในหน้านี้)",
-          "level": "recommended",
-          "why": "ช่วยตอบคำถามว่ามาเที่ยวที่ไหนบ้าง"
-        },
-        {
-          "key": "money",
-          "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้ เพียงพอตลอดทริป",
-          "level": "recommended",
-          "why": "ตม. อาจถามว่ามีเงินพอใช้ตลอดทริปไหม"
-        },
-        {
-          "key": "insurance",
-          "text": "ประกันการเดินทาง",
-          "level": "recommended",
-          "why": "ค่ารักษาที่ญี่ปุ่นแพง ไม่บังคับแต่ควรมี"
-        }
-      ],
-      "tips": [
-        "ตอบคำถามสั้นๆ ตรงกับเอกสาร: มาเที่ยว อยู่กี่วัน พักที่ไหน กลับวันไหน",
-        "จำชื่อและที่อยู่ที่พักคืนแรกให้ได้",
-        "อย่าพกของที่ทำให้ดูเหมือนมาทำงาน เช่น เอกสารสมัครงาน หรืออุปกรณ์ทำงานจำนวนมาก"
-      ],
-      "sources": [
-        {
-          "title": "กรมการกงสุล — ประเทศที่ผู้ถือหนังสือเดินทางไทยได้รับการยกเว้นวีซ่า",
-          "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/0303/THA.pdf"
-        },
-        {
-          "title": "ญี่ปุ่นต่อฟรีวีซ่าคนไทย 15 วัน ถึง 30 มิ.ย. 2570",
-          "url": "https://esim.vacay.asia/th/th/blog/japan-visa-free-thai-2026-2027.html"
-        },
-        {
-          "title": "Visit Japan Web (ทางการ)",
-          "url": "https://www.vjw.digital.go.jp/"
-        },
-        {
-          "title": "VisasNews — แผนเริ่ม JESTA ปีงบ 2028",
-          "url": "https://visasnews.com/en/japan-brings-forward-the-introduction-of-its-electronic-travel-authorization/"
-        },
-        {
-          "title": "สถานทูตญี่ปุ่นประจำประเทศไทย — เอกสารประกอบการขอวีซ่าระยะสั้น (หนังสือรับรองการทำงาน)",
-          "url": "https://www.th.emb-japan.go.jp/th/consular/visastr.htm"
-        },
-        {
-          "title": "MOFA Japan — Exemption of Visa (Thailand: 15 วัน เฉพาะ ePassport)",
-          "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html"
-        },
-        {
-          "title": "สถานกงสุลใหญ่ ณ นครโอซากา — ติดต่อ",
-          "url": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
-        },
-        {
-          "title": "JNTO — Japan Visitor Hotline",
-          "url": "https://www.japan.travel/en/plan/hotline/"
-        },
-        {
-          "title": "Japan Tax-Free Shopping 2026: New Rules from November 1",
-          "url": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026"
-        }
-      ],
-      "docsByStatus": {
-        "employee": [
-          {
-            "key": "employment",
-            "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ (ระบุตำแหน่ง วันเริ่มงาน และช่วงวันลา)",
-            "level": "optional",
-            "why": "ตม. ญี่ปุ่นไม่ได้ขอดูเป็นปกติ แต่ถ้าถูกเรียกสอบถาม ช่วยยืนยันว่ามีงานประจำและจะกลับไทย (สถานทูตใช้เอกสารนี้ตอนขอวีซ่า)"
-          }
-        ],
-        "business": [
-          {
-            "key": "business-reg",
-            "text": "หนังสือรับรองบริษัท / ทะเบียนพาณิชย์ (ภาษาอังกฤษถ้ามี)",
-            "level": "optional",
-            "why": "ใช้ยืนยันอาชีพถ้าถูกเรียกสอบถาม"
-          }
-        ],
-        "freelance": [
-          {
-            "key": "statement",
-            "text": "Bank statement ย้อนหลัง 3–6 เดือน",
-            "level": "optional",
-            "why": "ไม่มีหนังสือรับรองการทำงาน ใช้แสดงรายได้และเงินพอใช้แทน"
-          }
-        ],
-        "student": [
-          {
-            "key": "student-id",
-            "text": "บัตรนักศึกษา / หนังสือรับรองสถานศึกษา",
-            "level": "optional",
-            "why": "ยืนยันว่ายังเรียนอยู่และจะกลับไทย"
-          }
-        ],
-        "none": [
-          {
-            "key": "statement",
-            "text": "Bank statement ย้อนหลัง 3–6 เดือน หรือเอกสารของผู้ออกค่าใช้จ่าย",
-            "level": "optional",
-            "why": "แสดงว่ามีเงินพอใช้ตลอดทริป"
-          }
-        ]
-      },
-      "emergency": [
-        {
-          "label": "ตำรวจ",
-          "number": "110"
-        },
-        {
-          "label": "รถพยาบาล / ดับเพลิง",
-          "number": "119"
-        },
-        {
-          "label": "Japan Visitor Hotline (JNTO) 24 ชม. — ภาษาอังกฤษ",
-          "number": "050-3816-2787",
-          "note": "แจ้งเหตุ อุบัติเหตุ ป่วย ขอข้อมูลท่องเที่ยว",
-          "source": "https://www.japan.travel/en/plan/hotline/"
-        }
-      ],
-      "consulates": [
-        {
-          "name": "สถานกงสุลใหญ่ ณ นครโอซากา",
-          "nameEn": "Royal Thai Consulate-General, Osaka",
-          "phone": "06-6262-9226",
-          "phone2": "06-6262-9227",
-          "address": "Bangkok Bank Bldg., 1-9-16 Kyutaro-machi, Chuo-ku, Osaka 541-0056",
-          "hours": "จ.–ศ. 09:30–12:30, 13:30–17:30",
-          "match": [
-            "โอซาก้า",
-            "osaka",
-            "เกียวโต",
-            "kyoto",
-            "นารา",
-            "nara",
-            "โกเบ",
-            "kobe",
-            "คันไซ",
-            "kansai"
-          ],
-          "source": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
-        }
-      ],
-      "taxFree": {
-        "from": "2026-11-01",
-        "min": 5000,
-        "points": [
-          "ตั้งแต่ 1 พ.ย. 2569 ญี่ปุ่นเปลี่ยนเป็นระบบ “คืนภาษีที่สนามบิน”: จ่ายราคาเต็มรวมภาษีที่ร้านก่อน แล้วได้ภาษี 10% คืนทีหลัง",
-          "ต้องซื้อร้านเดียวกัน วันเดียวกัน ตั้งแต่ ¥5,000 (ก่อนภาษี ≈ ¥5,500 รวมภาษี) ขึ้นไป — รวมของกิน เครื่องสำอาง เสื้อผ้าได้หมด",
-          "ต้องยื่นพาสปอร์ตตอนซื้อทุกครั้ง",
-          "ก่อนขึ้นเครื่องขากลับ ยืนยันที่ตู้ศุลกากรในสนามบิน ของต้องติดตัวไปด้วย (ส่งไปรษณีย์กลับไม่ได้)",
-          "เงินคืนเข้าบัตร/บัญชีภายหลัง ประมาณ 1–4 สัปดาห์ แล้วแต่ร้าน"
-        ],
-        "source": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026"
-      }
+ "updated": "2026-10-02",
+ "note": "ข้อมูลสรุปสำหรับผู้ถือหนังสือเดินทางไทย (ท่องเที่ยวระยะสั้น) — Claude ค้นและอัปเดตให้เมื่อขอ ตรวจสอบกับแหล่งทางการอีกครั้งก่อนเดินทาง",
+ "countries": {
+  "JP": {
+   "name": "ญี่ปุ่น",
+   "nameEn": "Japan",
+   "match": [
+    "ญี่ปุ่น",
+    "japan",
+    "โอซาก้า",
+    "โตเกียว",
+    "เกียวโต",
+    "ฮอกไกโด",
+    "ฟุกุโอกะ"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยได้ฟรีวีซ่าและส่วนใหญ่ผ่าน ตม. ตามปกติ แต่ยังถูกเรียกสอบถามหรือปฏิเสธได้ถ้าเอกสารไม่สอดคล้องกัน หรือมีพฤติกรรมน่าสงสัยว่าจะไปทำงาน",
+   "entry": [
+    "ฟรีวีซ่า ท่องเที่ยว/เยี่ยมญาติ พำนักได้ไม่เกิน 15 วันต่อครั้ง (มาตรการปัจจุบันมีผลถึง 30 มิ.ย. 2570)",
+    "ฟรีวีซ่าใช้ได้เฉพาะพาสปอร์ตแบบ e-Passport (เล่มที่มีชิป) — ถ้าไม่ใช่ต้องขอวีซ่า",
+    "ห้ามทำงานหรือรับค่าจ้างระหว่างพำนัก",
+    "พาสปอร์ตแนะนำให้มีอายุเหลือไม่น้อยกว่า 6 เดือน (สายการบินบางแห่งตรวจ)"
+   ],
+   "maxStayDays": 15,
+   "beforeFlight": [
+    {
+     "key": "jp-vjw",
+     "text": "ลงทะเบียน Visit Japan Web (ตรวจคนเข้าเมือง + ศุลกากร) แล้วบันทึก QR code ไว้ในมือถือ",
+     "link": "https://www.vjw.digital.go.jp/",
+     "when": "1–2 วันก่อนบิน",
+     "level": "recommended",
+     "why": "ไม่บังคับ (กรอกบัตรกระดาษบนเครื่องแทนได้) แต่ช่วยให้ผ่านด่านเร็วขึ้น"
+    }
+   ],
+   "upcoming": [
+    "ญี่ปุ่นมีแผนเริ่มระบบ JESTA (ขออนุญาตเดินทางล่วงหน้าออนไลน์) ในปีงบประมาณ 2028 และคนไทยต้องขอด้วย — ทริปนี้ยังไม่ต้องทำ"
+   ],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
+     "level": "required",
+     "why": "ใช้ยื่นทุกด่าน ต้องเป็น e-Passport"
     },
-    "KR": {
-      "name": "เกาหลีใต้",
-      "nameEn": "Republic of Korea",
-      "match": [
-        "เกาหลี",
-        "korea",
-        "โซล",
-        "ปูซาน",
-        "เชจู",
-        "seoul",
-        "busan",
-        "jeju"
-      ],
-      "risk": "high",
-      "riskReason": "ตม. เกาหลีตรวจคนไทยเข้มเป็นพิเศษ เพราะปัญหาแรงงานผิดกฎหมาย มีข่าวคนไทยถูกปฏิเสธและส่งกลับเป็นกลุ่ม (เช่น เที่ยวบินเช่าเหมาลำไปเชจู) และจำนวนนักท่องเที่ยวไทยลดลงมากจากปัญหานี้ แม้มี K-ETA ผ่านแล้วก็ยังถูกปฏิเสธที่ด่านได้",
-      "entry": [
-        "ไม่ต้องขอวีซ่าตามความตกลงไทย–เกาหลี พำนักได้ไม่เกิน 90 วัน แต่ต้องได้ K-ETA อนุมัติก่อนบิน",
-        "คนไทยไม่อยู่ในกลุ่ม 22 ประเทศที่ได้ยกเว้น K-ETA (ยกเว้นถึง 31 ธ.ค. 2026 เฉพาะประเทศอื่น)",
-        "ห้ามทำงานหรือรับค่าจ้างระหว่างพำนัก"
-      ],
-      "maxStayDays": 90,
-      "beforeFlight": [
-        {
-          "key": "kr-keta",
-          "text": "ขอ K-ETA ที่เว็บทางการ (ค่าธรรมเนียมประมาณ 10,000 วอน ใช้ได้ประมาณ 3 ปี) ยื่นล่วงหน้าอย่างน้อย 72 ชั่วโมง — K-ETA ถูกปฏิเสธได้ อย่าซื้อตั๋วไม่คืนเงินก่อนได้ผล",
-          "link": "https://www.k-eta.go.kr/",
-          "when": "อย่างน้อย 3 วันก่อนบิน (ยิ่งเร็วยิ่งดี)",
-          "level": "required",
-          "why": "ไม่มี K-ETA อนุมัติ ขึ้นเครื่องไม่ได้"
-        },
-        {
-          "key": "kr-earrival",
-          "text": "e-Arrival Card: ผู้ที่ได้ K-ETA อนุมัติแล้วได้รับยกเว้น — ถ้าไม่มี K-ETA ต้องกรอกภายใน 3 วันก่อนถึง",
-          "link": "https://www.e-arrivalcard.go.kr/",
-          "when": "ภายใน 3 วันก่อนถึง (เฉพาะผู้ไม่มี K-ETA)",
-          "level": "optional"
-        }
-      ],
-      "upcoming": [],
-      "docs": [
-        {
-          "key": "passport",
-          "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
-          "level": "required",
-          "why": "อายุเหลือ ≥ 6 เดือน"
-        },
-        {
-          "key": "return-ticket",
-          "text": "ตั๋วเครื่องบินขาไป–ขากลับ (ปริ้นต์)",
-          "level": "required",
-          "why": "ตม. เกาหลีขอดูบ่อย ปริ้นต์ไว้"
-        },
-        {
-          "key": "hotel-all",
-          "text": "หลักฐานการจองที่พักครบทุกคืน (ปริ้นต์)",
-          "level": "required",
-          "why": "ต้องตรงกับที่กรอกใน K-ETA"
-        },
-        {
-          "key": "itinerary",
-          "text": "แพลนเที่ยวรายวัน (เอกสารโชว์ ตม. ในหน้านี้)",
-          "level": "recommended",
-          "why": "ตอบคำถามให้ตรงกับเอกสาร"
-        },
-        {
-          "key": "statement",
-          "text": "Bank statement ย้อนหลัง 3 เดือน (ฉบับจากธนาคาร ไม่ใช่ภาพหน้าจอ)",
-          "level": "recommended",
-          "why": "ใช้แสดงว่ามีเงินพอ — ฉบับจากธนาคาร ไม่ใช่ภาพหน้าจอ"
-        },
-        {
-          "key": "money",
-          "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้",
-          "level": "recommended",
-          "why": "แสดงว่ามีเงินใช้ตลอดทริป"
-        },
-        {
-          "key": "insurance",
-          "text": "ประกันการเดินทาง",
-          "level": "recommended",
-          "why": "ไม่บังคับ แต่ช่วยให้ดูน่าเชื่อถือ"
-        }
-      ],
-      "tips": [
-        "เอกสารทุกอย่างต้องตรงกัน: วันที่ ตั๋ว ที่พัก และแพลน",
-        "เตรียมคำตอบ: มาเที่ยวที่ไหน อยู่กี่วัน พักที่ไหน ทำงานอะไร ใครเป็นคนจ่าย",
-        "เดินทางกับเพื่อนให้ตอบข้อมูลทริปตรงกัน",
-        "ระวังทัวร์หรือแพ็กเกจราคาถูกผิดปกติ"
-      ],
-      "sources": [
-        {
-          "title": "LoyaltyLobby — รายชื่อ 22 ประเทศยกเว้น K-ETA ถึง ธ.ค. 2026 (ไม่มีไทย)",
-          "url": "https://loyaltylobby.com/2026/01/02/south-korea-extends-k-eta-waiver-through-december-2026-for-select-nationals-of-22-countries/"
-        },
-        {
-          "title": "EXO Travel — K-ETA และ e-Arrival Card",
-          "url": "https://www.exotravel.com/blog/korea-arrival-card-keta/"
-        },
-        {
-          "title": "Korea Atlas — ค่าธรรมเนียมและอายุ K-ETA",
-          "url": "https://koreaatlas.com/korea-entry-requirements-2026/"
-        },
-        {
-          "title": "OYEON — เตรียมตัวผ่าน ตม. เกาหลี 2026",
-          "url": "https://oyeon.me/articles/korea-immigration-tips-2026/"
-        },
-        {
-          "title": "Thai PBS — นักท่องเที่ยวไทยลดลงจากปม ตม. เข้มงวด",
-          "url": "https://www.thaipbs.or.th/news/content/341200"
-        },
-        {
-          "title": "ไทยรัฐ — ไม่ผ่าน ตม. ส่งตัว 115 คนไทยจากเชจู",
-          "url": "https://www.thairath.co.th/news/society/2463082"
-        }
-      ],
-      "docsByStatus": {
-        "employee": [
-          {
-            "key": "employment",
-            "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ (ระบุตำแหน่ง เงินเดือน วันเริ่มงาน และช่วงวันลา)",
-            "level": "recommended",
-            "why": "ตม. เกาหลีถามเรื่องงานบ่อย ช่วยยืนยันว่าจะกลับไปทำงานที่ไทย"
-          }
-        ],
-        "business": [
-          {
-            "key": "business-reg",
-            "text": "หนังสือรับรองบริษัท / ทะเบียนพาณิชย์ ภาษาอังกฤษ",
-            "level": "recommended",
-            "why": "ยืนยันว่ามีกิจการที่ไทย"
-          }
-        ],
-        "freelance": [
-          {
-            "key": "freelance-proof",
-            "text": "หลักฐานงานฟรีแลนซ์ เช่น สัญญาจ้าง / ใบแจ้งหนี้ / หนังสือรับรองจากผู้ว่าจ้าง",
-            "level": "recommended",
-            "why": "ไม่มีหนังสือรับรองการทำงาน ใช้แทนเพื่อยืนยันรายได้"
-          }
-        ],
-        "student": [
-          {
-            "key": "student-id",
-            "text": "บัตรนักศึกษา + หนังสือรับรองสถานศึกษา ภาษาอังกฤษ",
-            "level": "recommended",
-            "why": "ยืนยันว่ายังเรียนอยู่และจะกลับไทย"
-          }
-        ],
-        "none": [
-          {
-            "key": "sponsor",
-            "text": "เอกสารของผู้ออกค่าใช้จ่าย (เช่น statement ของครอบครัว + เอกสารความสัมพันธ์)",
-            "level": "recommended",
-            "why": "แสดงว่ามีผู้รับผิดชอบค่าใช้จ่าย"
-          }
-        ]
-      },
-      "emergency": [
-        {
-          "label": "ตำรวจ",
-          "number": "112"
-        },
-        {
-          "label": "รถพยาบาล / ดับเพลิง",
-          "number": "119"
-        },
-        {
-          "label": "Korea Travel Hotline 24 ชม.",
-          "number": "1330"
-        }
-      ]
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วเครื่องบินขากลับ (ปริ้นต์หรือเปิดในมือถือได้)",
+     "level": "required",
+     "why": "ตม. ต้องเห็นว่าจะออกจากญี่ปุ่นภายใน 15 วัน"
+    },
+    {
+     "key": "hotel-all",
+     "text": "หลักฐานการจองที่พักครบทุกคืน",
+     "level": "recommended",
+     "why": "ใช้ตอบว่าพักที่ไหน และใส่ใน Visit Japan Web"
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ (เอกสารโชว์ ตม. ในหน้านี้)",
+     "level": "recommended",
+     "why": "ช่วยตอบคำถามว่ามาเที่ยวที่ไหนบ้าง"
+    },
+    {
+     "key": "money",
+     "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้ เพียงพอตลอดทริป",
+     "level": "recommended",
+     "why": "ตม. อาจถามว่ามีเงินพอใช้ตลอดทริปไหม"
+    },
+    {
+     "key": "insurance",
+     "text": "ประกันการเดินทาง",
+     "level": "recommended",
+     "why": "ค่ารักษาที่ญี่ปุ่นแพง ไม่บังคับแต่ควรมี"
     }
-  },
-  "default": {
-    "name": "ประเทศอื่น",
-    "risk": "unknown",
-    "riskReason": "ยังไม่มีข้อมูลเฉพาะประเทศ — ขอให้ Claude เพิ่มข้อมูลประเทศนี้ได้",
-    "entry": [],
-    "beforeFlight": [],
-    "upcoming": [],
-    "docs": [
-      {
-        "key": "passport",
-        "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
-        "level": "required"
-      },
-      {
-        "key": "visa",
-        "text": "เช็กว่าต้องขอวีซ่าหรือระบบขออนุญาตล่วงหน้าไหม",
-        "level": "required"
-      },
-      {
-        "key": "return-ticket",
-        "text": "ตั๋วเครื่องบินขากลับ",
-        "level": "recommended"
-      },
-      {
-        "key": "hotel-all",
-        "text": "หลักฐานการจองที่พักครบทุกคืน",
-        "level": "recommended"
-      },
-      {
-        "key": "itinerary",
-        "text": "แพลนเที่ยวคร่าวๆ",
-        "level": "recommended"
-      },
-      {
-        "key": "money",
-        "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้",
-        "level": "recommended"
-      },
-      {
-        "key": "insurance",
-        "text": "ประกันการเดินทาง",
-        "level": "recommended"
-      }
-    ],
-    "tips": [
-      "ตอบคำถามสั้นๆ ตรงกับเอกสาร"
-    ],
-    "sources": [
-      {
-        "title": "กรมการกงสุล — ประเทศที่ผู้ถือหนังสือเดินทางไทยได้รับการยกเว้นวีซ่า",
-        "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/0303/THA.pdf"
-      }
-    ],
-    "docsByStatus": {
-      "employee": [
-        {
-          "key": "employment",
-          "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ",
-          "level": "optional",
-          "why": "ยืนยันว่ามีงานและจะกลับไทย"
-        }
-      ]
+   ],
+   "tips": [
+    "ตอบคำถามสั้นๆ ตรงกับเอกสาร: มาเที่ยว อยู่กี่วัน พักที่ไหน กลับวันไหน",
+    "จำชื่อและที่อยู่ที่พักคืนแรกให้ได้",
+    "อย่าพกของที่ทำให้ดูเหมือนมาทำงาน เช่น เอกสารสมัครงาน หรืออุปกรณ์ทำงานจำนวนมาก"
+   ],
+   "sources": [
+    {
+     "title": "กรมการกงสุล — ประเทศที่ผู้ถือหนังสือเดินทางไทยได้รับการยกเว้นวีซ่า",
+     "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/0303/THA.pdf"
+    },
+    {
+     "title": "ญี่ปุ่นต่อฟรีวีซ่าคนไทย 15 วัน ถึง 30 มิ.ย. 2570",
+     "url": "https://esim.vacay.asia/th/th/blog/japan-visa-free-thai-2026-2027.html"
+    },
+    {
+     "title": "Visit Japan Web (ทางการ)",
+     "url": "https://www.vjw.digital.go.jp/"
+    },
+    {
+     "title": "VisasNews — แผนเริ่ม JESTA ปีงบ 2028",
+     "url": "https://visasnews.com/en/japan-brings-forward-the-introduction-of-its-electronic-travel-authorization/"
+    },
+    {
+     "title": "สถานทูตญี่ปุ่นประจำประเทศไทย — เอกสารประกอบการขอวีซ่าระยะสั้น (หนังสือรับรองการทำงาน)",
+     "url": "https://www.th.emb-japan.go.jp/th/consular/visastr.htm"
+    },
+    {
+     "title": "MOFA Japan — Exemption of Visa (Thailand: 15 วัน เฉพาะ ePassport)",
+     "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html"
+    },
+    {
+     "title": "สถานกงสุลใหญ่ ณ นครโอซากา — ติดต่อ",
+     "url": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
+    },
+    {
+     "title": "JNTO — Japan Visitor Hotline",
+     "url": "https://www.japan.travel/en/plan/hotline/"
+    },
+    {
+     "title": "Japan Tax-Free Shopping 2026: New Rules from November 1",
+     "url": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026"
     }
-  },
-  "statuses": [
-    [
-      "employee",
-      "พนักงานบริษัท / รับราชการ"
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ (ระบุตำแหน่ง วันเริ่มงาน และช่วงวันลา)",
+      "level": "optional",
+      "why": "ตม. ญี่ปุ่นไม่ได้ขอดูเป็นปกติ แต่ถ้าถูกเรียกสอบถาม ช่วยยืนยันว่ามีงานประจำและจะกลับไทย (สถานทูตใช้เอกสารนี้ตอนขอวีซ่า)"
+     }
     ],
-    [
-      "business",
-      "เจ้าของกิจการ"
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "หนังสือรับรองบริษัท / ทะเบียนพาณิชย์ (ภาษาอังกฤษถ้ามี)",
+      "level": "optional",
+      "why": "ใช้ยืนยันอาชีพถ้าถูกเรียกสอบถาม"
+     }
     ],
-    [
-      "freelance",
-      "ฟรีแลนซ์ / อาชีพอิสระ"
+    "freelance": [
+     {
+      "key": "statement",
+      "text": "Bank statement ย้อนหลัง 3–6 เดือน",
+      "level": "optional",
+      "why": "ไม่มีหนังสือรับรองการทำงาน ใช้แสดงรายได้และเงินพอใช้แทน"
+     }
     ],
-    [
-      "student",
-      "นักเรียน / นักศึกษา"
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษา / หนังสือรับรองสถานศึกษา",
+      "level": "optional",
+      "why": "ยืนยันว่ายังเรียนอยู่และจะกลับไทย"
+     }
     ],
-    [
-      "none",
-      "ไม่ได้ทำงาน / เกษียณ / แม่บ้าน"
+    "none": [
+     {
+      "key": "statement",
+      "text": "Bank statement ย้อนหลัง 3–6 เดือน หรือเอกสารของผู้ออกค่าใช้จ่าย",
+      "level": "optional",
+      "why": "แสดงว่ามีเงินพอใช้ตลอดทริป"
+     }
     ]
-  ],
-  "levels": {
-    "required": "ต้องมี",
-    "recommended": "แนะนำ",
-    "optional": "มีไว้อุ่นใจ"
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "110"
+    },
+    {
+     "label": "รถพยาบาล / ดับเพลิง",
+     "number": "119"
+    },
+    {
+     "label": "Japan Visitor Hotline (JNTO) 24 ชม. — ภาษาอังกฤษ",
+     "number": "050-3816-2787",
+     "note": "แจ้งเหตุ อุบัติเหตุ ป่วย ขอข้อมูลท่องเที่ยว",
+     "source": "https://www.japan.travel/en/plan/hotline/"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครโอซากา",
+     "nameEn": "Royal Thai Consulate-General, Osaka",
+     "phone": "06-6262-9226",
+     "phone2": "06-6262-9227",
+     "address": "Bangkok Bank Bldg., 1-9-16 Kyutaro-machi, Chuo-ku, Osaka 541-0056",
+     "hours": "จ.–ศ. 09:30–12:30, 13:30–17:30",
+     "match": [
+      "โอซาก้า",
+      "osaka",
+      "เกียวโต",
+      "kyoto",
+      "นารา",
+      "nara",
+      "โกเบ",
+      "kobe",
+      "คันไซ",
+      "kansai"
+     ],
+     "source": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
+    }
+   ],
+   "taxFree": {
+    "from": "2026-11-01",
+    "min": 5000,
+    "points": [
+     "ตั้งแต่ 1 พ.ย. 2569 ญี่ปุ่นเปลี่ยนเป็นระบบ “คืนภาษีที่สนามบิน”: จ่ายราคาเต็มรวมภาษีที่ร้านก่อน แล้วได้ภาษี 10% คืนทีหลัง",
+     "ต้องซื้อร้านเดียวกัน วันเดียวกัน ตั้งแต่ ¥5,000 (ก่อนภาษี ≈ ¥5,500 รวมภาษี) ขึ้นไป — รวมของกิน เครื่องสำอาง เสื้อผ้าได้หมด",
+     "ต้องยื่นพาสปอร์ตตอนซื้อทุกครั้ง",
+     "ก่อนขึ้นเครื่องขากลับ ยืนยันที่ตู้ศุลกากรในสนามบิน ของต้องติดตัวไปด้วย (ส่งไปรษณีย์กลับไม่ได้)",
+     "เงินคืนเข้าบัตร/บัญชีภายหลัง ประมาณ 1–4 สัปดาห์ แล้วแต่ร้าน"
+    ],
+    "source": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026",
+    "currency": "JPY",
+    "plusTax": 0.1
+   },
+   "currency": "JPY",
+   "taxiHint": "このホテルまでお願いします"
   },
-  "thaiHotline": {
-    "label": "Call Center กรมการกงสุล (24 ชม.)",
-    "number": "+66 2 572 8442",
-    "note": "โทรจากต่างประเทศ — ช่วยประสานกับสถานทูต/กงสุลไทย",
-    "source": "https://siamrath.co.th/international/132938"
+  "KR": {
+   "name": "เกาหลีใต้",
+   "nameEn": "Republic of Korea",
+   "match": [
+    "เกาหลี",
+    "korea",
+    "โซล",
+    "ปูซาน",
+    "เชจู",
+    "seoul",
+    "busan",
+    "jeju"
+   ],
+   "risk": "high",
+   "riskReason": "ตม. เกาหลีตรวจคนไทยเข้มเป็นพิเศษ เพราะปัญหาแรงงานผิดกฎหมาย มีข่าวคนไทยถูกปฏิเสธและส่งกลับเป็นกลุ่ม (เช่น เที่ยวบินเช่าเหมาลำไปเชจู) และจำนวนนักท่องเที่ยวไทยลดลงมากจากปัญหานี้ แม้มี K-ETA ผ่านแล้วก็ยังถูกปฏิเสธที่ด่านได้",
+   "entry": [
+    "ไม่ต้องขอวีซ่าตามความตกลงไทย–เกาหลี พำนักได้ไม่เกิน 90 วัน แต่ต้องได้ K-ETA อนุมัติก่อนบิน",
+    "คนไทยไม่อยู่ในกลุ่ม 22 ประเทศที่ได้ยกเว้น K-ETA (ยกเว้นถึง 31 ธ.ค. 2026 เฉพาะประเทศอื่น)",
+    "ห้ามทำงานหรือรับค่าจ้างระหว่างพำนัก"
+   ],
+   "maxStayDays": 90,
+   "beforeFlight": [
+    {
+     "key": "kr-keta",
+     "text": "ขอ K-ETA ที่เว็บทางการ (ค่าธรรมเนียมประมาณ 10,000 วอน ใช้ได้ประมาณ 3 ปี) ยื่นล่วงหน้าอย่างน้อย 72 ชั่วโมง — K-ETA ถูกปฏิเสธได้ อย่าซื้อตั๋วไม่คืนเงินก่อนได้ผล",
+     "link": "https://www.k-eta.go.kr/",
+     "when": "อย่างน้อย 3 วันก่อนบิน (ยิ่งเร็วยิ่งดี)",
+     "level": "required",
+     "why": "ไม่มี K-ETA อนุมัติ ขึ้นเครื่องไม่ได้"
+    },
+    {
+     "key": "kr-earrival",
+     "text": "e-Arrival Card: ผู้ที่ได้ K-ETA อนุมัติแล้วได้รับยกเว้น — ถ้าไม่มี K-ETA ต้องกรอกภายใน 3 วันก่อนถึง",
+     "link": "https://www.e-arrivalcard.go.kr/",
+     "when": "ภายใน 3 วันก่อนถึง (เฉพาะผู้ไม่มี K-ETA)",
+     "level": "optional"
+    }
+   ],
+   "upcoming": [],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
+     "level": "required",
+     "why": "อายุเหลือ ≥ 6 เดือน"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วเครื่องบินขาไป–ขากลับ (ปริ้นต์)",
+     "level": "required",
+     "why": "ตม. เกาหลีขอดูบ่อย ปริ้นต์ไว้"
+    },
+    {
+     "key": "hotel-all",
+     "text": "หลักฐานการจองที่พักครบทุกคืน (ปริ้นต์)",
+     "level": "required",
+     "why": "ต้องตรงกับที่กรอกใน K-ETA"
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวรายวัน (เอกสารโชว์ ตม. ในหน้านี้)",
+     "level": "recommended",
+     "why": "ตอบคำถามให้ตรงกับเอกสาร"
+    },
+    {
+     "key": "statement",
+     "text": "Bank statement ย้อนหลัง 3 เดือน (ฉบับจากธนาคาร ไม่ใช่ภาพหน้าจอ)",
+     "level": "recommended",
+     "why": "ใช้แสดงว่ามีเงินพอ — ฉบับจากธนาคาร ไม่ใช่ภาพหน้าจอ"
+    },
+    {
+     "key": "money",
+     "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้",
+     "level": "recommended",
+     "why": "แสดงว่ามีเงินใช้ตลอดทริป"
+    },
+    {
+     "key": "insurance",
+     "text": "ประกันการเดินทาง",
+     "level": "recommended",
+     "why": "ไม่บังคับ แต่ช่วยให้ดูน่าเชื่อถือ"
+    }
+   ],
+   "tips": [
+    "เอกสารทุกอย่างต้องตรงกัน: วันที่ ตั๋ว ที่พัก และแพลน",
+    "เตรียมคำตอบ: มาเที่ยวที่ไหน อยู่กี่วัน พักที่ไหน ทำงานอะไร ใครเป็นคนจ่าย",
+    "เดินทางกับเพื่อนให้ตอบข้อมูลทริปตรงกัน",
+    "ระวังทัวร์หรือแพ็กเกจราคาถูกผิดปกติ"
+   ],
+   "sources": [
+    {
+     "title": "LoyaltyLobby — รายชื่อ 22 ประเทศยกเว้น K-ETA ถึง ธ.ค. 2026 (ไม่มีไทย)",
+     "url": "https://loyaltylobby.com/2026/01/02/south-korea-extends-k-eta-waiver-through-december-2026-for-select-nationals-of-22-countries/"
+    },
+    {
+     "title": "EXO Travel — K-ETA และ e-Arrival Card",
+     "url": "https://www.exotravel.com/blog/korea-arrival-card-keta/"
+    },
+    {
+     "title": "Korea Atlas — ค่าธรรมเนียมและอายุ K-ETA",
+     "url": "https://koreaatlas.com/korea-entry-requirements-2026/"
+    },
+    {
+     "title": "OYEON — เตรียมตัวผ่าน ตม. เกาหลี 2026",
+     "url": "https://oyeon.me/articles/korea-immigration-tips-2026/"
+    },
+    {
+     "title": "Thai PBS — นักท่องเที่ยวไทยลดลงจากปม ตม. เข้มงวด",
+     "url": "https://www.thaipbs.or.th/news/content/341200"
+    },
+    {
+     "title": "ไทยรัฐ — ไม่ผ่าน ตม. ส่งตัว 115 คนไทยจากเชจู",
+     "url": "https://www.thairath.co.th/news/society/2463082"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ (ระบุตำแหน่ง เงินเดือน วันเริ่มงาน และช่วงวันลา)",
+      "level": "recommended",
+      "why": "ตม. เกาหลีถามเรื่องงานบ่อย ช่วยยืนยันว่าจะกลับไปทำงานที่ไทย"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "หนังสือรับรองบริษัท / ทะเบียนพาณิชย์ ภาษาอังกฤษ",
+      "level": "recommended",
+      "why": "ยืนยันว่ามีกิจการที่ไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "freelance-proof",
+      "text": "หลักฐานงานฟรีแลนซ์ เช่น สัญญาจ้าง / ใบแจ้งหนี้ / หนังสือรับรองจากผู้ว่าจ้าง",
+      "level": "recommended",
+      "why": "ไม่มีหนังสือรับรองการทำงาน ใช้แทนเพื่อยืนยันรายได้"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษา + หนังสือรับรองสถานศึกษา ภาษาอังกฤษ",
+      "level": "recommended",
+      "why": "ยืนยันว่ายังเรียนอยู่และจะกลับไทย"
+     }
+    ],
+    "none": [
+     {
+      "key": "sponsor",
+      "text": "เอกสารของผู้ออกค่าใช้จ่าย (เช่น statement ของครอบครัว + เอกสารความสัมพันธ์)",
+      "level": "recommended",
+      "why": "แสดงว่ามีผู้รับผิดชอบค่าใช้จ่าย"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "112"
+    },
+    {
+     "label": "รถพยาบาล / ดับเพลิง",
+     "number": "119"
+    },
+    {
+     "label": "Korea Travel Hotline 24 ชม.",
+     "number": "1330"
+    }
+   ],
+   "currency": "KRW",
+   "taxiHint": "이 호텔로 가 주세요"
+  },
+  "TH": {
+   "name": "ไทย (เที่ยวในประเทศ)",
+   "nameEn": "Thailand",
+   "currency": "THB",
+   "domestic": true,
+   "taxiHint": "",
+   "match": [
+    "ไทย",
+    "thailand",
+    "เชียงใหม่",
+    "chiang mai",
+    "ภูเก็ต",
+    "phuket",
+    "กระบี่",
+    "krabi",
+    "พัทยา",
+    "pattaya",
+    "หัวหิน",
+    "hua hin",
+    "เขาใหญ่",
+    "khao yai",
+    "น่าน",
+    "เชียงราย",
+    "chiang rai",
+    "ปาย",
+    "เกาะสมุย",
+    "samui",
+    "เกาะช้าง",
+    "koh chang",
+    "กาญจนบุรี",
+    "kanchanaburi",
+    "อยุธยา",
+    "ayutthaya",
+    "ขอนแก่น",
+    "khon kaen",
+    "อุดรธานี",
+    "udon thani",
+    "หาดใหญ่",
+    "hat yai",
+    "ระยอง",
+    "rayong",
+    "จันทบุรี",
+    "chanthaburi",
+    "ตราด",
+    "trat",
+    "สุราษฎร์",
+    "surat thani",
+    "ตรัง",
+    "trang",
+    "ชลบุรี",
+    "chonburi"
+   ],
+   "risk": "low",
+   "riskReason": "เที่ยวในประเทศ ไม่ต้องผ่าน ตม.",
+   "entry": [],
+   "beforeFlight": [],
+   "upcoming": [],
+   "docs": [
+    {
+     "key": "id-card",
+     "text": "บัตรประชาชนตัวจริง (ยังไม่หมดอายุ)",
+     "level": "required",
+     "why": "ใช้เช็กอินเที่ยวบินในประเทศและเช็กอินที่พัก"
+    }
+   ],
+   "tips": [],
+   "sources": [],
+   "docsByStatus": {},
+   "emergency": [
+    {
+     "label": "เหตุด่วนเหตุร้าย (ตำรวจ)",
+     "number": "191"
+    },
+    {
+     "label": "เจ็บป่วยฉุกเฉิน (สพฉ.)",
+     "number": "1669"
+    },
+    {
+     "label": "ดับเพลิง",
+     "number": "199"
+    },
+    {
+     "label": "ตำรวจท่องเที่ยว",
+     "number": "1155"
+    }
+   ],
+   "consulates": [],
+   "taxFree": null
+  },
+  "CN": {
+   "name": "จีน",
+   "nameEn": "People's Republic of China",
+   "currency": "CNY",
+   "taxiHint": "请带我去这家酒店",
+   "match": [
+    "จีน",
+    "china",
+    "ปักกิ่ง",
+    "beijing",
+    "เซี่ยงไฮ้",
+    "shanghai",
+    "กว่างโจว",
+    "กวางโจว",
+    "guangzhou",
+    "เซินเจิ้น",
+    "shenzhen",
+    "เฉิงตู",
+    "chengdu",
+    "ฉงชิ่ง",
+    "chongqing",
+    "คุนหมิง",
+    "kunming",
+    "ลี่เจียง",
+    "lijiang",
+    "ต้าหลี่",
+    "dali",
+    "สิบสองปันนา",
+    "xishuangbanna",
+    "ซีอาน",
+    "xian",
+    "xi'an",
+    "เซี่ยเหมิน",
+    "xiamen",
+    "ชิงต่าว",
+    "qingdao",
+    "หนานหนิง",
+    "nanning",
+    "กุ้ยหลิน",
+    "guilin",
+    "หางโจว",
+    "hangzhou",
+    "ซูโจว",
+    "suzhou",
+    "จางเจียเจี้ย",
+    "zhangjiajie",
+    "ฮาร์บิน",
+    "harbin",
+    "เทียนจิน",
+    "tianjin"
+   ],
+   "risk": "low",
+   "riskReason": "ไทย–จีนมีความตกลงยกเว้นวีซ่าซึ่งกันและกันแบบถาวรมาตั้งแต่ 1 มี.ค. 2567 ยังไม่พบข่าวว่าตม.จีนตรวจเข้มหรือปฏิเสธการเข้าเมืองนักท่องเที่ยวไทยเป็นวงกว้าง",
+   "entry": [
+    "ถือพาสปอร์ตไทยแบบธรรมดา เข้าจีนแผ่นดินใหญ่ได้โดยไม่ต้องขอวีซ่า (ความตกลงยกเว้นวีซ่าไทย–จีน)",
+    "อยู่ได้ไม่เกิน 30 วันต่อครั้ง",
+    "รวมทุกครั้งแล้วต้องไม่เกิน 90 วันในช่วง 180 วันใดก็ได้",
+    "ความตกลงนี้ไม่มีวันหมดอายุ (มีผลตั้งแต่ 1 มี.ค. 2567)",
+    "ถ้าจะทำงาน เรียน ทำข่าว หรืออยู่อาศัย ต้องขอวีซ่าให้ถูกประเภทก่อนเดินทาง",
+    "ถ้าจะอยู่เกิน 30 วัน ต้องขอวีซ่าล่วงหน้า",
+    "เงื่อนไขนี้ใช้กับจีนแผ่นดินใหญ่เท่านั้น ฮ่องกงและมาเก๊าใช้กฎของตัวเองแยกกัน"
+   ],
+   "maxStayDays": 30,
+   "beforeFlight": [
+    {
+     "key": "cn-arrival-card",
+     "text": "กรอกบัตรขาเข้า (Arrival Card) ออนไลน์ของ ตม.จีน (NIA)",
+     "link": "https://s.nia.gov.cn/ArrivalCardFillingPC/",
+     "when": "ก่อนบิน หรือกรอกตอนถึงด่าน ตม. ก็ได้",
+     "level": "recommended",
+     "why": "เริ่มใช้ 20 พ.ย. 2568 ช่วยให้ผ่าน ตม. เร็วขึ้น ถ้ากรอกไม่ทันจะสแกน QR หรือกรอกกระดาษที่ด่านก็ได้"
+    },
+    {
+     "key": "cn-payment",
+     "text": "ผูกบัตรเครดิต/เดบิตต่างประเทศกับ Alipay หรือ WeChat Pay และยืนยันตัวตนให้เรียบร้อย",
+     "link": "https://www.alipay.com",
+     "when": "ก่อนบินอย่างน้อย 2–3 วัน",
+     "level": "recommended",
+     "why": "ร้านค้า รถไฟใต้ดิน และแท็กซี่ในจีนส่วนใหญ่รับจ่ายผ่าน QR"
+    },
+    {
+     "key": "cn-esim",
+     "text": "ซื้อ eSIM หรือแพ็กโรมมิ่งที่ใช้ Google, LINE และ IG ได้",
+     "link": "",
+     "when": "ก่อนบิน",
+     "level": "recommended",
+     "why": "แอปเหล่านี้ใช้ผ่านเน็ตจีนปกติไม่ได้ ส่วนแพ็กโรมมิ่งหรือ eSIM ต่างประเทศส่วนใหญ่ยังใช้ได้"
+    }
+   ],
+   "upcoming": [],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตไทยแบบธรรมดา อายุเหลือมากกว่า 6 เดือน และมีหน้าว่าง",
+     "level": "required",
+     "why": "ยกเว้นวีซ่าเฉพาะพาสปอร์ตธรรมดา"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วเครื่องบินขากลับหรือตั๋วออกนอกจีนภายใน 30 วัน",
+     "level": "recommended",
+     "why": "สายการบินหรือ ตม. อาจขอดู"
+    },
+    {
+     "key": "hotel-all",
+     "text": "ใบจองที่พักครบทุกคืน",
+     "level": "recommended",
+     "why": "ต้องใช้กรอกที่อยู่ในบัตรขาเข้า และโรงแรมต้องลงทะเบียนชาวต่างชาติ"
+    },
+    {
+     "key": "itinerary",
+     "text": "แผนการเดินทางคร่าวๆ",
+     "level": "optional",
+     "why": "ไว้ตอบถ้า ตม. ถามจุดประสงค์ที่มาเที่ยว"
+    },
+    {
+     "key": "money",
+     "text": "เงินสดหยวนสำรองเล็กน้อย พร้อมบัตรที่ผูกกับแอปจ่ายเงินแล้ว",
+     "level": "recommended",
+     "why": "บางที่ยังรับแต่เงินสด หรือแอปอาจใช้ไม่ได้ชั่วคราว"
+    },
+    {
+     "key": "insurance",
+     "text": "ประกันการเดินทางต่างประเทศ",
+     "level": "recommended",
+     "why": "ไม่บังคับ แต่ค่ารักษาพยาบาลในจีนสำหรับชาวต่างชาติค่อนข้างสูง"
+    }
+   ],
+   "tips": [
+    "พกพาสปอร์ตติดตัวตลอด เพราะต้องใช้ซื้อตั๋วรถไฟ เข้าสถานที่ท่องเที่ยว และเช็กอินโรงแรม",
+    "Google, LINE, Facebook และ IG ใช้ผ่าน Wi-Fi หรือซิมจีนไม่ได้ ให้ใช้ eSIM หรือโรมมิ่งต่างประเทศ",
+    "ติดตั้งแผนที่ Amap หรือ Baidu Maps ไว้ เพราะ Google Maps ในจีนไม่แม่น",
+    "เรียกรถด้วย DiDi หรือผ่านมินิโปรแกรมใน Alipay",
+    "ซื้อตั๋วรถไฟความเร็วสูงล่วงหน้าผ่านแอป Trip.com หรือ 12306",
+    "ถ้าพกเงินสดเกิน 20,000 หยวน หรือเงินตราต่างประเทศเกิน 5,000 USD ต้องสำแดงต่อศุลกากร",
+    "บันทึกชื่อและที่อยู่โรงแรมเป็นภาษาจีนไว้ เพื่อยื่นให้คนขับแท็กซี่ดู"
+   ],
+   "sources": [
+    {
+     "title": "Visa-Free Travel Between China and Thailand Starts from March 1 (Beijing Gov)",
+     "url": "https://english.beijing.gov.cn/latest/lawsandpolicies/202403/t20240301_3578010.html"
+    },
+    {
+     "title": "Notice on Implementation of Online Filling of Arrival Card (Chinese Embassy in Singapore)",
+     "url": "https://sg.china-embassy.gov.cn/eng/lsfwx/zytz/202512/t20251201_11763717.htm"
+    },
+    {
+     "title": "China refines departure tax refund policy (gov.cn)",
+     "url": "https://english.www.gov.cn/news/202504/27/content_WS680de14bc6d0868f4e8f21bf.html"
+    },
+    {
+     "title": "Update: China's Departure Tax Refund Policy (CNTO)",
+     "url": "https://www.cnto.org.uk/last-news-en/update-chinas-departure-tax-refund-policy/"
+    },
+    {
+     "title": "ติดต่อเรา - สถานเอกอัครราชทูต ณ กรุงปักกิ่ง",
+     "url": "https://thaiembbeij.org/th/contact/"
+    },
+    {
+     "title": "แจ้งเหตุฉุกเฉินสำหรับคนไทย - สถานเอกอัครราชทูต ณ กรุงปักกิ่ง",
+     "url": "https://thaiembbeij.org/th/emergency/"
+    },
+    {
+     "title": "PSA: 12345 Hotline (Singapore Consulate-General Chengdu)",
+     "url": "https://chengdu.mfa.gov.sg/mission-updates/psa-12345-hotline/"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงานหรือใบอนุมัติลา",
+      "level": "optional",
+      "why": "ไว้ยืนยันว่าจะกลับไทย ถ้าถูกถาม"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "สำเนาหนังสือรับรองบริษัทหรือทะเบียนการค้า",
+      "level": "optional",
+      "why": "ไว้ยืนยันว่ามีกิจการอยู่ที่ไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "freelance-proof",
+      "text": "หลักฐานรายได้หรือสัญญางานล่าสุด",
+      "level": "optional",
+      "why": "ไว้ยืนยันว่ามีรายได้และจะกลับไทย"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษาหรือหนังสือรับรองสถานศึกษา",
+      "level": "optional",
+      "why": "ไว้ยืนยันสถานะว่ายังเรียนอยู่ที่ไทย"
+     }
+    ],
+    "none": [
+     {
+      "key": "statement",
+      "text": "Statement บัญชีย้อนหลังหรือหลักฐานผู้สนับสนุนค่าใช้จ่าย",
+      "level": "optional",
+      "why": "ไว้แสดงว่ามีเงินพอใช้ระหว่างเที่ยว"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "110"
+    },
+    {
+     "label": "รถพยาบาล",
+     "number": "120"
+    },
+    {
+     "label": "ดับเพลิง",
+     "number": "119"
+    },
+    {
+     "label": "สายด่วนบริการ/ร้องเรียน (นักท่องเที่ยว)",
+     "number": "12345",
+     "note": "สายด่วนเรื่องไม่ฉุกเฉิน เปิด 24 ชม. รับเรื่องร้องเรียนการท่องเที่ยว บังคับซื้อของ และสอบถามการเดินทาง มีภาษาอังกฤษ",
+     "source": "https://chengdu.mfa.gov.sg/mission-updates/psa-12345-hotline/"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานเอกอัครราชทูตไทย ณ กรุงปักกิ่ง",
+     "nameEn": "Royal Thai Embassy, Beijing",
+     "phone": "+86 10 8531-8700",
+     "phone2": "+86 157 2731 2531",
+     "address": "21 Guang Hua Road, Chaoyang District, Beijing 100600 P.R.C.",
+     "hours": "จ.–ศ. 09:00–12:00, 13:00–17:00",
+     "match": [
+      "ปักกิ่ง",
+      "beijing",
+      "เทียนจิน",
+      "tianjin",
+      "ฮาร์บิน",
+      "harbin",
+      "ต้าเหลียน",
+      "dalian"
+     ],
+     "source": "https://thaiembbeij.org/th/contact/"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครเซี่ยงไฮ้",
+     "nameEn": "Royal Thai Consulate-General, Shanghai",
+     "phone": "(+86) 021-5260-9899",
+     "phone2": "(+86) 185-1626-8776",
+     "address": "No. 18 Wanshan Road, Changning District, Shanghai 200336",
+     "hours": "จ.–ศ. 09:30–12:00, 13:30–17:30",
+     "match": [
+      "เซี่ยงไฮ้",
+      "shanghai",
+      "หางโจว",
+      "hangzhou",
+      "ซูโจว",
+      "suzhou",
+      "หนานจิง",
+      "nanjing",
+      "เจ้อเจียง",
+      "zhejiang",
+      "เจียงซู",
+      "jiangsu"
+     ],
+     "source": "https://thaishanghai.thaiembassy.org/th/index"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครกว่างโจว",
+     "nameEn": "Royal Thai Consulate-General, Guangzhou",
+     "phone": "+86 20 8385-8988",
+     "phone2": "+86 188-1938-6190",
+     "address": "No. 36 Youhe Road, Haizhu District, Guangzhou 510310",
+     "hours": "จ.–ศ. 09:00–12:00, 13:30–17:00",
+     "match": [
+      "กว่างโจว",
+      "กวางโจว",
+      "guangzhou",
+      "เซินเจิ้น",
+      "shenzhen",
+      "จูไห่",
+      "zhuhai",
+      "กวางตุ้ง",
+      "guangdong",
+      "ไหหลำ",
+      "hainan",
+      "ซานย่า",
+      "sanya"
+     ],
+     "source": "https://guangzhou.thaiembassy.org/th/index"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครคุนหมิง",
+     "nameEn": "Royal Thai Consulate-General, Kunming",
+     "phone": "+86 871 6314-9296",
+     "phone2": "+86 155-8700-3732",
+     "address": "18th Floor, Shuncheng Twin Towers, East Building, Dong Feng Xi Lu Road, Kunming, Yunnan Province",
+     "hours": "จ.–ศ. 08:30–12:00, 13:00–17:30",
+     "match": [
+      "คุนหมิง",
+      "kunming",
+      "ยูนนาน",
+      "yunnan",
+      "ลี่เจียง",
+      "lijiang",
+      "ต้าหลี่",
+      "dali",
+      "สิบสองปันนา",
+      "xishuangbanna",
+      "จิ่งหง",
+      "jinghong",
+      "แชงกรีล่า",
+      "shangri-la"
+     ],
+     "source": "https://kunming.thaiembassy.org/th/index"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครเฉิงตู",
+     "nameEn": "Royal Thai Consulate-General, Chengdu",
+     "phone": "(+8628) 6689-7861",
+     "phone2": "(+86) 157 0842 8656",
+     "address": "12F, Building C, Fund International Plaza, No. 6, Hangkong Rd., Chengdu, Sichuan, 610041",
+     "hours": "จ.–ศ. 09:00–12:00, 13:00–17:00",
+     "match": [
+      "เฉิงตู",
+      "chengdu",
+      "เสฉวน",
+      "sichuan",
+      "ฉงชิ่ง",
+      "chongqing",
+      "จิ่วจ้ายโกว",
+      "jiuzhaigou"
+     ],
+     "source": "https://chengdu.thaiembassy.org/"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครหนานหนิง",
+     "nameEn": "Royal Thai Consulate-General, Nanning",
+     "phone": "+86 771 5526942",
+     "phone2": "153 0781 3559",
+     "address": "1st and 2nd Floor, 52-1 Jinhu Road, Nanning, Guangxi 530022 P.R. China",
+     "hours": "จ.–ศ. ยื่นเรื่อง 09:00–11:30, รับเล่ม/สอบถาม 14:00–17:00",
+     "match": [
+      "หนานหนิง",
+      "nanning",
+      "กว่างซี",
+      "guangxi",
+      "กุ้ยหลิน",
+      "guilin",
+      "หยางซั่ว",
+      "yangshuo"
+     ],
+     "source": "https://nanning.thaiembassy.org/th/index"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครซีอาน",
+     "nameEn": "Royal Thai Consulate-General, Xi'an",
+     "phone": "+86 29 6125-3668",
+     "phone2": "(+86) 18202921281",
+     "address": "Room 104, 1st Floor, Building A, China Railway First International, No. 9 Yanta North Road, Beilin District, Xi'an, Shaanxi 710000",
+     "hours": "จ.–ศ. 09:00–12:00, 13:30–17:00",
+     "match": [
+      "ซีอาน",
+      "xian",
+      "xi'an",
+      "ส่านซี",
+      "shaanxi",
+      "กานซู",
+      "gansu",
+      "หนิงเซี่ย",
+      "ningxia",
+      "ตุนหวง",
+      "dunhuang"
+     ],
+     "source": "https://xian.thaiembassy.org/"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ เมืองเซี่ยเหมิน",
+     "nameEn": "Royal Thai Consulate-General, Xiamen",
+     "phone": "+86 592-202-7980",
+     "phone2": "18150907662",
+     "address": "Building No. 3, City Hotel Xiamen, No. 16 Hu Yuan Road, Xiamen, Fujian, PRC 361003",
+     "match": [
+      "เซี่ยเหมิน",
+      "xiamen",
+      "ฝูเจี้ยน",
+      "fujian",
+      "ฝูโจว",
+      "fuzhou",
+      "เจียงซี",
+      "jiangxi",
+      "หนานชาง",
+      "nanchang"
+     ],
+     "source": "https://xiamen.thaiembassy.org/th/index"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ เมืองชิงต่าว",
+     "nameEn": "Royal Thai Consulate-General, Qingdao",
+     "phone": "+86 532 6887-7038",
+     "phone2": "176 6751 2714",
+     "address": "15th Floor, Unit 1503-05 Shangri-La Centre Tower, No. 9 Xianggang Zhong Road, Qingdao, PRC 266071",
+     "hours": "จ.–ศ. 09:00–12:00, 13:00–17:00",
+     "match": [
+      "ชิงต่าว",
+      "qingdao",
+      "ซานตง",
+      "shandong",
+      "จี่หนาน",
+      "jinan"
+     ],
+     "source": "https://qingdao.thaiembassy.org/th/index"
+    }
+   ],
+   "taxFree": {
+    "currency": "CNY",
+    "min": 200,
+    "points": [
+     "ซื้อตั้งแต่ 200 หยวนขึ้นไปในร้านเดียวภายในวันเดียว ที่ร้านติดป้าย Tax Free",
+     "ได้คืน 11% ของราคาสินค้า หักค่าธรรมเนียมแล้วจะได้จริงประมาณ 9%",
+     "ต้องอยู่ในจีนติดต่อกันไม่เกิน 183 วัน และนำสินค้าออกนอกประเทศภายใน 90 วันนับจากวันที่ซื้อ",
+     "ยื่นขอคืนที่จุด Tax Refund ในสนามบินขาออก หรือรับคืนทันทีที่ร้าน (ระบบ refund-upon-purchase) ตอนซื้อก็ได้",
+     "คืนเป็นเงินสดได้สูงสุด 20,000 หยวน ส่วนช่องทางอื่น (โอนเข้าแอปหรือบัตร) ไม่จำกัดยอด",
+     "เก็บใบเสร็จและสินค้าไว้ เพราะเจ้าหน้าที่ศุลกากรอาจขอตรวจตอนขาออก"
+    ],
+    "source": "https://english.www.gov.cn/news/202504/27/content_WS680de14bc6d0868f4e8f21bf.html"
+   }
+  },
+  "HK": {
+   "name": "ฮ่องกง",
+   "nameEn": "Hong Kong SAR, China",
+   "currency": "HKD",
+   "taxiHint": "唔該車我去呢間酒店",
+   "match": [
+    "ฮ่องกง",
+    "hong kong",
+    "hongkong",
+    "เกาลูน",
+    "kowloon",
+    "จิมซาจุ่ย",
+    "tsim sha tsui",
+    "มงก๊ก",
+    "mong kok",
+    "causeway bay",
+    "คอสเวย์เบย์",
+    "wan chai",
+    "หว่านไจ๋",
+    "lantau",
+    "ลันเตา",
+    "ngong ping",
+    "sheung wan",
+    "yau ma tei",
+    "sham shui po",
+    "victoria peak",
+    "the peak"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยถือพาสปอร์ตเข้าได้โดยไม่ต้องขอวีซ่าสูงสุด 30 วัน และไม่มีขั้นตอนลงทะเบียนออนไลน์ก่อนบิน แต่ ตม. อาจถามหาตั๋วขากลับและดูว่ามีเงินพอใช้ตลอดทริป",
+   "entry": [
+    "พาสปอร์ตไทยเข้าฮ่องกงได้โดยไม่ต้องขอวีซ่า อยู่ได้สูงสุด 30 วัน",
+    "ห้ามทำงาน ทั้งแบบได้เงินและไม่ได้เงิน ห้ามเปิดหรือร่วมธุรกิจ และห้ามเข้าเรียน",
+    "ต้องมีตั๋วขาออกหรือขากลับ ยกเว้นคนที่ต่อไปจีนแผ่นดินใหญ่หรือมาเก๊า",
+    "ต้องมีเงินพอใช้ตลอดช่วงที่อยู่โดยไม่ต้องทำงาน",
+    "ถ้าอยู่เกิน 30 วันหรือมาทำกิจกรรมต้องห้าม ต้องขอวีซ่าก่อนเดินทาง"
+   ],
+   "maxStayDays": 30,
+   "beforeFlight": [
+    {
+     "key": "hk-passport-check",
+     "text": "เช็กอายุพาสปอร์ตให้เหลืออย่างน้อย 6 เดือน",
+     "link": "https://www.immd.gov.hk/eng/faq/e-channel-thailand.html",
+     "when": "ก่อนจองตั๋ว",
+     "level": "recommended",
+     "why": "ต้องเหลือ 6 เดือนถึงจะสมัคร e-Channel ได้ และสายการบินมักใช้เกณฑ์นี้"
+    },
+    {
+     "key": "hk-return-ticket",
+     "text": "เตรียมตั๋วขากลับหรือตั๋วขาออกไว้ให้พร้อม",
+     "link": "https://www.immd.gov.hk/eng/services/visas/visit-transit/visit-visa-entry-permit.html",
+     "when": "ก่อนบิน",
+     "level": "required",
+     "why": "เป็นเงื่อนไขของผู้มาเยือนตามกฎ ตม.ฮ่องกง"
+    },
+    {
+     "key": "hk-insurance",
+     "text": "ซื้อประกันเดินทางที่ครอบคลุมค่ารักษาพยาบาล",
+     "link": "https://www.discoverhongkong.com/eng/plan/traveller-info/immigrations-and-customs.html",
+     "when": "ก่อนบิน 1–7 วัน",
+     "level": "recommended",
+     "why": "ค่ารักษาในฮ่องกงแพงสำหรับนักท่องเที่ยว"
+    },
+    {
+     "key": "hk-consulate-register",
+     "text": "เซฟเบอร์ฉุกเฉินของสถานกงสุลใหญ่ฯ ไว้ในมือถือ",
+     "link": "https://hongkong.thaiembassy.org/",
+     "when": "ก่อนบิน",
+     "level": "optional",
+     "why": "ใช้ติดต่อตอนพาสปอร์ตหายหรือเกิดเหตุฉุกเฉิน"
+    }
+   ],
+   "upcoming": [],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตไทยตัวจริง แนะนำให้อายุเหลือ 6 เดือนขึ้นไป",
+     "level": "required",
+     "why": "ใช้เข้าเมืองได้โดยไม่ต้องขอวีซ่า"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วขากลับหรือตั๋วขาออก แบบพิมพ์หรือในมือถือ",
+     "level": "required",
+     "why": "ตม. อาจขอดู"
+    },
+    {
+     "key": "hotel-all",
+     "text": "ใบยืนยันที่พักครบทุกคืน",
+     "level": "recommended",
+     "why": "ใช้ตอบ ตม. และกรอกที่อยู่"
+    },
+    {
+     "key": "money",
+     "text": "เงินสดหรือบัตรที่พอใช้ตลอดทริป",
+     "level": "recommended",
+     "why": "ต้องมีเงินพอใช้โดยไม่ต้องทำงาน"
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ",
+     "level": "optional",
+     "why": "ใช้ตอบถ้าโดนถามว่ามาทำอะไร"
+    },
+    {
+     "key": "insurance",
+     "text": "กรมธรรม์ประกันเดินทาง",
+     "level": "recommended",
+     "why": "ทางการไม่ได้บังคับ แต่ช่วยเรื่องค่ารักษาพยาบาล"
+    }
+   ],
+   "tips": [
+    "ซื้อบัตร Octopus ไว้ใช้จ่ายค่า MTR รถเมล์ เรือ Star Ferry และร้านสะดวกซื้อ",
+    "สมัคร e-Channel ได้ฟรีที่โถงขาเข้าสนามบิน ถ้าอายุ 11 ปีขึ้นไป พาสปอร์ตเหลือ 6 เดือน และเคยมาฮ่องกงใน 12 เดือนที่ผ่านมา",
+    "ภาษีขาออกสนามบิน HK$200 สำหรับคนอายุ 12 ปีขึ้นไป ปกติรวมอยู่ในค่าตั๋วแล้ว",
+    "ร้านอาหารส่วนใหญ่บวกค่าบริการ 10%",
+    "ทิ้งขยะ ถ่มน้ำลาย หรือสูบบุหรี่ในเขตห้ามสูบ โดนปรับ HK$3,000",
+    "บางร้านไม่รับแบงก์ HK$500 และ HK$1,000 ควรพกแบงก์ย่อยไว้",
+    "ไปมาเก๊าแบบวันเดียวได้ทั้งเรือเฟอร์รี่และรถบัสข้ามสะพาน HZMB ต้องพกพาสปอร์ตไปด้วย และควรเช็กจำนวนวันที่อยู่ได้โดยไม่ต้องขอวีซ่าก่อนไป"
+   ],
+   "sources": [
+    {
+     "title": "HK Immigration – Visit Visa / Entry Permit Requirements",
+     "url": "https://www.immd.gov.hk/eng/services/visas/visit-transit/visit-visa-entry-permit.html"
+    },
+    {
+     "title": "HK Immigration – e-Channel for Thai Passport Holders",
+     "url": "https://www.immd.gov.hk/eng/faq/e-channel-thailand.html"
+    },
+    {
+     "title": "HKTB – Traveller Essentials",
+     "url": "https://www.discoverhongkong.com/eng/plan/traveller-info/immigrations-and-customs.html"
+    },
+    {
+     "title": "HKTB – Contact Us",
+     "url": "https://www.discoverhongkong.com/eng/contact-us.html"
+    },
+    {
+     "title": "Royal Thai Consulate-General, Hong Kong – About the Consulate",
+     "url": "https://hongkong.thaiembassy.org/en/page/rtcghk?menu=5d84804a15e39c03c8002813"
+    },
+    {
+     "title": "สถานกงสุลใหญ่ ณ เมืองฮ่องกง",
+     "url": "https://hongkong.thaiembassy.org/"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงานหรือใบอนุมัติลา",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่าจะกลับไทย ถ้าโดนถาม"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "หนังสือรับรองบริษัทหรือทะเบียนพาณิชย์",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่ามีธุรกิจที่ไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "statement",
+      "text": "สเตทเมนต์บัญชีย้อนหลัง",
+      "level": "optional",
+      "why": "ใช้ยืนยันรายได้และว่ามีเงินพอใช้"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษาหรือหนังสือรับรองสถานศึกษา",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่าจะกลับไปเรียนต่อ"
+     }
+    ],
+    "none": [
+     {
+      "key": "statement",
+      "text": "สเตทเมนต์บัญชีหรือหลักฐานว่ามีคนออกค่าใช้จ่ายให้",
+      "level": "recommended",
+      "why": "ใช้ยืนยันว่ามีเงินพอใช้ตลอดทริป"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ / รถพยาบาล / ดับเพลิง",
+     "number": "999"
+    },
+    {
+     "label": "สายด่วนนักท่องเที่ยว HKTB",
+     "number": "+852 2508 1234",
+     "note": "เปิด 9:00–18:00 ทุกวัน",
+     "source": "https://www.discoverhongkong.com/eng/contact-us.html"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานกงสุลใหญ่ ณ ฮ่องกง",
+     "nameEn": "Royal Thai Consulate-General, Hong Kong",
+     "phone": "(+852) 2521 6481",
+     "phone2": "(+852) 6821 1545",
+     "address": "8/F, Fairmont House, 8 Cotton Tree Drive, Central, Hong Kong",
+     "hours": "จันทร์–ศุกร์ 9:00–17:00 น. ปิดวันหยุดราชการ",
+     "match": [
+      "ฮ่องกง",
+      "hong kong",
+      "มาเก๊า",
+      "macau"
+     ],
+     "source": "https://hongkong.thaiembassy.org/en/page/rtcghk?menu=5d84804a15e39c03c8002813"
+    }
+   ],
+   "taxFree": null
+  },
+  "TW": {
+   "name": "ไต้หวัน",
+   "nameEn": "Taiwan",
+   "currency": "TWD",
+   "taxiHint": "請帶我到這家飯店",
+   "match": [
+    "ไต้หวัน",
+    "ไทเป",
+    "เกาสง",
+    "ไถจง",
+    "ไถหนาน",
+    "จิ่วเฟิ่น",
+    "หัวเหลียน",
+    "taiwan",
+    "taipei",
+    "kaohsiung",
+    "taichung",
+    "tainan",
+    "jiufen",
+    "hualien",
+    "taoyuan",
+    "ximending"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยยังได้ฟรีวีซ่า 14 วันถึง 31 ก.ค. 2027 แต่เป็นโครงการทดลองที่ต่ออายุทีละปี และ ตม. อาจขอดูตั๋วขากลับ ที่พัก และเงินติดตัว",
+   "entry": [
+    "พาสปอร์ตไทยฟรีวีซ่า (โครงการทดลอง) 1 ส.ค. 2026 – 31 ก.ค. 2027",
+    "อยู่ได้สูงสุด 14 วัน นับจากวันถัดจากวันเดินทางถึง",
+    "ขยายเวลาพำนักไม่ได้ เปลี่ยนประเภทวีซ่าในไต้หวันไม่ได้",
+    "พาสปอร์ตต้องเหลืออายุอย่างน้อย 6 เดือน",
+    "ต้องมีตั๋วขากลับ/ขาออกที่ยืนยันแล้ว และที่พัก",
+    "ต้องกรอกบัตรขาเข้าออนไลน์ TWAC ก่อนเดินทาง",
+    "ห้ามทำงาน ใช้สำหรับท่องเที่ยว/เยี่ยมญาติ/ธุระระยะสั้นเท่านั้น"
+   ],
+   "maxStayDays": 14,
+   "beforeFlight": [
+    {
+     "key": "tw-twac",
+     "text": "กรอกบัตรขาเข้าออนไลน์ TWAC (ฟรี)",
+     "link": "https://twac.immigration.gov.tw/",
+     "when": "ภายใน 7 วันก่อนถึง",
+     "level": "required",
+     "why": "บังคับสำหรับชาวต่างชาติตั้งแต่ 1 ต.ค. 2025 ระวังเว็บปลอมที่เก็บเงิน"
+    },
+    {
+     "key": "tw-visa-check",
+     "text": "เช็กว่าวันกลับไม่เกิน 14 วัน และไม่เกิน 31 ก.ค. 2027",
+     "link": "https://www.boca.gov.tw/",
+     "when": "ก่อนจองตั๋ว",
+     "level": "required",
+     "why": "ฟรีวีซ่าเป็นโครงการทดลอง มีวันสิ้นสุด"
+    },
+    {
+     "key": "tw-insurance",
+     "text": "ทำประกันเดินทางที่ครอบคลุมค่ารักษา",
+     "link": "https://www.boca.gov.tw/",
+     "when": "ก่อนบิน",
+     "level": "recommended",
+     "why": "ค่ารักษาสำหรับชาวต่างชาติแพง"
+    },
+    {
+     "key": "tw-esim",
+     "text": "ซื้อ eSIM/ซิม หรือรับซิมที่สนามบินเถาหยวน",
+     "link": "https://eng.taiwan.net.tw/",
+     "when": "ก่อนบิน / ตอนถึง",
+     "level": "optional",
+     "why": "ใช้แผนที่และแอปแปลภาษา"
+    }
+   ],
+   "upcoming": [
+    "ฟรีวีซ่าคนไทยจะหมดวันที่ 31 ก.ค. 2027 รอประกาศว่าจะต่ออายุหรือไม่"
+   ],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตอายุเหลือ ≥ 6 เดือน",
+     "level": "required",
+     "why": "เงื่อนไขฟรีวีซ่า"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วขากลับ/ขาออกที่ยืนยันแล้ว",
+     "level": "required",
+     "why": "เงื่อนไขฟรีวีซ่า"
+    },
+    {
+     "key": "hotel-all",
+     "text": "ใบยืนยันที่พักทุกคืน",
+     "level": "required",
+     "why": "ตม. อาจขอดู"
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ",
+     "level": "recommended",
+     "why": "ช่วยตอบคำถาม ตม."
+    },
+    {
+     "key": "money",
+     "text": "เงินสด/บัตรเครดิตพอสำหรับทั้งทริป",
+     "level": "recommended",
+     "why": "ต้องแสดงว่ามีเงินพอใช้"
+    },
+    {
+     "key": "statement",
+     "text": "สเตทเมนต์บัญชีย้อนหลัง",
+     "level": "optional",
+     "why": "ใช้ถ้าถูกขอหลักฐานการเงิน"
+    },
+    {
+     "key": "insurance",
+     "text": "กรมธรรม์ประกันเดินทาง",
+     "level": "recommended",
+     "why": "ไม่บังคับ แต่ช่วยเรื่องค่ารักษา"
+    }
+   ],
+   "tips": [
+    "ซื้อบัตร EasyCard ไว้ใช้ MRT รถบัส และร้านสะดวกซื้อ",
+    "แลกเงิน TWD ที่สนามบินเถาหยวนเรทใช้ได้ หรือถอนจาก ATM",
+    "สาย 1990 ของ ตม. มีบริการภาษาไทย จ.–ศ. 9:00–17:00",
+    "ร้านเล็กและตลาดกลางคืนส่วนใหญ่รับเงินสด",
+    "บนรถ MRT ห้ามกินดื่ม รวมถึงหมากฝรั่ง (มีค่าปรับ)",
+    "ต.ค.–พ.ย. อากาศเย็นสบาย พกเสื้อกันหนาวบาง/ร่มไว้"
+   ],
+   "sources": [
+    {
+     "title": "Nation Thailand: Taiwan extends visa-free entry for Thais to July 2027",
+     "url": "https://www.nationthailand.com/news/general/40068763"
+    },
+    {
+     "title": "MOFA: Visa-free trial extension for Thailand, Brunei, Philippines (1 Aug 2026 – 31 Jul 2027)",
+     "url": "https://www.taiwanembassy.org/ph_en/post/11845.html"
+    },
+    {
+     "title": "TECO: TWAC submission extended to 7 days before arrival",
+     "url": "https://www.taiwanembassy.org/in_en/post/8153.html"
+    },
+    {
+     "title": "สำนักงานการค้าและเศรษฐกิจไทย ไทเป – ติดต่อ",
+     "url": "https://tteo.thaiembassy.org/th/page/contact?menu=5d7dc71915e39c072c004e80"
+    },
+    {
+     "title": "TTEO – เบอร์โทรฉุกเฉินที่จำเป็น",
+     "url": "https://tteo.thaiembassy.org/th/page/55680-emergency-tel?menu=5d7dc71a15e39c072c004f52"
+    },
+    {
+     "title": "Tourism Administration – Travel Service Center",
+     "url": "https://admin.taiwan.net.tw/english/Introduction/Articles?a=1291"
+    },
+    {
+     "title": "Taiwan Tax Refund (TRS) – Eligible goods",
+     "url": "https://www.taxrefund.net.tw/ttr/info/8a8c512c53c2138e0153c216df0f000a?lang=en_US"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงาน/ใบอนุมัติลา",
+      "level": "optional",
+      "why": "แสดงว่าจะกลับมาทำงาน"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "หนังสือรับรองบริษัท/ทะเบียนพาณิชย์",
+      "level": "optional",
+      "why": "แสดงว่ามีธุรกิจในไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "freelance-income",
+      "text": "หลักฐานรายได้หรือสัญญางาน",
+      "level": "optional",
+      "why": "แสดงว่ามีรายได้ต่อเนื่อง"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษา/หนังสือรับรองการศึกษา",
+      "level": "optional",
+      "why": "แสดงว่ายังเรียนอยู่ในไทย"
+     }
+    ],
+    "none": [
+     {
+      "key": "sponsor",
+      "text": "หลักฐานการเงินของผู้ออกค่าใช้จ่าย",
+      "level": "recommended",
+      "why": "แสดงว่ามีเงินพอใช้ตลอดทริป"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "110"
+    },
+    {
+     "label": "รถพยาบาล / ดับเพลิง",
+     "number": "119"
+    },
+    {
+     "label": "สายด่วนข้อมูลท่องเที่ยว 24 ชม. (โทรฟรี)",
+     "number": "0800-011-765",
+     "note": "การท่องเที่ยวไต้หวัน ให้ข้อมูลการเดินทาง",
+     "source": "https://admin.taiwan.net.tw/english/Introduction/Articles?a=1291"
+    },
+    {
+     "label": "สายด่วนชาวต่างชาติ (ตม.)",
+     "number": "1990",
+     "note": "24 ชม.; ภาษาไทย จ.–ศ. 9:00–17:00",
+     "source": "https://tteo.thaiembassy.org/th/page/55680-emergency-tel?menu=5d7dc71a15e39c072c004f52"
+    },
+    {
+     "label": "สายฉุกเฉิน สนง.การค้าฯ ไทย (นอกเวลาทำการ)",
+     "number": "+886 952-238-931",
+     "note": "เฉพาะกรณีฉุกเฉินเท่านั้น",
+     "source": "https://tteo.thaiembassy.org/th/page/55680-emergency-tel?menu=5d7dc71a15e39c072c004f52"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สำนักงานการค้าและเศรษฐกิจไทย ไทเป",
+     "nameEn": "Thailand Trade and Economic Office, Taipei",
+     "phone": "+886 2 2775-2211 ต่อ 110-119",
+     "phone2": "+886 952-238-931",
+     "address": "No. 206, Civic Boulevard Section 3, Da'an District, Taipei City 106, Taiwan",
+     "hours": "จ.–ศ. 9:00–12:00, 14:00–17:00",
+     "match": [
+      "ไทเป",
+      "ไต้หวันเหนือ",
+      "เถาหยวน",
+      "ซินจู๋",
+      "ไถจง",
+      "taipei",
+      "new taipei",
+      "taoyuan",
+      "hsinchu",
+      "taichung",
+      "keelung",
+      "jiufen",
+      "hualien"
+     ],
+     "source": "https://tteo.thaiembassy.org/th/page/contact?menu=5d7dc71915e39c072c004e80"
+    },
+    {
+     "name": "สนง.การค้าฯ ไทย ไทเป ฝ่ายแรงงาน เกาสง",
+     "nameEn": "TTEO Kaohsiung Labour Division",
+     "phone": "+886-7-338-0052",
+     "address": "No. 12, 11-1F Fuxing 4th Road, Qianzhen District, Kaohsiung City 806",
+     "hours": "ดูแลงานด้านแรงงานเป็นหลัก งานกงสุลติดต่อไทเป",
+     "match": [
+      "เกาสง",
+      "ไถหนาน",
+      "ผิงตง",
+      "เขิ่นติง",
+      "kaohsiung",
+      "tainan",
+      "pingtung",
+      "kenting"
+     ],
+     "source": "https://tteo.thaiembassy.org/th/page/contact?menu=5d7dc71915e39c072c004e80"
+    }
+   ],
+   "taxFree": {
+    "currency": "TWD",
+    "min": 2000,
+    "points": [
+     "ซื้อตั้งแต่ NT$2,000 ในร้านเดียวกันวันเดียวกัน (ร้านที่มีป้าย TRS)",
+     "VAT 5% หักค่าธรรมเนียมก่อนคืน",
+     "ยอดไม่เกิน NT$48,000 ขอคืนเงินเล็กน้อยที่ร้านได้ทันที (small-amount on-site refund)",
+     "ต้องนำของออกนอกประเทศภายใน 90 วันนับจากวันซื้อ",
+     "ที่สนามบินไปเคาน์เตอร์คืนภาษีก่อนเช็กอินกระเป๋า โดยใช้พาสปอร์ต ใบเสร็จ และฟอร์ม",
+     "ควรถึงสนามบินก่อนบิน 3 ชม."
+    ],
+    "source": "https://www.taxrefund.net.tw/ttr/info/8a8c512c53c2138e0153c216df0f000a?lang=en_US"
+   }
+  },
+  "SG": {
+   "name": "สิงคโปร์",
+   "nameEn": "Republic of Singapore",
+   "currency": "SGD",
+   "taxiHint": "Please take me to this hotel",
+   "match": [
+    "สิงคโปร์",
+    "singapore",
+    "changi",
+    "sentosa",
+    "marina bay",
+    "little india",
+    "bugis",
+    "clarke quay",
+    "jewel",
+    "universal studios singapore",
+    "gardens by the bay"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยเข้าได้โดยไม่ต้องขอวีซ่าและผ่าน ตม. ด้วยช่องอัตโนมัติได้ แต่กฎหมายเข้มงวดมาก โดยเฉพาะเรื่องบุหรี่ไฟฟ้า และตั้งแต่ 30 ม.ค. 2026 สายการบินอาจปฏิเสธไม่ให้ขึ้นเครื่องตามคำสั่ง No-Boarding Directive",
+   "entry": [
+    "พาสปอร์ตไทยเล่มธรรมดาเข้าได้ไม่ต้องขอวีซ่า อยู่ได้ไม่เกิน 30 วัน",
+    "จำนวนวันที่อยู่ได้จริงดูจาก Visit Pass ที่ ตม. ให้ตอนเข้าเมือง ห้ามอยู่เกินกำหนด",
+    "พาสปอร์ตต้องเหลืออายุอย่างน้อย 6 เดือน",
+    "ต้องกรอก SG Arrival Card ภายใน 3 วันก่อนถึง (นับวันที่ถึงด้วย) และกรอกฟรี",
+    "ควรมีตั๋วขาออกและเงินพอใช้ระหว่างพัก",
+    "Visit Pass ใช้ท่องเที่ยวเท่านั้น ห้ามทำงาน",
+    "ต่างชาติทุกสัญชาติใช้ช่องอัตโนมัติขาเข้าได้ ไม่ต้องลงทะเบียนก่อน"
+   ],
+   "maxStayDays": 30,
+   "beforeFlight": [
+    {
+     "key": "sg-arrival-card",
+     "text": "กรอก SG Arrival Card ผ่านเว็บ ICA หรือแอป MyICA",
+     "link": "https://eservices.ica.gov.sg/sgarrivalcard/",
+     "when": "ภายใน 3 วันก่อนถึง (นับวันที่ถึงด้วย)",
+     "level": "required",
+     "why": "ทุกคนต้องกรอก กรอกฟรี และ ICA ใช้ข้อมูลนี้คัดกรองผู้โดยสารก่อนขึ้นเครื่อง"
+    },
+    {
+     "key": "sg-fake-sites",
+     "text": "ระวังเว็บปลอมที่เก็บเงินค่ากรอก SGAC ให้ใช้เฉพาะเว็บ ica.gov.sg หรือแอป MyICA",
+     "link": "https://www.ica.gov.sg/news-and-publications/newsroom/media-release/public-advisory-on-fake-sg-arrival-card-website",
+     "when": "ตอนกรอก SGAC",
+     "level": "recommended",
+     "why": "SGAC ไม่มีค่าธรรมเนียม"
+    },
+    {
+     "key": "sg-passport-6m",
+     "text": "เช็กว่าพาสปอร์ตเหลืออายุอย่างน้อย 6 เดือน",
+     "link": "https://www.ica.gov.sg/enter-transit-depart/entering-singapore",
+     "when": "ก่อนจองตั๋ว",
+     "level": "required",
+     "why": "ถ้าอายุไม่ถึงจะเข้าเมืองไม่ได้และใช้ช่องอัตโนมัติไม่ได้"
+    },
+    {
+     "key": "sg-nbd",
+     "text": "ตั้งแต่ 30 ม.ค. 2026 สายการบินอาจปฏิเสธไม่ให้ขึ้นเครื่องตาม No-Boarding Directive ถ้าโดนต้องยื่นขออนุญาตจาก ICA ก่อนบินใหม่",
+     "link": "https://www.ica.gov.sg/",
+     "when": "ตอนเช็กอิน",
+     "level": "recommended",
+     "why": "กรอกข้อมูลให้ถูกต้องและเข้าเงื่อนไขการเข้าประเทศครบ"
+    },
+    {
+     "key": "sg-no-vape",
+     "text": "อย่าพกบุหรี่ไฟฟ้าหรือพอตทุกชนิด รวมถึงในกระเป๋าโหลด",
+     "link": "https://www.moh.gov.sg/newsroom/whole-of-government-efforts-to-tackle-vaping/",
+     "when": "ตอนจัดกระเป๋า",
+     "level": "required",
+     "why": "ผิดกฎหมาย โดนปรับและอาจถูกเนรเทศ"
+    }
+   ],
+   "upcoming": [
+    "สายด่วน 1777 (รถพยาบาลกรณีไม่ฉุกเฉิน) จะยกเลิกตั้งแต่ 1 ม.ค. 2027 ให้โทร NurseFirst 6262 6262 แทน"
+   ],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตตัวจริงที่เหลืออายุอย่างน้อย 6 เดือน",
+     "level": "required",
+     "why": "เงื่อนไขของ ICA"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วเครื่องบินขากลับหรือตั๋วไปประเทศถัดไป",
+     "level": "required",
+     "why": "ICA กำหนดให้มีหลักฐานการเดินทางออก"
+    },
+    {
+     "key": "hotel-all",
+     "text": "ใบจองที่พักครบทุกคืน",
+     "level": "recommended",
+     "why": "ใช้กรอกที่อยู่ใน SGAC และตอบ ตม."
+    },
+    {
+     "key": "money",
+     "text": "เงินสดหรือบัตรที่พอใช้ตลอดทริป",
+     "level": "recommended",
+     "why": "ICA กำหนดให้มีเงินพอใช้ระหว่างพัก"
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ",
+     "level": "optional",
+     "why": "เผื่อ ตม. ถาม"
+    },
+    {
+     "key": "insurance",
+     "text": "ประกันการเดินทาง",
+     "level": "recommended",
+     "why": "ค่ารักษาพยาบาลแพงมาก"
+    }
+   ],
+   "tips": [
+    "บุหรี่ไฟฟ้าผิดกฎหมาย ใช้หรือพกครั้งแรกโดนปรับ S$700 ถ้าทำซ้ำ ต่างชาติอาจถูกเนรเทศและห้ามกลับเข้าประเทศ",
+    "พอตที่ผสมยา etomidate นับเป็นยาเสพติด โทษหนักกว่าและกระทบสถานะการเข้าเมืองทันที",
+    "ห้ามนำเข้าหรือขายหมากฝรั่ง อย่าพกเข้าไป",
+    "บุหรี่ไม่มีโควตาปลอดภาษี ถ้าพกเข้าไปต้องสำแดงและเสียภาษี",
+    "ทิ้งขยะ สูบบุหรี่นอกจุดที่กำหนด หรือกินดื่มใน MRT มีโทษปรับสูง",
+    "ตอนผ่านช่องอัตโนมัติให้ถอดแว่นกันแดด หมวก และแมสก์ และงดใส่คอนแทคเลนส์สี",
+    "จ่าย MRT และรถบัสได้ด้วยการแตะบัตร Visa หรือ Mastercard แบบ contactless",
+    "อากาศร้อนชื้นทั้งปี ฝนตกบ่อย พกร่มไปด้วย"
+   ],
+   "sources": [
+    {
+     "title": "ICA – ข้อกำหนดการเข้าเมือง",
+     "url": "https://www.ica.gov.sg/enter-transit-depart/entering-singapore"
+    },
+    {
+     "title": "ICA – SG Arrival Card",
+     "url": "https://www.ica.gov.sg/enter-transit-depart/entering-singapore/sg-arrival-card"
+    },
+    {
+     "title": "ICA – ช่องอัตโนมัติสำหรับนักท่องเที่ยว",
+     "url": "https://www.ica.gov.sg/enter-transit-depart/at-our-checkpoints/for-travellers/automated-lanes"
+    },
+    {
+     "title": "กรมการกงสุล – ประเทศที่ยกเว้นวีซ่าให้ผู้ถือพาสปอร์ตไทย",
+     "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/%E0%B9%80%E0%B8%AD%E0%B8%81%E0%B8%AA%E0%B8%B2%E0%B8%A3/THA.pdf"
+    },
+    {
+     "title": "MOH – มาตรการคุมบุหรี่ไฟฟ้า (มีผล 1 ก.ย. 2025)",
+     "url": "https://www.moh.gov.sg/newsroom/whole-of-government-efforts-to-tackle-vaping/"
+    },
+    {
+     "title": "Singapore Customs – Tourist Refund Scheme",
+     "url": "https://customs.gov.sg/individuals/going-through-customs/departure/tourist-refund-scheme/"
+    },
+    {
+     "title": "MHA – ยกเลิกสายด่วน 1777 ตั้งแต่ 1 ม.ค. 2027",
+     "url": "https://www.mha.gov.sg/media-room/newsroom/1777-non-emergency-ambulance-hotline-to-cease-from-1-january-2027/"
+    },
+    {
+     "title": "สถานเอกอัครราชทูตไทย ณ สิงคโปร์ – ติดต่อเรา",
+     "url": "https://singapore.thaiembassy.org/en/page/contact-us?menu=621c828fa6da916dfd326663"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงานหรือใบอนุมัติลา",
+      "level": "optional",
+      "why": "ยืนยันว่าจะกลับมาทำงาน ใช้เมื่อ ตม. ถาม"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "หนังสือรับรองบริษัทหรือทะเบียนพาณิชย์",
+      "level": "optional",
+      "why": "ยืนยันว่ามีกิจการที่ไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "statement",
+      "text": "สเตทเมนต์บัญชีย้อนหลัง หรือหลักฐานรายได้",
+      "level": "optional",
+      "why": "แสดงว่ามีเงินพอใช้ระหว่างเที่ยว"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษาหรือหนังสือรับรองสถานะนักศึกษา",
+      "level": "optional",
+      "why": "ยืนยันว่าจะกลับไปเรียนต่อ"
+     }
+    ],
+    "none": [
+     {
+      "key": "statement",
+      "text": "สเตทเมนต์บัญชีหรือหลักฐานว่ามีคนออกค่าใช้จ่ายให้",
+      "level": "recommended",
+      "why": "ใช้แสดงว่ามีเงินพอใช้ระหว่างพัก"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "999"
+    },
+    {
+     "label": "รถพยาบาล / ดับเพลิง",
+     "number": "995"
+    },
+    {
+     "label": "NurseFirst (ขอคำแนะนำด้านสุขภาพ กรณีไม่ฉุกเฉิน)",
+     "number": "6262 6262",
+     "note": "สายด่วน 1777 ใช้ได้ถึง 31 ธ.ค. 2026 หลังจากนั้นให้โทรเบอร์นี้แทน",
+     "source": "https://www.mha.gov.sg/media-room/newsroom/1777-non-emergency-ambulance-hotline-to-cease-from-1-january-2027/"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานเอกอัครราชทูตไทย ณ สิงคโปร์",
+     "nameEn": "Royal Thai Embassy, Singapore",
+     "phone": "+65 6737 2644 ext.665",
+     "phone2": "+65 6737 2158 ext. 664",
+     "address": "370 Orchard Road, Singapore 238870 (visitor entrance at Claymore Road)",
+     "hours": "จ.–ศ. 09:30–17:30 น. งานกงสุลเปิด จ.–พฤ. ยื่นเอกสาร 09:30–11:30 น. รับเอกสาร 14:00–15:00 น. (ปิดวันศุกร์)",
+     "match": [
+      "singapore",
+      "สิงคโปร์"
+     ],
+     "source": "https://singapore.thaiembassy.org/en/page/contact-us?menu=621c828fa6da916dfd326663"
+    }
+   ],
+   "taxFree": {
+    "currency": "SGD",
+    "min": 100,
+    "points": [
+     "ต้องซื้ออย่างน้อย S$100 รวม GST แล้ว",
+     "รวมใบเสร็จได้สูงสุด 3 ใบ ถ้าซื้อวันเดียวกันจากร้านที่ใช้เลข GST เดียวกัน",
+     "ใช้ได้เฉพาะร้านที่ร่วมโครงการ TRS ผู้ขอคืนต้องอายุ 16 ปีขึ้นไปและออกจากประเทศทางเครื่องบิน",
+     "ของที่จะโหลดใต้เครื่อง ให้ทำเรื่องที่ตู้ eTRS โถงเช็กอินก่อนผ่าน ตม.",
+     "ของที่ถือขึ้นเครื่อง ให้ทำเรื่องที่ตู้ eTRS ฝั่ง Transit หลังผ่าน ตม.",
+     "ต้องนำของออกไปเองและยังไม่ได้ใช้ ภาษี GST ตอนนี้ 9% เงินที่ได้คืนจริงจะหักค่าธรรมเนียมผู้ดำเนินการแล้ว",
+     "Global Tax Free เป็นผู้คืนเงิน เช็กสถานะได้ที่ touristrefund.sg"
+    ],
+    "source": "https://customs.gov.sg/individuals/going-through-customs/departure/tourist-refund-scheme/"
+   }
+  },
+  "MY": {
+   "name": "มาเลเซีย",
+   "nameEn": "Malaysia",
+   "currency": "MYR",
+   "taxiHint": "Tolong bawa saya ke hotel ini",
+   "match": [
+    "มาเลเซีย",
+    "malaysia",
+    "กัวลาลัมเปอร์",
+    "kuala lumpur",
+    "ปีนัง",
+    "penang",
+    "จอร์จทาวน์",
+    "george town",
+    "ลังกาวี",
+    "langkawi",
+    "มะละกา",
+    "malacca",
+    "melaka",
+    "โกตาคินาบาลู",
+    "kota kinabalu",
+    "ซาบาห์",
+    "sabah",
+    "คาเมรอนไฮแลนด์",
+    "cameron highlands",
+    "เก็นติ้ง",
+    "genting",
+    "อิโปห์",
+    "ipoh",
+    "ยะโฮร์บาห์รู",
+    "johor bahru",
+    "โกตาบารู",
+    "kota bharu",
+    "กูชิง",
+    "kuching",
+    "ปุตราจายา",
+    "putrajaya"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยไม่ต้องขอวีซ่าเมื่อไปเที่ยวไม่เกิน 30 วัน มีแค่ต้องลงทะเบียน MDAC ออนไลน์ฟรีก่อนเดินทาง 3 วัน",
+   "entry": [
+    "พาสปอร์ตไทยไม่ต้องขอวีซ่าเมื่อไปเที่ยว อยู่ได้ไม่เกิน 30 วัน",
+    "ห้ามทำงานทุกรูปแบบ แม้จะได้ค่าตอบแทนเพียงเล็กน้อย",
+    "ต้องกรอก MDAC (บัตรขาเข้าดิจิทัล) ทุกคนรวมเด็กเล็ก โดยกรอกแยกกันคนละใบ",
+    "MDAC ใช้ได้กับการเข้าประเทศ 1 ครั้งเท่านั้น หากออกแล้วกลับเข้ามาอีกต้องกรอกใหม่",
+    "ตม. อาจขอดูตั๋วขากลับ ที่พัก และเงินค่าใช้จ่าย",
+    "คดียาเสพติดมีโทษรุนแรงถึงขั้นประหารชีวิต"
+   ],
+   "maxStayDays": 30,
+   "beforeFlight": [
+    {
+     "key": "my-mdac",
+     "text": "กรอก MDAC (Malaysia Digital Arrival Card) ทางเว็บไซต์ทางการ",
+     "link": "https://imigresen-online.imi.gov.my/mdac/main",
+     "when": "ภายใน 3 วัน (72 ชม.) ก่อนเวลาถึงมาเลเซีย",
+     "level": "required",
+     "why": "ทุกคนต้องกรอก และสายการบินอาจขอดูตอนเช็กอิน"
+    },
+    {
+     "key": "my-mdac-scam",
+     "text": "ใช้เว็บไซต์ imi.gov.my เท่านั้นเพราะ MDAC ไม่มีค่าใช้จ่าย",
+     "link": "https://imigresen-online.imi.gov.my/mdac/main",
+     "when": "ตอนกรอก MDAC",
+     "level": "recommended",
+     "why": "มีเว็บปลอมที่เก็บค่าธรรมเนียม"
+    },
+    {
+     "key": "my-passport-6m",
+     "text": "เช็กว่าพาสปอร์ตมีอายุเหลือเกิน 6 เดือน",
+     "link": "https://www.imi.gov.my",
+     "when": "ก่อนจองตั๋ว",
+     "level": "required",
+     "why": "เป็นเงื่อนไขพื้นฐานในการเข้าประเทศ"
+    },
+    {
+     "key": "my-insurance",
+     "text": "ซื้อประกันเดินทางที่ครอบคลุมค่ารักษาพยาบาล",
+     "link": "https://kualalumpur.thaiembassy.org",
+     "when": "ก่อนบิน",
+     "level": "recommended",
+     "why": "โรงพยาบาลเอกชนค่ารักษาสูง"
+    }
+   ],
+   "upcoming": [
+    "ระบบ MyNIISe (สแกนใบหน้าและไบโอเมตริก) ทยอยเปิดใช้ทุกด่านภายในราวปลายปี 2026 โดยช่องเจ้าหน้าที่ยังเปิดตามปกติ",
+    "กรอก MDAC ผ่านแอป MyNIISe ได้แล้ว นอกเหนือจากเว็บไซต์"
+   ],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตอายุเหลือเกิน 6 เดือน",
+     "level": "required",
+     "why": "ใช้เข้าประเทศ"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วขากลับหรือตั๋วไปประเทศถัดไป",
+     "level": "recommended",
+     "why": "ตม. หรือสายการบินอาจขอดู"
+    },
+    {
+     "key": "hotel-all",
+     "text": "ใบจองที่พักทุกคืน",
+     "level": "recommended",
+     "why": "ใช้กรอก MDAC และใช้ตอบ ตม."
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ",
+     "level": "optional",
+     "why": "ใช้ตอบเมื่อถูกถามจุดประสงค์ของการเดินทาง"
+    },
+    {
+     "key": "money",
+     "text": "เงินสดหรือบัตรที่พอสำหรับทั้งทริป",
+     "level": "recommended",
+     "why": "ใช้แสดงว่ามีเงินพอใช้ระหว่างเที่ยว"
+    },
+    {
+     "key": "insurance",
+     "text": "กรมธรรม์ประกันเดินทาง",
+     "level": "recommended",
+     "why": "ใช้คุ้มครองค่ารักษาพยาบาล"
+    }
+   ],
+   "tips": [
+    "กรอก MDAC ให้เสร็จก่อนไปสนามบิน แล้วแคปหน้าจอผลการลงทะเบียนเก็บไว้",
+    "ที่พักเก็บภาษี Tourism Tax จากชาวต่างชาติ คืนละ RM10 ต่อห้อง",
+    "มาเลเซียไม่มีระบบคืนภาษี (VAT Refund) ให้นักท่องเที่ยวแล้ว แต่ยังซื้อของปลอดภาษีที่ลังกาวีและร้าน Duty Free ได้",
+    "เรียกรถด้วยแอป Grab สะดวกและราคาชัดเจน",
+    "ใน KL ใช้บัตร Touch 'n Go ขึ้น LRT/MRT ได้ และควรเผื่อเวลารถติดช่วงเย็น",
+    "เมื่อเข้ามัสยิดควรแต่งกายสุภาพ ปิดไหล่และเข่า",
+    "เวลาที่มาเลเซียเร็วกว่าไทย 1 ชั่วโมง"
+   ],
+   "sources": [
+    {
+     "title": "MDAC – Immigration Department of Malaysia",
+     "url": "https://imigresen-online.imi.gov.my/mdac/main"
+    },
+    {
+     "title": "Royal Thai Embassy Kuala Lumpur – Contact",
+     "url": "https://kualalumpur.thaiembassy.org/th/page/contact-us"
+    },
+    {
+     "title": "สถานกงสุลใหญ่ ณ เมืองปีนัง",
+     "url": "https://penang.thaiembassy.org/th/page/17352"
+    },
+    {
+     "title": "สถานกงสุลใหญ่ ณ เมืองโกตาบารู",
+     "url": "https://kotabharu.thaiembassy.org/th/page/17232"
+    },
+    {
+     "title": "Visa policy of Malaysia – Wikipedia",
+     "url": "https://en.wikipedia.org/wiki/Visa_policy_of_Malaysia"
+    },
+    {
+     "title": "MDAC 2026 Guide – Wego",
+     "url": "https://blog.wego.com/mdac/"
+    },
+    {
+     "title": "Tax Refund Malaysia for Tourists – Wise",
+     "url": "https://wise.com/my/blog/tax-refund-malaysia"
+    },
+    {
+     "title": "Emergency numbers in Penang",
+     "url": "https://onpenang.com/emergency-numbers-in-penang/"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงานหรือใบอนุมัติลา",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่าจะกลับไทยตามกำหนด"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "สำเนาหนังสือรับรองบริษัทหรือทะเบียนพาณิชย์",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่ามีกิจการอยู่ที่ไทย"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "freelance-proof",
+      "text": "หลักฐานรายได้หรือ statement ย้อนหลัง",
+      "level": "optional",
+      "why": "ใช้แสดงว่ามีเงินพอใช้ระหว่างเที่ยว"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษาหรือหนังสือรับรองสถานศึกษา",
+      "level": "optional",
+      "why": "ใช้ยืนยันว่ากำลังเรียนอยู่ที่ไทย"
+     }
+    ],
+    "none": [
+     {
+      "key": "statement",
+      "text": "statement บัญชีหรือหลักฐานผู้ออกค่าใช้จ่าย",
+      "level": "recommended",
+      "why": "ใช้แสดงว่ามีเงินพอใช้ระหว่างเที่ยว"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ / รถพยาบาล",
+     "number": "999"
+    },
+    {
+     "label": "ดับเพลิง",
+     "number": "994"
+    },
+    {
+     "label": "ฉุกเฉินจากมือถือ",
+     "number": "112",
+     "note": "โทรได้จากมือถือทุกเครื่อง",
+     "source": "https://onpenang.com/emergency-numbers-in-penang/"
+    },
+    {
+     "label": "สถานทูตไทย KL (ฉุกเฉินสำหรับคนไทย)",
+     "number": "+60 17-700 4822",
+     "note": "ใช้กรณีเร่งด่วน เช่น พาสปอร์ตหาย หรือถูกจับกุม",
+     "source": "https://kualalumpur.thaiembassy.org/th/page/contact-us"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานเอกอัครราชทูต ณ กรุงกัวลาลัมเปอร์",
+     "nameEn": "Royal Thai Embassy, Kuala Lumpur",
+     "phone": "03-2148 8420",
+     "phone2": "03-2148 8222 (กงสุล) / 017-700 4822 (ฉุกเฉิน)",
+     "address": "206 Jalan Ampang, 50450 Kuala Lumpur",
+     "hours": "จ.–ศ. 09:00–13:00, 14:00–17:00 (งานกงสุล 09:30–12:30, 14:30–16:30)",
+     "match": [
+      "กัวลาลัมเปอร์",
+      "kuala lumpur",
+      "kl",
+      "สลังงอร์",
+      "selangor",
+      "ปุตราจายา",
+      "putrajaya",
+      "มะละกา",
+      "malacca",
+      "melaka",
+      "เก็นติ้ง",
+      "genting",
+      "ยะโฮร์",
+      "johor",
+      "ซาบาห์",
+      "sabah",
+      "โกตาคินาบาลู",
+      "kota kinabalu",
+      "ซาราวัก",
+      "sarawak",
+      "kuching"
+     ],
+     "source": "https://kualalumpur.thaiembassy.org/th/page/contact-us"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ เมืองปีนัง",
+     "nameEn": "Royal Thai Consulate-General, Penang",
+     "phone": "04-226 8029",
+     "phone2": "04-226 9484 / 04-228 6784 / 04-226 3121 / 04-226 2533",
+     "address": "No. 1, Jalan Tunku Abdul Rahman, 10350 Penang, Malaysia",
+     "hours": "จ.–ศ. (เช็กวันหยุดราชการบนเว็บไซต์)",
+     "match": [
+      "ปีนัง",
+      "penang",
+      "จอร์จทาวน์",
+      "george town",
+      "ลังกาวี",
+      "langkawi",
+      "เกดะห์",
+      "kedah",
+      "เปอร์ลิส",
+      "perlis",
+      "เประ",
+      "perak",
+      "อิโปห์",
+      "ipoh",
+      "คาเมรอนไฮแลนด์",
+      "cameron highlands"
+     ],
+     "source": "https://penang.thaiembassy.org/th/page/17352"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ เมืองโกตาบารู",
+     "nameEn": "Royal Thai Consulate-General, Kota Bharu",
+     "phone": "09-744 5266",
+     "phone2": "09-748 2545 / 09-744 9801",
+     "address": "4426 Jalan Tok Guru, 15400 Kota Bharu, Kelantan, Malaysia",
+     "hours": "จ.–ศ. (เช็กเวลาทำการบนเว็บไซต์)",
+     "match": [
+      "โกตาบารู",
+      "kota bharu",
+      "กลันตัน",
+      "kelantan",
+      "ตรังกานู",
+      "terengganu",
+      "kuala terengganu",
+      "เปอร์เฮนเทียน",
+      "perhentian",
+      "redang"
+     ],
+     "source": "https://kotabharu.thaiembassy.org/th/page/17232"
+    }
+   ],
+   "taxFree": null
+  },
+  "VN": {
+   "name": "เวียดนาม",
+   "nameEn": "Viet Nam",
+   "currency": "VND",
+   "taxiHint": "Làm ơn đưa tôi đến khách sạn này.",
+   "match": [
+    "เวียดนาม",
+    "vietnam",
+    "viet nam",
+    "ฮานอย",
+    "hanoi",
+    "โฮจิมินห์",
+    "ไซ่ง่อน",
+    "ho chi minh",
+    "saigon",
+    "ดานัง",
+    "da nang",
+    "danang",
+    "ฮอยอัน",
+    "hoi an",
+    "ดาลัด",
+    "dalat",
+    "da lat",
+    "ซาปา",
+    "sapa",
+    "ฮาลองเบย์",
+    "ฮาลอง",
+    "ha long",
+    "halong",
+    "เว้",
+    "ฟูก๊วก",
+    "phu quoc",
+    "ญาจาง",
+    "nha trang",
+    "นิงห์บิงห์",
+    "ninh binh",
+    "มุยเน่",
+    "mui ne"
+   ],
+   "risk": "low",
+   "riskReason": "คนไทยเข้าได้โดยไม่ต้องขอวีซ่า 30 วันตามความตกลงอาเซียน ไม่ต้องขอเอกสารล่วงหน้า แค่ต้องดูอายุพาสปอร์ตให้เหลือพอ",
+   "entry": [
+    "พาสปอร์ตไทยได้รับยกเว้นวีซ่า เที่ยวได้สูงสุด 30 วันต่อการเข้า 1 ครั้ง",
+    "พาสปอร์ตต้องเหลืออายุอย่างน้อย 6 เดือน (เข้มงวดขึ้นตั้งแต่ 1 มี.ค. 2026)",
+    "ถ้าจะอยู่เกิน 30 วัน ต้องขอ e-Visa (อยู่ได้สูงสุด 90 วัน) ก่อนเดินทาง",
+    "ห้ามทำงานด้วยสิทธิ์ยกเว้นวีซ่า",
+    "อยู่เกินกำหนดจะโดนปรับ และอาจมีปัญหาตอนออกนอกประเทศ"
+   ],
+   "maxStayDays": 30,
+   "beforeFlight": [
+    {
+     "key": "vn-passport-6m",
+     "text": "เช็กว่าพาสปอร์ตเหลืออายุ ≥ 6 เดือน นับจากวันเข้าเวียดนาม",
+     "link": "https://evisa.gov.vn",
+     "when": "ก่อนจองตั๋ว",
+     "level": "required",
+     "why": "ตม.ไม่ให้เข้า หรือสายการบินไม่ให้ขึ้นเครื่อง"
+    },
+    {
+     "key": "vn-pai",
+     "text": "กรอกข้อมูลล่วงหน้า (PAI) รับ QR ไว้ยื่นตอนผ่าน ตม. (ฟรี)",
+     "link": "https://prearrival.immigration.gov.vn",
+     "when": "ภายใน 3 วันก่อนถึง",
+     "level": "recommended",
+     "why": "ช่วยให้ผ่าน ตม. เร็วขึ้นที่สนามบินเตินเซินเญิ้ต โหน่ยบ่าย ดานัง และฟูก๊วก"
+    },
+    {
+     "key": "vn-evisa",
+     "text": "ขอ e-Visa เฉพาะกรณีอยู่เกิน 30 วัน (ใช้เว็บทางการเท่านั้น)",
+     "link": "https://evisa.gov.vn",
+     "when": "ล่วงหน้า ≥ 1 สัปดาห์",
+     "level": "optional",
+     "why": "สิทธิ์ยกเว้นวีซ่าใช้ได้แค่ 30 วัน"
+    },
+    {
+     "key": "vn-esim",
+     "text": "ซื้อ eSIM หรือซิมท้องถิ่น (Viettel/Vinaphone/Mobifone)",
+     "link": "",
+     "when": "ก่อนบิน",
+     "level": "recommended",
+     "why": "ต้องใช้เน็ตเรียก Grab และเปิดแผนที่"
+    }
+   ],
+   "upcoming": [
+    "ระบบกรอกข้อมูลล่วงหน้า (PAI) จะขยายไปสนามบินนานาชาติอื่นๆ ทยอยเพิ่ม ตอนนี้ยังไม่บังคับ"
+   ],
+   "docs": [
+    {
+     "key": "passport",
+     "text": "พาสปอร์ตที่เหลืออายุ ≥ 6 เดือน",
+     "level": "required",
+     "why": "ใช้เข้าประเทศ"
+    },
+    {
+     "key": "return-ticket",
+     "text": "ตั๋วขากลับหรือตั๋วไปประเทศถัดไปภายใน 30 วัน",
+     "level": "recommended",
+     "why": "สายการบินหรือ ตม. อาจขอดู"
+    },
+    {
+     "key": "hotel-all",
+     "text": "หลักฐานจองที่พักทุกคืน",
+     "level": "recommended",
+     "why": "ใช้กรอก PAI และตอบ ตม."
+    },
+    {
+     "key": "itinerary",
+     "text": "แพลนเที่ยวคร่าวๆ",
+     "level": "optional",
+     "why": "เผื่อ ตม. ถาม"
+    },
+    {
+     "key": "money",
+     "text": "เงินสด/บัตรพอใช้ตลอดทริป",
+     "level": "optional",
+     "why": "ร้านเล็กส่วนใหญ่รับแต่เงินสด"
+    },
+    {
+     "key": "insurance",
+     "text": "ประกันเดินทาง",
+     "level": "recommended",
+     "why": "ไม่บังคับ แต่ค่ารักษาของโรงพยาบาลเอกชนแพง"
+    }
+   ],
+   "tips": [
+    "แลกเงินดองที่ร้านทองหรือร้านแลกเงินในเมือง เรทดีกว่าที่สนามบิน",
+    "เงินดองมีเลข 0 เยอะ ระวังสับสนระหว่างแบงก์ 20,000 กับ 500,000 (สีคล้ายกัน)",
+    "เรียกรถด้วย Grab, Xanh SM หรือ Be ได้ราคาชัดเจน ไม่ต้องต่อราคา",
+    "ข้ามถนนให้เดินช้าๆ ด้วยความเร็วเท่าเดิม อย่าหยุดหรือวิ่งกะทันหัน",
+    "ช่วง พ.ย.–ธ.ค. เหนือ (ฮานอย/ซาปา) อากาศเย็น ภาคกลาง (ดานัง/เว้) อาจมีพายุฝน",
+    "กรอก PAI ผ่าน prearrival.immigration.gov.vn เท่านั้น ระวังเว็บปลอมที่เก็บเงิน",
+    "ขอใบกำกับภาษีอิเล็กทรอนิกส์ (e-invoice) ทุกครั้งถ้าจะขอคืน VAT"
+   ],
+   "sources": [
+    {
+     "title": "Vietnam Tourism – Visa exemptions (updated 19 Sep 2026)",
+     "url": "https://www.vietnamtourism.com/en/vietnam-visa-exemptions-which-nationalities-can-enter-visa-free"
+    },
+    {
+     "title": "กระทรวงความมั่นคงสาธารณะเวียดนาม – ระบบ PAI",
+     "url": "https://www.mps.gov.vn/bai-viet/cuc-quan-ly-xuat-nhap-canh-trien-khai-he-thong-cung-cap-thong-tin-truoc-chuyen-di-pai-1778469461"
+    },
+    {
+     "title": "VietnamNet – 2026 entry rules",
+     "url": "https://vietnamnet.vn/en/what-travelers-need-to-know-about-vietnam-s-2026-entry-rules-2512879.html"
+    },
+    {
+     "title": "สถานเอกอัครราชทูต ณ กรุงฮานอย – ช่องทางติดต่อกรณีฉุกเฉิน",
+     "url": "https://rtehanoi.thaiembassy.org/th/page/cate-2095-hot-line?menu=635f40add14d1c5ccd7403b3"
+    },
+    {
+     "title": "สถานกงสุลใหญ่ ณ นครโฮจิมินห์",
+     "url": "https://hochiminh.thaiembassy.org/"
+    },
+    {
+     "title": "Viet Nam News – 112 hotline",
+     "url": "https://vietnamnews.vn/society/1725314/new-112-hotline-connects-citizens-to-unified-emergency-response.html"
+    },
+    {
+     "title": "Vietnam VAT refund – Decree 181/2025",
+     "url": "https://applepricehunt.com/blog/vietnam-vat-refund-2026-new-rules-decree-181"
+    }
+   ],
+   "docsByStatus": {
+    "employee": [
+     {
+      "key": "employment",
+      "text": "หนังสือรับรองการทำงาน/ใบลา",
+      "level": "optional",
+      "why": "ปกติไม่ถูกขอ พกไว้เผื่อถูกถาม"
+     }
+    ],
+    "business": [
+     {
+      "key": "business-reg",
+      "text": "สำเนาหนังสือรับรองบริษัท/ทะเบียนการค้า",
+      "level": "optional",
+      "why": "ปกติไม่ถูกขอ พกไว้เผื่อถูกถาม"
+     }
+    ],
+    "freelance": [
+     {
+      "key": "freelance-proof",
+      "text": "หลักฐานรายได้ เช่น statement ย้อนหลัง",
+      "level": "optional",
+      "why": "ปกติไม่ถูกขอ พกไว้เผื่อถูกถาม"
+     }
+    ],
+    "student": [
+     {
+      "key": "student-id",
+      "text": "บัตรนักศึกษา/หนังสือรับรองสถานศึกษา",
+      "level": "optional",
+      "why": "ปกติไม่ถูกขอ พกไว้เผื่อถูกถาม"
+     }
+    ],
+    "none": [
+     {
+      "key": "statement",
+      "text": "statement หรือหลักฐานว่ามีเงินพอใช้",
+      "level": "optional",
+      "why": "ปกติไม่ถูกขอ พกไว้เผื่อถูกถาม"
+     }
+    ]
+   },
+   "emergency": [
+    {
+     "label": "ตำรวจ",
+     "number": "113"
+    },
+    {
+     "label": "รถพยาบาล",
+     "number": "115"
+    },
+    {
+     "label": "ดับเพลิง",
+     "number": "114"
+    },
+    {
+     "label": "เหตุฉุกเฉิน/กู้ภัย (เบอร์กลาง)",
+     "number": "112",
+     "note": "สายด่วนฉุกเฉินระดับประเทศ เชื่อมต่อกับ 113/114/115",
+     "source": "https://vietnamnews.vn/society/1725314/new-112-hotline-connects-citizens-to-unified-emergency-response.html"
+    }
+   ],
+   "consulates": [
+    {
+     "name": "สถานเอกอัครราชทูตไทย ณ กรุงฮานอย",
+     "nameEn": "Royal Thai Embassy, Hanoi",
+     "phone": "+84 24 3823 5092",
+     "phone2": "090-454-4800 (ฉุกเฉิน 24 ชม.)",
+     "address": "26 Phan Boi Chau St., Hoan Kiem, Hanoi (Consular Section: 85 Ly Thuong Kiet St., Hoan Kiem, Hanoi; direct line (84) 24 3823 5095)",
+     "hours": "จ.–ศ. 09:00–12:00 / 13:30–17:30 (กงสุล/วีซ่า ถึง 17:00)",
+     "match": [
+      "ฮานอย",
+      "hanoi",
+      "ฮาลอง",
+      "ha long",
+      "halong",
+      "ซาปา",
+      "sapa",
+      "นิงห์บิงห์",
+      "ninh binh",
+      "ไฮฟอง",
+      "hai phong",
+      "ภาคเหนือ"
+     ],
+     "source": "https://rtehanoi.thaiembassy.org/th/page/cate-2095-hot-line?menu=635f40add14d1c5ccd7403b3"
+    },
+    {
+     "name": "สถานกงสุลใหญ่ ณ นครโฮจิมินห์",
+     "nameEn": "Royal Thai Consulate-General, Ho Chi Minh City",
+     "phone": "+84 28 3932 7637 (กด 0)",
+     "phone2": "(+84) 36 696 4621 (ฉุกเฉิน 24 ชม. เท่านั้น)",
+     "address": "77 Tran Quoc Thao St., Xuan Hoa Ward (former District 3), Ho Chi Minh City",
+     "hours": "จ.–ศ. 08:30–12:00 / 13:30–17:00 (กงสุล/วีซ่า 09:00–11:30 / 13:30–15:30)",
+     "match": [
+      "โฮจิมินห์",
+      "ไซ่ง่อน",
+      "ho chi minh",
+      "saigon",
+      "ดานัง",
+      "da nang",
+      "danang",
+      "ฮอยอัน",
+      "hoi an",
+      "ดาลัด",
+      "dalat",
+      "da lat",
+      "ฟูก๊วก",
+      "phu quoc",
+      "ญาจาง",
+      "nha trang",
+      "มุยเน่",
+      "mui ne",
+      "เกิ่นเทอ",
+      "can tho",
+      "ภาคใต้"
+     ],
+     "source": "https://hochiminh.thaiembassy.org/"
+    }
+   ],
+   "taxFree": {
+    "currency": "VND",
+    "min": 2000000,
+    "points": [
+     "ซื้อจากร้านเดียวกันในวันเดียวกัน รวม ≥ 2,000,000 ดอง (รวม VAT) ที่ร้านร่วมโครงการ",
+     "ได้คืน 85% ของ VAT ที่จ่าย (หักค่าบริการ 15%)",
+     "ต้องเป็นของที่ซื้อภายใน 60 วันก่อนออกจากเวียดนาม และต้องมี e-invoice มี QR",
+     "ยื่นที่จุดคืนภาษีก่อนเช็กอิน ที่สนามบินนานาชาติ เช่น โหน่ยบ่าย เตินเซินเญิ้ต ดานัง",
+     "รับเงินคืนเป็นเงินสดดอง โอนเข้าบัตรเครดิต หรือโอนเข้าบัญชี"
+    ],
+    "source": "https://applepricehunt.com/blog/vietnam-vat-refund-2026-new-rules-decree-181"
+   }
   }
+ },
+ "default": {
+  "name": "ประเทศอื่น",
+  "risk": "unknown",
+  "riskReason": "ยังไม่มีข้อมูลเฉพาะประเทศ — ขอให้ Claude เพิ่มข้อมูลประเทศนี้ได้",
+  "entry": [],
+  "beforeFlight": [],
+  "upcoming": [],
+  "docs": [
+   {
+    "key": "passport",
+    "text": "พาสปอร์ต (อายุเหลือ ≥ 6 เดือน)",
+    "level": "required"
+   },
+   {
+    "key": "visa",
+    "text": "เช็กว่าต้องขอวีซ่าหรือระบบขออนุญาตล่วงหน้าไหม",
+    "level": "required"
+   },
+   {
+    "key": "return-ticket",
+    "text": "ตั๋วเครื่องบินขากลับ",
+    "level": "recommended"
+   },
+   {
+    "key": "hotel-all",
+    "text": "หลักฐานการจองที่พักครบทุกคืน",
+    "level": "recommended"
+   },
+   {
+    "key": "itinerary",
+    "text": "แพลนเที่ยวคร่าวๆ",
+    "level": "recommended"
+   },
+   {
+    "key": "money",
+    "text": "เงินสด/บัตรที่ใช้ต่างประเทศได้",
+    "level": "recommended"
+   },
+   {
+    "key": "insurance",
+    "text": "ประกันการเดินทาง",
+    "level": "recommended"
+   }
+  ],
+  "tips": [
+   "ตอบคำถามสั้นๆ ตรงกับเอกสาร"
+  ],
+  "sources": [
+   {
+    "title": "กรมการกงสุล — ประเทศที่ผู้ถือหนังสือเดินทางไทยได้รับการยกเว้นวีซ่า",
+    "url": "https://image.mfa.go.th/mfa/0/zE6021nSnu/0303/THA.pdf"
+   }
+  ],
+  "docsByStatus": {
+   "employee": [
+    {
+     "key": "employment",
+     "text": "หนังสือรับรองการทำงาน ภาษาอังกฤษ",
+     "level": "optional",
+     "why": "ยืนยันว่ามีงานและจะกลับไทย"
+    }
+   ]
+  }
+ },
+ "statuses": [
+  [
+   "employee",
+   "พนักงานบริษัท / รับราชการ"
+  ],
+  [
+   "business",
+   "เจ้าของกิจการ"
+  ],
+  [
+   "freelance",
+   "ฟรีแลนซ์ / อาชีพอิสระ"
+  ],
+  [
+   "student",
+   "นักเรียน / นักศึกษา"
+  ],
+  [
+   "none",
+   "ไม่ได้ทำงาน / เกษียณ / แม่บ้าน"
+  ]
+ ],
+ "levels": {
+  "required": "ต้องมี",
+  "recommended": "แนะนำ",
+  "optional": "มีไว้อุ่นใจ"
+ },
+ "thaiHotline": {
+  "label": "Call Center กรมการกงสุล (24 ชม.)",
+  "number": "+66 2 572 8442",
+  "note": "โทรจากต่างประเทศ — ช่วยประสานกับสถานทูต/กงสุลไทย",
+  "source": "https://siamrath.co.th/international/132938"
+ }
 }
