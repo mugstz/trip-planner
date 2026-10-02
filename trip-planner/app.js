@@ -467,7 +467,7 @@ function readTripForm(form) {
 
 function renderCreate() {
   app.innerHTML = `
-    <p><a href="#/">← ทริปทั้งหมด</a></p>
+    <a class="back-btn" href="#/"><span aria-hidden="true">‹</span> ทริปทั้งหมด</a>
     <h1>Create plan</h1>
     ${modeBanner()}
     <form id="create-form" class="card form">
@@ -519,7 +519,7 @@ function renderTripSkeleton() {
   const memberOpts = members().map((m) => `<option value="${esc(m)}">${esc(m)}</option>`).join("");
   app.innerHTML = `
   <div class="screen">
-    <p><a href="#/">← ทริปทั้งหมด</a></p>
+    <a class="back-btn" href="#/"><span aria-hidden="true">‹</span> ทริปทั้งหมด</a>
     ${modeBanner()}
     <div class="trip-head">
       <div>
@@ -545,7 +545,7 @@ function renderTripSkeleton() {
       <div class="panel-head">
         <h2>แพลนรายวัน</h2>
         <div class="panel-btns">
-          <button class="btn primary" type="button" data-action="item-new">＋ เพิ่มกิจกรรม</button>
+          <button class="btn add-btn" type="button" data-action="item-new">＋ เพิ่มกิจกรรม</button>
           <button class="btn pdf-btn" type="button" data-action="pdf">Export PDF</button>
         </div>
       </div>
@@ -592,7 +592,7 @@ function renderTripSkeleton() {
       </div>
       <div id="suggest-view"></div>
       <div id="wish-mine">
-      <button type="button" class="btn primary add-wish-btn" data-action="wish-new" id="wish-new-btn">＋ เพิ่มที่อยากไป</button>
+      <button type="button" class="btn add-btn add-wish-btn" data-action="wish-new" id="wish-new-btn">＋ เพิ่มที่อยากไป</button>
       <div id="wish-list"></div>
       </div>
       ${sheetHtml("sheet-wish", "wish-form-title", "เพิ่มที่อยากไป", `
@@ -621,7 +621,7 @@ function renderTripSkeleton() {
     <section data-panel="bookings">
       <div class="panel-head">
         <h2>การจอง</h2>
-        <div class="panel-btns"><button class="btn primary" type="button" data-action="book-new">＋ เพิ่มการจอง</button></div>
+        <div class="panel-btns"><button class="btn add-btn" type="button" data-action="book-new">＋ เพิ่มการจอง</button></div>
       </div>
       <div id="book-list"></div>
       ${sheetHtml("sheet-book", "book-form-title", "เพิ่มการจอง", `
@@ -663,7 +663,7 @@ function renderTripSkeleton() {
     <section data-panel="money">
       <div class="panel-head">
         <h2>ค่าใช้จ่าย</h2>
-        <div class="panel-btns"><button class="btn primary" type="button" data-action="expense-new">＋ เพิ่มค่าใช้จ่าย</button></div>
+        <div class="panel-btns"><button class="btn add-btn" type="button" data-action="expense-new">＋ เพิ่มค่าใช้จ่าย</button></div>
       </div>
       <div class="card" id="rate-card"></div>
       <div class="card"><h3>💸 สรุปใครต้องโอนให้ใคร <small class="muted">(หารเท่ากันทุกคน · คิดเป็นเงินบาท)</small></h3><div id="settle"></div></div>
@@ -1812,7 +1812,7 @@ function openTripEdit(id) {
     rendered = true;
     const back = `#/trip/${encodeURIComponent(id)}`;
     app.innerHTML = `
-      <p><a href="${back}">← กลับไปที่ทริป</a></p>
+      <a class="back-btn" href="${back}"><span aria-hidden="true">‹</span> กลับไปที่ทริป</a>
       <h1>แก้ไขทริป</h1>
       ${modeBanner()}
       <form id="trip-form" class="card form">${tripFormFields(trip)}
@@ -2096,7 +2096,7 @@ function renderSuggest() {
   const box = $("#suggest-view");
   if (!box) return;
   const nMine = data.wishlist.length;
-  if (!wishView) wishView = nMine ? "mine" : "suggest";
+  if (!wishView) wishView = "mine"; // เปิดแท็บ "ของเรา" ก่อนเสมอ
   $("#seg-mine").innerHTML = `⭐ ของเรา${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
   $("#seg-mine").classList.toggle("active", wishView === "mine");
   $("#seg-suggest").classList.toggle("active", wishView === "suggest");
