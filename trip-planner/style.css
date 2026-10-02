@@ -899,3 +899,20 @@ details.card > summary { cursor: pointer; font-weight: 600; }
   .day-hotel { color: var(--text); }
   .sg-kpop { color: var(--text); }
 }
+
+/* PDF ในแอป (เมื่อติดตั้งเป็นแอป) */
+#pdf-overlay { position: fixed; inset: 0; z-index: 300; background: #fff; color: #222; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+.pdf-bar { position: sticky; top: 0; z-index: 2; display: flex; align-items: center; gap: 8px; padding: max(10px, env(safe-area-inset-top)) 12px 10px; background: #fff; border-bottom: 1px solid #eee; }
+.pdf-bar .pdf-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: .9rem; }
+.pdf-bar .btn { color: #222; background: #fff; border-color: #ddd; }
+.pdf-bar .btn.primary { background: #F5AFAF; border-color: #F5AFAF; color: #3D1F24; }
+.pdf-tip { margin: 8px 12px 0; font-size: .78rem; color: #777; }
+.pdf-doc { padding: 12px 12px 40px; overflow-x: auto; }
+body.pdf-mode { overflow: hidden; }
+@media print {
+  body.pdf-mode > *:not(#pdf-overlay) { display: none !important; }
+  body.pdf-mode #pdf-overlay { position: static; overflow: visible; }
+  body.pdf-mode .pdf-bar, body.pdf-mode .pdf-tip { display: none !important; }
+  body.pdf-mode .pdf-doc { padding: 0; overflow: visible; }
+}
+@media screen { .pdf-doc table:not(.kv) { min-width: 720px; } }

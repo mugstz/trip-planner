@@ -2268,6 +2268,7 @@ function updateMeChip() {
 }
 
 function setMe(name) {
+  if (!name) { closeSheet("sheet-expense"); }
   if (useAccount()) {
     userDoc = { ...userDoc, me: { ...(userDoc.me || {}), [trip.id]: name } };
     store.setUser({ me: { [trip.id]: name } });
@@ -2287,7 +2288,7 @@ function showMePicker() {
   wrap.className = "modal-backdrop me-picker";
   wrap.innerHTML = `
     <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mp-title">
-      <button type="button" class="m-close" data-skip="1" aria-label="ปิด" title="ปิด">✕</button>
+      <button type="button" class="m-close" data-close="1" aria-label="ปิด" title="ปิด">✕</button>
       <div class="m-icon" aria-hidden="true">👋</div>
       <h3 id="mp-title">ฉันคือใคร?</h3>
       <p class="muted">เลือกชื่อตัวเองในทริป “${esc(trip.name)}” เพื่อจ่ายเงิน จัดของ และติ๊กเช็กลิสต์ในชื่อของคุณ</p>
@@ -2304,7 +2305,14 @@ function showMePicker() {
   wrap.addEventListener("click", (e) => {
     const opt = e.target.closest("[data-m]");
     if (opt) { setMe(opt.dataset.m); close(); toast(`สวัสดี ${opt.dataset.m} 👋`); return; }
-    if (e.target.closest("[data-skip]")) { lsSet("me-skip-" + trip.id, "1"); close(); }
+    // ✕ = ปิดเฉยๆ (คงชื่อเดิม) / "ดูอย่างเดียว" = ล้างชื่อที่เลือกไว้
+    if (e.target.closest("[data-close]")) { if (!getMe()) lsSet("me-skip-" + trip.id, "1"); close(); return; }
+    if (e.target.closest("[data-skip]")) {
+      lsSet("me-skip-" + trip.id, "1");
+      const had = getMe();
+      if (had) { setMe(""); toast("ดูอย่างเดียว — ยังไม่ได้เลือกว่าเป็นใคร"); }
+      close();
+    }
   });
   wrap.querySelector(".me-option")?.focus();
 }
@@ -3070,10 +3078,67 @@ function stripEmoji(html) {
     .replace(/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu, (ch) => (ch === "✓" || ch === "★" ? ch : ""));
 }
 
+// แปลง CSS ของหน้าพิมพ์ให้ใช้เฉพาะในกล่อง .pdf-doc (ไม่กระทบหน้าแอป)
+function scopeCss(css, scope) {
+  let out = "", i = 0;
+  while (i < css.length) {
+    const open = css.indexOf("{", i);
+    if (open < 0) break;
+    const sel = css.slice(i, open).trim();
+    if (sel.startsWith("@media")) {
+      let depth = 1, j = open + 1;
+      while (j < css.length && depth) { if (css[j] === "{") depth++; else if (css[j] === "}") depth--; j++; }
+      out += `${sel} { ${scopeCss(css.slice(open + 1, j - 1), scope)} }\n`;
+      i = j;
+      continue;
+    }
+    const close = css.indexOf("}", open);
+    const body = css.slice(open + 1, close);
+    if (sel.startsWith("@")) out += `${sel} {${body}}\n`;
+    else out += sel.split(",").map((s) => { s = s.trim(); return s === "body" || s === "main" || s === "*" ? scope : `${scope} ${s}`; }).join(", ") + ` {${body}}\n`;
+    i = close + 1;
+  }
+  return out;
+}
+function showPdfOverlay(title, body) {
+  document.getElementById("pdf-overlay")?.remove();
+  const ov = document.createElement("div");
+  ov.id = "pdf-overlay";
+  ov.innerHTML = `<style>${scopeCss(PRINT_CSS.replace(/@page[^}]*}/, ""), ".pdf-doc")}</style>
+    <div class="pdf-bar">
+      <button type="button" class="btn small" data-pdf="back">‹ กลับ</button>
+      <b class="pdf-title">${esc(title)}</b>
+      <button type="button" class="btn small primary" data-pdf="print">พิมพ์ / บันทึก PDF</button>
+    </div>
+    <p class="pdf-tip">กด “พิมพ์ / บันทึก PDF” แล้วเลือกบันทึกเป็น PDF (iPhone: ถ้าเมนูพิมพ์ไม่ขึ้น ให้เปิดเว็บใน Safari แล้วกด Export PDF แทน)</p>
+    <div class="pdf-doc">${body}</div>`;
+  document.body.appendChild(ov);
+  document.body.classList.add("pdf-mode");
+  const oldTitle = document.title;
+  document.title = title;
+  history.pushState({ pdf: 1 }, "");
+  const close = (fromPop) => {
+    ov.remove();
+    document.body.classList.remove("pdf-mode");
+    document.title = oldTitle;
+    removeEventListener("popstate", onPop);
+    if (!fromPop && history.state?.pdf) history.back();
+  };
+  const onPop = () => close(true);
+  addEventListener("popstate", onPop);
+  ov.addEventListener("click", (e) => {
+    const a = e.target.closest("[data-pdf]")?.dataset.pdf;
+    if (a === "back") close(false);
+    else if (a === "print") window.print();
+  });
+}
+
 function exportPdf(mode) {
   if (mode === "immi") buildImmiPrintView(); else buildPrintView();
   const title = mode === "immi" ? `Travel-Itinerary-${getMe()}-${trip.name}` : `แพลน-${trip.name}`;
   const body = stripEmoji($("#print-view").innerHTML);
+  // แอปที่ติดตั้งบนหน้าจอ: เปิดหน้าต่างใหม่แล้วย้อนกลับไม่ได้ → แสดงในแอปแทน มีปุ่มกลับ
+  if (isStandalone()) { showPdfOverlay(title, body); return; }
   const w = window.open("", "_blank");
   if (!w) {
     // บล็อกหน้าต่างใหม่ → พิมพ์ในหน้าเดิมแทน
