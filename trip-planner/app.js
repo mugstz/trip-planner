@@ -1406,14 +1406,13 @@ function itemHtml(x) {
       <div class="body">
         <div class="title">${st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
         <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}${editedHtml(x)}</div>
-        ${st === "cancel" ? "" : linkChipsHtml(itemLinks(x))}
-        ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${refOf(bk, getMe()) ? ` · ${esc(refOf(bk, getMe()))}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
         ${st === "cancel" ? `<button type="button" class="link-plain" data-action="item-cancel" data-id="${esc(x.id)}">เอากลับมา</button>` : ""}
       </div>
       <div class="row-actions">
         <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
       </div>
+      ${(() => { const c = linkChipsHtml(st === "cancel" ? [] : itemLinks(x), bk ? `<button type="button" class="bk-chip" data-action="goto-booking" data-id="${esc(bk.id)}" title="${esc(bk.type)}: ${esc(bk.title)}"><span class="bk-ic" aria-hidden="true">${isFlight(bk) ? "✈️" : isHotel(bk) ? "🏨" : "🎫"}</span><b>${esc(bk.title)}</b>${refOf(bk, getMe()) ? `<small>${esc(refOf(bk, getMe()))}</small>` : ""}<span class="bk-go" aria-hidden="true">›</span></button>` : ""); return c ? `<div class="row-tix">${c}</div>` : ""; })()}
     </li>`;
 }
 
@@ -1653,8 +1652,9 @@ function itemLinks(x) {
   const seen = new Set();
   return [...linksOf(x), ...linksOf(bk)].filter((l) => !seen.has(l.url) && seen.add(l.url));
 }
-const linkChipsHtml = (links) => links.length
-  ? `<div class="tix">${links.map((l) => `<a class="tix-chip" href="${esc(l.url)}" target="_blank" rel="noopener">🎟️ <b>${esc(l.label || siteName(l.url))}</b>${l.label ? `<small>${esc(siteName(l.url))}</small>` : ""}<span class="tix-go" aria-hidden="true">↗</span></a>`).join("")}</div>`
+const TIX_GO = `<svg class="tix-go" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M4 2h6v6M10 2 3 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+const linkChipsHtml = (links, lead = "") => links.length || lead
+  ? `<div class="tix">${lead}${links.map((l) => `<a class="tix-chip" href="${esc(l.url)}" target="_blank" rel="noopener">🎟️ <b>${esc(l.label || siteName(l.url))}</b>${l.label ? `<small>${esc(siteName(l.url))}</small>` : ""}${TIX_GO}</a>`).join("")}</div>`
   : "";
 const linkRowHtml = (l = {}) => `
   <div class="lnk">

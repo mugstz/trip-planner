@@ -941,12 +941,16 @@ body.pdf-mode { overflow: hidden; }
 @media (prefers-color-scheme: dark) { .taxi-cta { box-shadow: none; } .taxi-cta .tc-go { background: rgba(0, 0, 0, .2); } }
 
 /* ---------- v17: ลิงก์ตั๋ว + ใครแก้ล่าสุด ---------- */
-.tix { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
-.tix-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); text-decoration: none; font-size: .88rem; line-height: 1.2; max-width: 100%; }
-.tix-chip b { font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-.tix-chip small { color: var(--muted); font-size: .75rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tix-chip .tix-go { opacity: .6; }
-.tix-chip:active { transform: scale(.97); }
+.tix { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 2px; min-width: 0; }
+.tix-chip, .bk-chip { display: inline-flex; align-items: center; gap: 5px; max-width: 100%; min-width: 0; padding: 5px 10px; border-radius: 999px; font: inherit; font-size: .82rem; line-height: 1.25; white-space: nowrap; overflow: hidden; text-decoration: none; cursor: pointer; }
+.tix-chip { border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); }
+.bk-chip { border: 1px solid var(--line); background: var(--card); color: var(--text); }
+.tix-chip b, .bk-chip b { font-weight: 600; flex: 0 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.tix-chip small, .bk-chip small { flex: 0 100 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--muted); font-size: .74rem; }
+.tix-go { flex: none; opacity: .7; }
+.bk-ic { flex: none; font-size: .9rem; }
+.bk-go { flex: none; color: var(--muted); font-size: 1rem; line-height: 1; }
+.tix-chip:active, .bk-chip:active { transform: scale(.97); }
 .next-card .tix { margin-top: 8px; }
 .links-field .links-box { display: flex; flex-direction: column; gap: 8px; }
 .links-field .links-box:empty { display: none; }
@@ -960,3 +964,8 @@ body.pdf-mode { overflow: hidden; }
 .edited.fresh { color: var(--accent-ink); font-weight: 600; }
 .sheet-edited { margin: 0 0 8px; font-size: .8rem; color: var(--muted); }
 .sheet-edited:empty { display: none; }
+/* ปุ่มตั๋ว/การจองในแพลน: ใช้ความกว้างเต็มแถว (เริ่มใต้คอลัมน์เวลา) */
+.item-row { flex-wrap: wrap; }
+.item-row > .body { flex: 1 1 0; min-width: 0; }
+.row-tix { flex: 0 0 100%; min-width: 0; padding-left: 38px; margin-top: -6px; }
+.row-tix .tix { margin: 0; }
