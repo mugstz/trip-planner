@@ -732,3 +732,14 @@ body.sheet-open .to-top { display: none; }
 .tf-card summary { cursor: pointer; font-weight: 700; }
 .tf-card .immi-list { margin-top: 8px; }
 details.card > summary { cursor: pointer; font-weight: 600; }
+
+/* การ์ดหุบได้ (แท็บเตรียมตัว / ตม.) */
+.ck > :first-child { position: relative; cursor: pointer; padding-right: 38px; -webkit-user-select: none; user-select: none; }
+.ck > :first-child::before { content: ""; position: absolute; right: 0; top: 50%; width: 28px; height: 28px; margin-top: -14px; border-radius: 50%; background: var(--accent-soft); }
+.ck > :first-child::after { content: ""; position: absolute; right: 10px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border-right: 2px solid var(--accent-ink); border-bottom: 2px solid var(--accent-ink); transform: rotate(45deg); transition: transform .15s, margin .15s; }
+.ck.collapsed > :first-child::after { transform: rotate(-45deg); margin-top: -4px; right: 11px; }
+.ck.collapsed > :not(:first-child) { display: none !important; }
+.ck.collapsed > :first-child { margin-bottom: 0; }
+.ck > :first-child:focus-visible { outline: 2px solid var(--accent-ink); border-radius: 6px; }
+.immi-card.ck > .immi-head { padding-right: 38px; }
+.ck.collapsed .sos-sub { display: none; }

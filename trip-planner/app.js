@@ -749,21 +749,21 @@ function renderTripSkeleton() {
     </section>
 
     <section data-panel="prep">
-      <div class="card sos-card" id="sos-card"></div>
+      <div class="card sos-card ck" data-ck="sos" id="sos-card"></div>
       <div id="prep-info"></div>
-      <div class="card private-card">
+      <div class="card private-card ck" data-ck="private">
         <h3>🔒 ข้อมูลของฉัน <small class="muted" id="prep-who"></small></h3>
         <div id="prep-private"></div>
       </div>
-      <div class="card">
+      <div class="card ck" data-ck="ready">
         <h3>✅ ความพร้อมของฉัน</h3>
         <div id="prep-ready"></div>
       </div>
-      <div class="card">
+      <div class="card ck" data-ck="docs">
         <h3>📄 เอกสารที่ต้องเตรียม <small class="muted" id="prep-count"></small></h3>
         <div id="prep-mine"></div>
       </div>
-      <div class="card">
+      <div class="card ck" data-ck="group">
         <h3>📋 เช็กลิสต์ทั้งกลุ่ม <small class="muted" id="check-count"></small></h3>
         <div id="check-list"></div>
         <form id="check-form" class="inline-form">
@@ -2559,7 +2559,8 @@ function renderSos() {
   const me = getMe();
   const row = (label, num, note = "") => `<li><div><b>${esc(label)}</b>${note ? `<small>${esc(note)}</small>` : ""}</div><a class="tel-btn" href="${telHref(num)}">📞 ${esc(num)}</a></li>`;
   box.innerHTML = `
-    <h3>🆘 ฉุกเฉิน & ที่พัก <small class="muted">ใช้ได้ตอนออฟไลน์ (ถ้าเคยเปิดหน้านี้ตอนมีเน็ต)</small></h3>
+    <h3>🆘 ฉุกเฉิน & ที่พัก</h3>
+    <p class="muted small-note sos-sub">ใช้ได้ตอนออฟไลน์ (ถ้าเคยเปิดหน้านี้ตอนมีเน็ต)</p>
     ${h ? `<div class="sos-hotel">
         <div class="sh-label">🏨 ที่พัก${tripDays().includes(todayISO()) ? "คืนนี้" : "คืนแรก"}</div>
         <div class="sh-name">${esc(h.title)}</div>
@@ -2602,7 +2603,31 @@ function showTaxiCard(id) {
   wrap.addEventListener("click", close);
 }
 
+/* การ์ดในแท็บเตรียมตัว/ตม. หุบ–กางได้ (จำไว้ในเครื่อง) */
+const CK_KEY = "prep-collapsed";
+const ckGet = () => { try { return new Set(JSON.parse(lsGet(CK_KEY)) || []); } catch { return new Set(); } };
+function applyCollapse() {
+  const set = ckGet();
+  app.querySelectorAll('[data-panel="prep"] .ck').forEach((c) => {
+    const on = set.has(c.dataset.ck);
+    c.classList.toggle("collapsed", on);
+    const h = c.firstElementChild;
+    if (h) { h.setAttribute("role", "button"); h.tabIndex = 0; h.setAttribute("aria-expanded", String(!on)); }
+  });
+}
+function toggleCollapse(card) {
+  const set = ckGet();
+  const k = card.dataset.ck;
+  set.has(k) ? set.delete(k) : set.add(k);
+  lsSet(CK_KEY, JSON.stringify([...set]));
+  applyCollapse();
+}
+
 function renderPrep() {
+  renderPrepInner();
+  applyCollapse();
+}
+function renderPrepInner() {
   renderSos();
   const el = $("#prep-info");
   if (!el) return;
@@ -2610,7 +2635,7 @@ function renderPrep() {
   const [riskLabel, riskCls] = RISK[info.risk] || RISK.unknown;
   const list = (arr) => (arr?.length ? `<ul class="immi-list">${arr.map((x) => `<li>${esc(x)}</li>`).join("")}</ul>` : "");
   el.innerHTML = `
-    <div class="card immi-card">
+    <div class="card immi-card ck" data-ck="immi">
       <div class="immi-head">
         <div>
           <h3>🛂 เตรียมผ่าน ตม. · ${esc(info.name)}</h3>
@@ -2836,6 +2861,8 @@ function exportPdf(mode) {
    จัดการปุ่ม / ฟอร์ม (ผูกครั้งเดียวที่ app)
    ============================================================ */
 function onClick(e) {
+  const ckHead = e.target.closest('[data-panel="prep"] .ck > :first-child');
+  if (ckHead && !e.target.closest("a, button, input, select, label, textarea")) { toggleCollapse(ckHead.parentElement); return; }
   const b = e.target.closest("[data-action]");
   if (!b || b.tagName === "INPUT") return;
   const { action, id, sub } = b.dataset;
@@ -3252,6 +3279,7 @@ async function init() {
   app.addEventListener("change", onChange);
   app.addEventListener("input", onInput);
   app.addEventListener("keydown", (e) => {
+    if ((e.key === "Enter" || e.key === " ") && e.target.matches?.('[data-panel="prep"] .ck > :first-child')) { e.preventDefault(); toggleCollapse(e.target.parentElement); return; }
     if (e.key === "Enter" && e.target.classList?.contains("origin-input")) { e.preventDefault(); setCustomOrigin(e.target.value); }
   });
   app.addEventListener("submit", onSubmit);
