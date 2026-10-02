@@ -663,3 +663,72 @@ body.sheet-open .to-top { display: none; }
   .trip-head .head-actions { flex: 0 0 auto; width: 100%; padding-top: 14px; border-top: 1px solid var(--line); }
 }
 .trip-head.card > div.th-main:first-child { flex-direction: row; align-items: flex-start; gap: 12px; }
+
+/* หารกับใคร */
+.split-quick { font-size: .85rem; }
+/* งบของฉัน */
+.my-budget { border-color: var(--accent); }
+.mb-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.mb-head h3 { margin: 0; }
+.lock-note { font-size: .75rem; color: var(--muted); background: var(--accent-soft); border-radius: 999px; padding: 2px 10px; white-space: nowrap; }
+.mb-set { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); margin: 10px 0 12px; max-width: 260px; }
+.mb-bar { height: 14px; background: var(--line); border-radius: 999px; overflow: hidden; }
+.mb-bar div { height: 100%; background: var(--accent); border-radius: 999px; transition: width .3s; }
+.mb-bar.near div { background: #f0a500; }
+.mb-bar.over div { background: var(--neg); }
+.mb-nums { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 4px 12px; margin-top: 6px; font-size: .92rem; }
+.mb-break { list-style: none; padding: 0; margin: 10px 0 0; font-size: .88rem; border-top: 1px dashed var(--line); }
+.mb-break li { display: flex; justify-content: space-between; gap: 10px; padding: 5px 0; color: var(--muted); }
+.mb-break b { color: var(--text); }
+.mb-own { margin-top: 8px; font-size: .9rem; }
+.mb-own summary { cursor: pointer; color: var(--accent-ink); font-weight: 600; padding: 4px 0; }
+.mb-form { flex-wrap: wrap; }
+.mb-form > input { flex: 1 1 160px; }
+.mb-form .amount-cur { flex: 1 1 180px; }
+
+/* ฉุกเฉิน */
+.sos-card { border-color: #f1b8b0; }
+.sos-card h3 small { font-weight: 400; font-size: .75rem; }
+.sos-hotel { background: var(--tint); border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 4px; }
+.sh-label { font-size: .8rem; color: var(--muted); }
+.sh-name { font-weight: 700; font-size: 1.05rem; }
+.sh-local { font-size: 1rem; }
+.sh-en { font-size: .88rem; color: var(--muted); }
+.sh-btns { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.tel-list { list-style: none; padding: 0; margin: 0; }
+.tel-list li { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+.tel-list li:last-child { border-bottom: none; }
+.tel-list li > div { display: flex; flex-direction: column; min-width: 0; }
+.tel-list small { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
+.tel-btn { flex: 0 0 auto; white-space: nowrap; border: 1px solid var(--accent); border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: .9rem; }
+.taxi-full { position: fixed; inset: 0; z-index: 200; background: #fff; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade .15s; }
+.taxi-full .m-close { top: 16px; right: 16px; width: 44px; height: 44px; font-size: 1.3rem; }
+.tx-in { text-align: center; display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
+.tx-hint { font-size: 1.1rem; color: var(--muted); }
+.tx-name { font-size: 2rem; font-weight: 700; line-height: 1.3; }
+.tx-local { font-size: 1.8rem; line-height: 1.5; }
+.tx-en { font-size: 1.15rem; color: #444; }
+
+/* อากาศ */
+.d-wx { font-size: .72rem; margin-top: 1px; }
+.wx-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; margin: 0 0 10px; font-size: .9rem; }
+.wx-line.ly { background: var(--bg); }
+.wx-line small { font-size: .78rem; flex-basis: 100%; }
+.wx-ic { font-size: 1.15rem; }
+
+/* ลิสต์ช้อป */
+.shop-sum { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.shop-sum > div { display: flex; flex-direction: column; }
+.shop-sum b { font-size: 1.15rem; }
+.shop-sum p { flex-basis: 100%; margin: 0; }
+.shop-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
+.shop-head h3 { margin: 0; }
+.shop-sub { font-size: .9rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.tf { font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 1px 10px; background: #fff1e0; color: #b45f00; }
+.tf.ok { background: #e3f4ea; color: var(--ok); }
+.shop-list li.is-bought .doc-main { text-decoration: line-through; color: var(--muted); }
+.shop-list label { align-items: flex-start; }
+.shop-list input[type=checkbox] { margin-top: 3px; }
+.tf-card summary { cursor: pointer; font-weight: 700; }
+.tf-card .immi-list { margin-top: 8px; }
+details.card > summary { cursor: pointer; font-weight: 600; }

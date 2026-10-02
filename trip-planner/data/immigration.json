@@ -103,6 +103,18 @@
         {
           "title": "MOFA Japan — Exemption of Visa (Thailand: 15 วัน เฉพาะ ePassport)",
           "url": "https://www.mofa.go.jp/j_info/visit/visa/short/novisa.html"
+        },
+        {
+          "title": "สถานกงสุลใหญ่ ณ นครโอซากา — ติดต่อ",
+          "url": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
+        },
+        {
+          "title": "JNTO — Japan Visitor Hotline",
+          "url": "https://www.japan.travel/en/plan/hotline/"
+        },
+        {
+          "title": "Japan Tax-Free Shopping 2026: New Rules from November 1",
+          "url": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026"
         }
       ],
       "docsByStatus": {
@@ -146,6 +158,57 @@
             "why": "แสดงว่ามีเงินพอใช้ตลอดทริป"
           }
         ]
+      },
+      "emergency": [
+        {
+          "label": "ตำรวจ",
+          "number": "110"
+        },
+        {
+          "label": "รถพยาบาล / ดับเพลิง",
+          "number": "119"
+        },
+        {
+          "label": "Japan Visitor Hotline (JNTO) 24 ชม. — ภาษาอังกฤษ",
+          "number": "050-3816-2787",
+          "note": "แจ้งเหตุ อุบัติเหตุ ป่วย ขอข้อมูลท่องเที่ยว",
+          "source": "https://www.japan.travel/en/plan/hotline/"
+        }
+      ],
+      "consulates": [
+        {
+          "name": "สถานกงสุลใหญ่ ณ นครโอซากา",
+          "nameEn": "Royal Thai Consulate-General, Osaka",
+          "phone": "06-6262-9226",
+          "phone2": "06-6262-9227",
+          "address": "Bangkok Bank Bldg., 1-9-16 Kyutaro-machi, Chuo-ku, Osaka 541-0056",
+          "hours": "จ.–ศ. 09:30–12:30, 13:30–17:30",
+          "match": [
+            "โอซาก้า",
+            "osaka",
+            "เกียวโต",
+            "kyoto",
+            "นารา",
+            "nara",
+            "โกเบ",
+            "kobe",
+            "คันไซ",
+            "kansai"
+          ],
+          "source": "https://osaka.thaiembassy.org/en/page/enquiries-3?menu=680204329a74a41821723132"
+        }
+      ],
+      "taxFree": {
+        "from": "2026-11-01",
+        "min": 5000,
+        "points": [
+          "ตั้งแต่ 1 พ.ย. 2569 ญี่ปุ่นเปลี่ยนเป็นระบบ “คืนภาษีที่สนามบิน”: จ่ายราคาเต็มรวมภาษีที่ร้านก่อน แล้วได้ภาษี 10% คืนทีหลัง",
+          "ต้องซื้อร้านเดียวกัน วันเดียวกัน ตั้งแต่ ¥5,000 (ก่อนภาษี ≈ ¥5,500 รวมภาษี) ขึ้นไป — รวมของกิน เครื่องสำอาง เสื้อผ้าได้หมด",
+          "ต้องยื่นพาสปอร์ตตอนซื้อทุกครั้ง",
+          "ก่อนขึ้นเครื่องขากลับ ยืนยันที่ตู้ศุลกากรในสนามบิน ของต้องติดตัวไปด้วย (ส่งไปรษณีย์กลับไม่ได้)",
+          "เงินคืนเข้าบัตร/บัญชีภายหลัง ประมาณ 1–4 สัปดาห์ แล้วแต่ร้าน"
+        ],
+        "source": "https://selfguidejapan.com/blog/japan-tax-free-shopping-2026"
       }
     },
     "KR": {
@@ -304,7 +367,21 @@
             "why": "แสดงว่ามีผู้รับผิดชอบค่าใช้จ่าย"
           }
         ]
-      }
+      },
+      "emergency": [
+        {
+          "label": "ตำรวจ",
+          "number": "112"
+        },
+        {
+          "label": "รถพยาบาล / ดับเพลิง",
+          "number": "119"
+        },
+        {
+          "label": "Korea Travel Hotline 24 ชม.",
+          "number": "1330"
+        }
+      ]
     }
   },
   "default": {
@@ -397,5 +474,11 @@
     "required": "ต้องมี",
     "recommended": "แนะนำ",
     "optional": "มีไว้อุ่นใจ"
+  },
+  "thaiHotline": {
+    "label": "Call Center กรมการกงสุล (24 ชม.)",
+    "number": "+66 2 572 8442",
+    "note": "โทรจากต่างประเทศ — ช่วยประสานกับสถานทูต/กงสุลไทย",
+    "source": "https://siamrath.co.th/international/132938"
   }
 }

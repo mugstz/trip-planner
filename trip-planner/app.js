@@ -4,11 +4,11 @@ import { FIREBASE_CONFIG } from "./firebase-config.js";
    ค่าตั้งต้น
    ============================================================ */
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2";
-const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist", "prep"];
+const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist", "prep", "shopping"];
 // [key, ชื่อเต็ม, ไอคอน, ชื่อสั้น (แถบล่างในมือถือ)]
 const TABS = [
   ["plan", "แพลน", "🗓️", "แพลน"], ["wishlist", "Wishlist", "⭐", "Wishlist"], ["bookings", "การจอง", "🎫", "การจอง"],
-  ["money", "ค่าใช้จ่าย", "💰", "ค่าใช้จ่าย"], ["packing", "ของที่ต้องเตรียม", "🎒", "ของเตรียม"], ["prep", "เตรียมตัว / ตม.", "🛂", "เตรียมตัว"],
+  ["money", "ค่าใช้จ่าย", "💰", "ค่าใช้จ่าย"], ["packing", "ของเตรียม / ช้อป", "🎒", "ของ/ช้อป"], ["prep", "เตรียมตัว / ตม.", "🛂", "เตรียมตัว"],
 ];
 const DEFAULT_CHECKLIST = [
   "พาสปอร์ต (อายุเหลือเกิน 6 เดือน)",
@@ -136,6 +136,12 @@ async function firebaseStore(cfg) {
     updateTrip: (id, patch) => fs.updateDoc(fs.doc(db, "trips", id), patch).catch(onErr),
     listen: (t, s, cb) => fs.onSnapshot(sub(t, s), (snap) => cb(list(snap)), onErr),
     add: (t, s, data) => fs.addDoc(sub(t, s), data).catch(onErr),
+    set: (t, s, id, data) => fs.setDoc(fs.doc(db, "trips", t, s, id), data).catch(onErr),
+    async getAll(t) {
+      const out = {};
+      for (const s of SUBS) out[s] = (await fs.getDocs(sub(t, s))).docs.map((d) => ({ id: d.id, ...d.data() }));
+      return out;
+    },
     update: (t, s, id, patch) => fs.updateDoc(fs.doc(db, "trips", t, s, id), patch).catch(onErr),
     remove: (t, s, id) => fs.deleteDoc(fs.doc(db, "trips", t, s, id)).catch(onErr),
     // ลบทริป: ต้องลบข้อมูลย่อยทุกหมวดก่อน แล้วค่อยลบตัวทริป
@@ -182,6 +188,8 @@ function localStore() {
     updateTrip(id, patch) { Object.assign(db.trips[id], clone(patch)); emit(); },
     listen: (t, s, cb) => watch(() => cb(Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) })))),
     add(t, s, data) { bucket(t, s)[uid()] = clone(data); emit(); },
+    set(t, s, id, data) { bucket(t, s)[id] = clone(data); emit(); },
+    async getAll(t) { return Object.fromEntries(SUBS.map((s) => [s, Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) }))])); },
     update(t, s, id, patch) { const b = bucket(t, s); if (b[id]) Object.assign(b[id], clone(patch)); emit(); },
     remove(t, s, id) { delete bucket(t, s)[id]; emit(); },
     deleteTrip(id) { delete db.trips[id]; delete db.subs[id]; delete db.priv[id]; emit(); },
@@ -307,6 +315,9 @@ function cleanup() {
   planOpenId = null;
   editingWishId = null;
   priv = {};
+  WX = {};
+  packView = "pack";
+  wxState = "";
   closeAllSheets();
 }
 
@@ -403,7 +414,11 @@ function onUserDocChange() {
 /* ---------- หน้า: รายการทริป ---------- */
 function renderList() {
   app.innerHTML = `
-    <div class="list-head"><h1>ทริปของเรา</h1><a class="btn primary" href="#/new">+ Create plan</a></div>
+    <div class="list-head"><h1>ทริปของเรา</h1>
+      <div class="panel-btns">
+        <label class="btn" title="กู้คืนทริปจากไฟล์สำรอง (.json)">กู้คืนจากไฟล์<input type="file" id="restore-file" accept="application/json,.json" hidden></label>
+        <a class="btn primary" href="#/new">+ Create plan</a>
+      </div></div>
     ${modeBanner()}
     <div id="trip-grid" class="trip-grid"><p class="muted">กำลังโหลด…</p></div>`;
   unsubs.push(store.listenTrips((list) => {
@@ -507,7 +522,7 @@ function openTrip(id) {
   })));
   unsubs.push(store.listenPrivate(id, (p) => {
     priv = p || {};
-    if (skeletonSig) { renderPrep(); syncBookForm(); }
+    if (skeletonSig) { renderPrep(); syncBookForm(); renderMyBudget(); }
   }));
 }
 
@@ -652,6 +667,9 @@ function renderTripSkeleton() {
           <label class="not-flight">เลขการจอง<input name="ref"></label>
           <label class="wide hotel-only">ที่อยู่โรงแรม <small class="muted">(ภาษาอังกฤษ — ใช้ในเอกสารโชว์ ตม. และหาตำแหน่งที่พัก)</small>
             <textarea name="address" rows="2" placeholder="เช่น 8-9 Namba-sennichimae, Chuo-ku, Osaka 542-0075"></textarea></label>
+          <label class="wide hotel-only">ที่อยู่ภาษาท้องถิ่น <small class="muted">(เช่น ภาษาญี่ปุ่น — ก๊อปจาก Google Maps / อีเมลยืนยันการจอง ไว้ยื่นให้คนขับแท็กซี่)</small>
+            <textarea name="addressLocal" rows="2" placeholder="例: 大阪府大阪市中央区難波千日前8-9"></textarea></label>
+          <label class="wide hotel-only">เบอร์โทรโรงแรม<input name="phone" inputmode="tel" placeholder="เช่น +81 6-xxxx-xxxx"></label>
           <label class="wide"><span class="hotel-only">ลิงก์ Google Maps / ชื่อบนแผนที่ (ไม่บังคับ)</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
@@ -667,8 +685,9 @@ function renderTripSkeleton() {
         <h2>ค่าใช้จ่าย</h2>
         <div class="panel-btns"><button class="btn add-btn" type="button" data-action="expense-new">＋ เพิ่มค่าใช้จ่าย</button></div>
       </div>
+      <div class="card my-budget" id="my-budget"></div>
       <div class="card" id="rate-card"></div>
-      <div class="card"><h3>💸 สรุปใครต้องโอนให้ใคร <small class="muted">(หารเท่ากันทุกคน · คิดเป็นเงินบาท)</small></h3><div id="settle"></div></div>
+      <div class="card"><h3>💸 สรุปใครต้องโอนให้ใคร <small class="muted">(คิดเป็นเงินบาท)</small></h3><div id="settle"></div></div>
       <div class="card"><h3>🧾 รายการที่จ่ายไปแล้ว</h3><p class="muted small-note">ติ๊กชื่อคนที่โอนคืนคนจ่ายแล้ว ยอดค้างด้านบนจะลดลงเอง</p><div id="expense-list"></div></div>
       ${sheetHtml("sheet-expense", "expense-form-title", "เพิ่มค่าใช้จ่าย", `
       <form id="expense-form" class="form">
@@ -679,6 +698,12 @@ function renderTripSkeleton() {
             <small class="muted" id="expense-preview"></small></label>
           <label>ใครจ่าย<select name="paidBy">${memberOpts}</select></label>
           <label>วันที่<select name="date"><option value="">—</option>${dayOpts}</select></label>
+          <fieldset class="sub">
+            <legend>หารกับใครบ้าง</legend>
+            <div class="pax" id="split-box">${members().map((m) => `<label class="pax-opt"><input type="checkbox" name="splitWith" value="${esc(m)}" checked><span>${esc(m)}</span></label>`).join("")}</div>
+            <div class="split-quick"><button type="button" class="link-plain" data-action="split-all">เลือกทุกคน</button></div>
+            <small class="muted">ค่าใช้จ่ายของตัวเองคนเดียว (เช่น ช้อปของตัวเอง) ใส่ใน “งบของฉัน” แทน คนอื่นจะไม่เห็น</small>
+          </fieldset>
         </div>
         <div class="actions">
           <button class="btn primary" id="expense-submit">เพิ่ม</button>
@@ -688,6 +713,12 @@ function renderTripSkeleton() {
     </section>
 
     <section data-panel="packing">
+      <div class="seg" role="tablist">
+        <button type="button" data-action="pack-view" data-v="pack" id="seg-pack">🎒 ของที่ต้องเตรียม</button>
+        <button type="button" data-action="pack-view" data-v="shop" id="seg-shop">🛍️ ของที่อยากซื้อ</button>
+      </div>
+      <div id="shop-view"></div>
+      <div id="pack-view">
       <div class="card"><h3>ความคืบหน้าของทุกคน</h3><div id="pack-progress"></div></div>
       <div class="card">
         <h3>ของของฉัน</h3>
@@ -700,9 +731,25 @@ function renderTripSkeleton() {
         <div id="pack-sugg"></div>
       </div>
       <div id="pack-others"></div>
+      </div>
+      ${sheetHtml("sheet-shop", "shop-form-title", "เพิ่มของที่อยากซื้อ", `
+      <form id="shop-form" class="form">
+        <div class="grid">
+          <label class="wide">ของที่อยากซื้อ*<input name="name" required placeholder="เช่น อัลบั้ม aespa, KitKat มัทฉะ"></label>
+          <label class="wide">ร้าน / ที่ไหน<input name="shop" list="shop-names" placeholder="เช่น Don Quijote Dotonbori"><datalist id="shop-names"></datalist></label>
+          <label>ราคาต่อชิ้น (รวมภาษี)<div class="amount-cur"><input type="number" name="price" min="0" step="any" inputmode="decimal">${curSelect("currency", tripCur())}</div></label>
+          <label>จำนวน<input type="number" name="qty" min="1" step="1" value="1" inputmode="numeric"></label>
+          <label class="wide">หมายเหตุ<input name="note" placeholder="เช่น ฝากซื้อให้แม่, สีชมพู"></label>
+        </div>
+        <div class="actions">
+          <button class="btn primary">บันทึก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-shop">ยกเลิก</button>
+        </div>
+      </form>`)}
     </section>
 
     <section data-panel="prep">
+      <div class="card sos-card" id="sos-card"></div>
       <div id="prep-info"></div>
       <div class="card private-card">
         <h3>🔒 ข้อมูลของฉัน <small class="muted" id="prep-who"></small></h3>
@@ -767,7 +814,7 @@ function closeAllSheets() {
   document.body.classList.remove("sheet-open");
 }
 // ปิด pop-up = ยกเลิกการแก้ไข
-const SHEET_CANCEL = { "sheet-item": () => stopEdit(), "sheet-book": () => stopEditBooking(), "sheet-wish": () => closeWishForm(), "sheet-expense": () => stopEditExpense() };
+const SHEET_CANCEL = { "sheet-shop": () => closeShopForm(), "sheet-item": () => stopEdit(), "sheet-book": () => stopEditBooking(), "sheet-wish": () => closeWishForm(), "sheet-expense": () => stopEditExpense() };
 
 function setTab(name, fromUser = false) {
   tab = name;
@@ -795,15 +842,16 @@ function syncMeForms() {
   if (paidBy && me && !editingExpenseId) paidBy.value = me;
 }
 
-function renderAll() { renderPlan(); renderWishlist(); renderSuggest(); renderBookings(); renderMoney(); renderPacking(); renderChecklist(); renderPrep(); }
+function renderAll() { renderPlan(); renderWishlist(); renderSuggest(); renderBookings(); renderMoney(); renderPacking(); renderShopping(); renderChecklist(); renderPrep(); }
 
 function renderSection(s) {
   ({
     items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); renderWishlist(); renderSuggest(); },
     wishlist: () => { renderWishlist(); renderSuggest(); },
-    bookings: () => { renderBookings(); renderPlan(); renderPrep(); renderSuggest(); renderWishlist(); },
+    bookings: () => { if (wxState === "done") { wxState = ""; } renderBookings(); renderPlan(); renderPrep(); renderSuggest(); renderWishlist(); },
     expenses: renderMoney,
     packing: renderPacking,
+    shopping: () => { renderShopping(); renderMyBudget(); },
     checklist: renderChecklist,
     prep: renderPrep,
   })[s]();
@@ -843,7 +891,7 @@ function renderPlan() {
   $("#day-tabs").innerHTML = days.map((d, i) => {
     const c = data.items.filter((x) => x.date === d).length;
     return `<button type="button" class="day-btn ${i === dayIdx ? "active" : ""}" data-action="day" data-i="${i}">
-      <span class="d-num">วันที่ ${i + 1}</span><span class="d-date">${fmtDate(d, "weekday")}</span>${c ? `<span class="d-count">${c}</span>` : ""}</button>`;
+      <span class="d-num">วันที่ ${i + 1}</span><span class="d-date">${fmtDate(d, "weekday")}</span>${(() => { const w = dayWx(d); return w?.fc ? `<span class="d-wx">${w.fc.icon} ${Math.round(w.fc.max)}°</span>` : ""; })()}${c ? `<span class="d-count">${c}</span>` : ""}</button>`;
   }).join("");
   // เลื่อนแท็บวันที่เลือกให้อยู่ตรงกลาง (ไม่เลื่อนทั้งหน้า)
   const strip = $("#day-tabs"), act = strip.querySelector(".active");
@@ -862,11 +910,84 @@ function renderPlan() {
     return conn + itemHtml(x);
   });
   const nDone = list.filter((x) => x.status === "done").length;
-  el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + dayHotelHtml(d) + (list.length
+  loadWeather();
+  el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + dayWxHtml(d) + dayHotelHtml(d) + (list.length
     ? `${list.length > 1 ? `<p class="muted small-note drag-hint">ลาก ⋮⋮ เพื่อสลับลำดับ — เวลาจะเรียงให้ใหม่อัตโนมัติ</p>` : ""}
        <ul class="rows timeline" id="plan-rows">${rows.join("")}</ul>
        <p class="total">${nDone ? `ไปแล้ว ${nDone}/${active.length} · ` : ""}รวมวันนี้ ${money(total)}${travelTotal ? ` · เดินทางรวม ~${fmtDur(travelTotal)}` : ""}</p>`
     : `<p class="empty">ยังไม่มีแพลนวันนี้ — กด “＋ เพิ่มกิจกรรม” ด้านบน หรือดึงจากแท็บ Wishlist</p>`);
+}
+
+/* ---------- พยากรณ์อากาศ (Open-Meteo ฟรี ไม่ต้องใช้คีย์) ----------
+   ล่วงหน้าได้ 16 วัน · ถ้ายังไกลเกิน แสดงอากาศจริงช่วงเดียวกันของปีที่แล้วไว้เป็นแนวทาง */
+const WMO = [[0, "☀️", "แดดจัด"], [2, "🌤️", "มีเมฆบางส่วน"], [3, "☁️", "เมฆมาก"], [48, "🌫️", "หมอก"], [57, "🌦️", "ฝนปรอย"], [67, "🌧️", "ฝนตก"], [77, "🌨️", "หิมะ"], [82, "🌧️", "ฝนเป็นช่วงๆ"], [86, "🌨️", "หิมะเป็นช่วงๆ"], [99, "⛈️", "พายุฝนฟ้าคะนอง"]];
+const wmo = (c) => { const r = WMO.find(([max]) => num(c) <= max) || WMO.at(-1); return { icon: r[1], text: r[2] }; };
+let WX = {};          // date → { fc?, ly?, place }
+let wxState = "";     // "" | loading | done
+const shiftYear = (iso, n) => `${+iso.slice(0, 4) + n}${iso.slice(4, 10) === "-02-29" ? "-02-28" : iso.slice(4, 10)}`;
+async function wxBase() {
+  const h = hotels().map(hotelCoords).find(Boolean);
+  if (h) return h;
+  const it = data.items.map(itemCoords).find(Boolean);
+  if (it) return it;
+  const key = "wx-geo-" + trip.id;
+  try { const c = JSON.parse(lsGet(key)); if (c) return c; } catch {}
+  const c = (await geocode(trip.name)) || (await geocode(`${trip.name}, ${destInfo().nameEn || ""}`)) || (await geocode(trip.country));
+  if (c) lsSet(key, JSON.stringify(c));
+  return c;
+}
+async function loadWeather(force = false) {
+  if (!trip || wxState === "loading" || (wxState === "done" && !force)) return;
+  wxState = "loading";
+  try {
+    const days = tripDays();
+    const base = await wxBase();
+    if (!base) { wxState = "done"; return; }
+    // จุดของแต่ละวัน = ที่พักคืนนั้น (ปัดทศนิยม 1 ตำแหน่ง ≈ 10 กม. รวมเป็นกลุ่มเดียวกัน)
+    const locOf = (d) => { const h = hotelForNight(d)[0] || hotels().find((x) => x.checkOutDate === d); const c = (h && hotelCoords(h)) || base; return { lat: +c.lat.toFixed(1), lng: +c.lng.toFixed(1), place: h?.title || trip.name }; };
+    const groups = new Map();
+    days.forEach((d) => { const l = locOf(d); const k = `${l.lat},${l.lng}`; if (!groups.has(k)) groups.set(k, { ...l, days: [] }); groups.get(k).days.push(d); });
+    const sig = JSON.stringify([...groups.keys(), days[0], days.at(-1)]);
+    const cacheKey = "wx-" + trip.id;
+    let cache = null;
+    try { cache = JSON.parse(lsGet(cacheKey)); } catch {}
+    const fresh = cache && cache.sig === sig && Date.now() - cache.at < 3 * 3600e3;
+    if (fresh) { WX = cache.data; wxState = "done"; renderPlan(); return; }
+    if (!navigator.onLine) { if (cache?.data) WX = cache.data; wxState = "done"; renderPlan(); return; }
+    const out = {};
+    const today = todayISO();
+    const lastFc = shiftDays(today, 15);
+    for (const g of groups.values()) {
+      const inFc = g.days.filter((d) => d >= today && d <= lastFc);
+      if (inFc.length) {
+        try {
+          const r = await (await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.lat}&longitude=${g.lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=auto&start_date=${inFc[0]}&end_date=${inFc.at(-1)}`)).json();
+          (r.daily?.time || []).forEach((d, i) => { (out[d] ||= { place: g.place }).fc = { code: r.daily.weather_code[i], ...wmo(r.daily.weather_code[i]), max: r.daily.temperature_2m_max[i], min: r.daily.temperature_2m_min[i], rain: r.daily.precipitation_probability_max?.[i] }; });
+        } catch {}
+      }
+      try {
+        const s = shiftYear(g.days[0], -1), e = shiftYear(g.days.at(-1), -1);
+        const r = await (await fetch(`https://archive-api.open-meteo.com/v1/archive?latitude=${g.lat}&longitude=${g.lng}&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_sum&timezone=auto&start_date=${s}&end_date=${e}`)).json();
+        (r.daily?.time || []).forEach((d, i) => { const td = shiftYear(d, 1); (out[td] ||= { place: g.place }).ly = { date: d, ...wmo(r.daily.weather_code[i]), max: r.daily.temperature_2m_max[i], min: r.daily.temperature_2m_min[i], mm: r.daily.precipitation_sum[i] }; });
+      } catch {}
+    }
+    WX = out;
+    lsSet(cacheKey, JSON.stringify({ at: Date.now(), sig, data: out }));
+  } catch (e) { console.warn(e); }
+  wxState = "done";
+  renderPlan();
+}
+const shiftDays = (iso, n) => new Date(new Date(iso + "T00:00:00Z").getTime() + n * 864e5).toISOString().slice(0, 10);
+const dayWx = (d) => WX[d] || null;
+function dayWxHtml(d) {
+  const w = dayWx(d);
+  if (!w) return wxState === "loading" ? `<div class="wx-line muted">กำลังโหลดพยากรณ์อากาศ…</div>` : "";
+  if (w.fc) {
+    const f = w.fc;
+    return `<div class="wx-line"><span class="wx-ic">${f.icon}</span><b>${esc(f.text)}</b> · ${Math.round(f.min)}–${Math.round(f.max)}°C${f.rain != null ? ` · โอกาสฝน ${f.rain}%` : ""}${f.rain >= 50 ? ` <span class="badge">☔ พกร่ม</span>` : ""}${f.max <= 12 ? ` <span class="badge">🧥 หนาว</span>` : ""}<small class="muted"> · พยากรณ์ ${esc(w.place || "")}</small></div>`;
+  }
+  const l = w.ly;
+  return l ? `<div class="wx-line ly"><span class="wx-ic">${l.icon}</span><span>ปีที่แล้ววันเดียวกัน: <b>${Math.round(l.min)}–${Math.round(l.max)}°C</b>${l.mm > 0.5 ? ` · ฝน ${Math.round(l.mm)} มม.` : " · ไม่มีฝน"}</span><small class="muted">พยากรณ์จริงจะขึ้นประมาณ 16 วันก่อนวันนั้น</small></div>` : "";
 }
 
 /* เวลา: "14:30" ↔ นาที */
@@ -1383,6 +1504,7 @@ function renderBookings() {
             ${isHotel(b)
               ? `<div class="stay-line">🛬 เช็คอิน <b>${fmtDate(b.date, "weekday")}${b.time ? " " + esc(b.time) : ""}</b> → 🛫 เช็คเอาท์ <b>${fmtDate(b.checkOutDate, "weekday")}${b.checkOutTime ? " " + esc(b.checkOutTime) : ""}</b> · ${nightsOf(b)} คืน</div>
                  ${b.address ? `<div class="note">ที่อยู่: ${esc(b.address)}</div>` : `<div class="note warn-soft">ยังไม่ได้ใส่ที่อยู่โรงแรม — ใช้ในเอกสารโชว์ ตม.</div>`}
+                 ${b.addressLocal ? `<div class="note">${esc(b.addressLocal)}</div>` : ""}${b.phone ? `<div class="note">📞 <a href="tel:${esc(b.phone.replace(/[^\d+]/g, ""))}">${esc(b.phone)}</a></div>` : ""}
                  <div class="meta">${mapLink(b.place || b.address || b.title, b.title)}</div>`
               : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place, b.title)}</div>`}
             ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
@@ -1464,7 +1586,7 @@ function startEditBooking(id) {
   editingBookingId = id;
   const form = $("#book-form");
   const f = form.elements;
-  ["type", "date", "time", "title", "ref", "place", "note", "address"].forEach((k) => (f[k].value = b[k] ?? ""));
+  ["type", "date", "time", "title", "ref", "place", "note", "address", "addressLocal", "phone"].forEach((k) => (f[k].value = b[k] ?? ""));
   const pax = paxOf(b);
   form.querySelectorAll("[name=pax]").forEach((cb) => (cb.checked = pax.includes(cb.value)));
   renderPaxRefs(Object.fromEntries(members().map((m) => [m, refOf(b, m)])));
@@ -1506,11 +1628,13 @@ function stopEditBooking() {
 
 /* ---------- ค่าใช้จ่าย + หารเงิน (แยกรายรายการ + ติ๊กว่าใครโอนคืนแล้ว) ---------- */
 let editingExpenseId = null;
-const expShare = (e) => toTHB(e.amount, e.currency) / (members().length || 1);
+// หารกับใคร: รายการเก่าที่ไม่ได้ระบุ = ทุกคน
+const splitOf = (e) => { const s = Array.isArray(e.splitWith) ? e.splitWith.filter((m) => members().includes(m)) : []; return s.length ? s : members(); };
+const expShare = (e) => toTHB(e.amount, e.currency) / (splitOf(e).length || 1);
 const isSettled = (e, m) => !!e.settled?.[m];
 // ส่วนแบ่งต่อคน: เงินต่างประเทศ + บาท (ถ้ารายการเป็นเงินบาท แสดงเงินปลายทางคู่ด้วย)
 function shareText(e) {
-  const n = members().length || 1;
+  const n = splitOf(e).length || 1;
   const cur = e.currency || "THB";
   if (cur !== "THB") return `${fmtCur(num(e.amount) / n, cur)}${rateOf(cur) ? ` ≈ ${money(expShare(e))}` : ""}`;
   return `${money(expShare(e))}${isForeign() && rateOf(tripCur()) ? ` ≈ ${fmtCur(expShare(e) / rateOf(tripCur()), tripCur())}` : ""}`;
@@ -1521,7 +1645,11 @@ function settle() {
   const total = data.expenses.reduce((s, e) => s + toTHB(e.amount, e.currency), 0);
   const share = ms.length ? total / ms.length : 0;
   const paid = Object.fromEntries(ms.map((m) => [m, 0]));
-  data.expenses.forEach((e) => { if (e.paidBy in paid) paid[e.paidBy] += toTHB(e.amount, e.currency); });
+  const owe = Object.fromEntries(ms.map((m) => [m, 0])); // ส่วนที่แต่ละคนต้องจ่ายจริง
+  data.expenses.forEach((e) => {
+    if (e.paidBy in paid) paid[e.paidBy] += toTHB(e.amount, e.currency);
+    splitOf(e).forEach((m) => (owe[m] += expShare(e)));
+  });
   // ยอดค้างทีละรายการ: คนที่ไม่ได้จ่าย × ส่วนแบ่ง → โอนให้คนจ่าย (ยกเว้นติ๊กว่าโอนแล้ว)
   const pair = new Map(); // "ก→ข" → { from, to, amt, items[] }
   const add = (from, to, amt, e) => {
@@ -1534,7 +1662,7 @@ function settle() {
   [...data.expenses].sort((a, b) => `${a.date || ""}${a.createdAt}`.localeCompare(`${b.date || ""}${b.createdAt}`)).forEach((e) => {
     if (!ms.includes(e.paidBy)) return;
     const sh = expShare(e);
-    ms.filter((m) => m !== e.paidBy && !isSettled(e, m)).forEach((m) => add(m, e.paidBy, sh, e));
+    splitOf(e).filter((m) => m !== e.paidBy && !isSettled(e, m)).forEach((m) => add(m, e.paidBy, sh, e));
   });
   // หักลบกันระหว่าง 2 คน (ก ค้าง ข 300, ข ค้าง ก 100 → ก โอนให้ ข 200)
   const tx = [];
@@ -1551,13 +1679,13 @@ function settle() {
   }
   tx.sort((a, b) => a.from.localeCompare(b.from) || b.amt - a.amt);
   const outstanding = tx.reduce((s, t) => s + t.amt, 0);
-  return { total, share, paid, tx, outstanding };
+  return { total, share, paid, owe, tx, outstanding };
 }
 
 const planTotalTHB = () => data.items.filter((x) => x.status !== "cancel").reduce((s, x) => s + toTHB(x.cost, x.costCurrency), 0);
 
 function settleHtml(forPrint = false) {
-  const { total, share, paid, tx } = settle();
+  const { total, paid, owe, tx } = settle();
   const me = getMe();
   const missingRate = data.expenses.some((e) => e.currency && e.currency !== "THB" && !rateOf(e.currency));
   const planTotal = planTotalTHB();
@@ -1565,7 +1693,7 @@ function settleHtml(forPrint = false) {
   const itemLine = (x, sign = "") => `<li>${sign}${esc(x.e.title)}${x.e.date ? ` <span class="muted">(${fmtDate(x.e.date)})</span>` : ""} — ${money(x.amt)}</li>`;
   return (missingRate ? `<p class="warn">⚠️ มีรายการที่เป็นเงินต่างประเทศแต่ยังไม่มีเรต — กด “อัปเดตเรตล่าสุด” ก่อน ยอดจึงจะถูกต้อง</p>` : "") +
     (data.expenses.length
-      ? `<p>รวมทั้งหมด <b>${money(total)}</b>${thbToTrip(total)} · หาร ${members().length} คน = คนละ <b>${money(share)}</b>${thbToTrip(share)}</p>
+      ? `<p>รวมค่าใช้จ่ายกลุ่ม <b>${money(total)}</b>${thbToTrip(total)}${me ? ` · ส่วนของฉัน <b>${money(owe[me] || 0)}</b>${thbToTrip(owe[me] || 0)}` : ""}</p>
          <h4>ยังค้างโอน</h4>
          ${tx.length ? `<ul class="tx-list">${tx.map((t) => `
            <li class="tx ${t.from === me ? "me-owe" : t.to === me ? "me-get" : ""}">
@@ -1577,7 +1705,7 @@ function settleHtml(forPrint = false) {
           : `<p class="ok-text">✓ ไม่มียอดค้าง ทุกคนเคลียร์กันครบแล้ว</p>`}
          <details class="paid-table"><summary>ดูยอดที่แต่ละคนออกไปก่อน</summary>
          <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th class="num">ออกไปก่อน</th><th class="num">ส่วนที่ต้องจ่าย</th></tr></thead>
-         <tbody>${members().map((m) => `<tr><td>${esc(m)}${m === me ? " (ฉัน)" : ""}</td><td class="num">${money(paid[m])}</td><td class="num">${money(share)}</td></tr>`).join("")}</tbody></table></div></details>`
+         <tbody>${members().map((m) => `<tr><td>${esc(m)}${m === me ? " (ฉัน)" : ""}</td><td class="num">${money(paid[m])}</td><td class="num">${money(owe[m])}</td></tr>`).join("")}</tbody></table></div></details>`
       : `<p class="muted">ยังไม่มีรายการค่าใช้จ่าย</p>`) +
     (planTotal ? `<p class="muted">ประมาณการค่าใช้จ่ายตามแพลน: ${money(planTotal)} (ตกคนละ ${money(planTotal / n)})</p>` : "");
 }
@@ -1614,7 +1742,7 @@ function updateExpensePreview() {
   if (!f || !out) return;
   const cur = f.elements.currency.value;
   const v = num(f.elements.amount.value);
-  const n = members().length || 1;
+  const n = [...document.querySelectorAll("#expense-form [name=splitWith]:checked")].length || 1;
   out.textContent = v ? `${cur !== "THB" ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))} · ` : "ยังไม่มีเรต · ") : ""}หาร ${n} คน = คนละ ${shareText({ amount: v, currency: cur })}` : "";
 }
 
@@ -1625,12 +1753,14 @@ function renderMoney() {
   if (!card.contains(document.activeElement)) { card.innerHTML = rateCardHtml(); }
   updateConverter();
   updateExpensePreview();
+  renderMyBudget();
   el.innerHTML = settleHtml();
   const me = getMe();
   const list = [...data.expenses].sort((a, b) => `${b.date || ""}${b.createdAt}`.localeCompare(`${a.date || ""}${a.createdAt}`));
   $("#expense-list").innerHTML = list.length
     ? `<ul class="rows exp-rows">${list.map((e) => {
-        const others = members().filter((m) => m !== e.paidBy);
+        const split = splitOf(e);
+        const others = split.filter((m) => m !== e.paidBy);
         const sh = expShare(e);
         const done = others.filter((m) => isSettled(e, m)).length;
         return `
@@ -1638,7 +1768,7 @@ function renderMoney() {
           <div class="body">
             <div class="title">${esc(e.title)} · <b>${fmtWithTHB(e.amount, e.currency)}</b></div>
             <div class="meta"><span>💳 ${esc(e.paidBy)} จ่ายไปก่อน</span>${e.date ? `<span>📅 ${fmtDate(e.date)}</span>` : ""}</div>
-            <div class="exp-share">👥 คนละ <b>${shareText(e)}</b></div>
+            <div class="exp-share">👥 ${split.length === members().length ? `หารทุกคน (${split.length})` : `หาร ${split.length} คน: ${split.map(esc).join(", ")}`} · คนละ <b>${shareText(e)}</b></div>
             ${others.length ? `<div class="settle-label muted">โอนคืน ${esc(e.paidBy)} แล้ว (${done}/${others.length})</div><div class="settle-row">
               ${others.map((m) => `<label class="settle-chip ${m === me ? "is-me" : ""}"><input type="checkbox" data-action="settle" data-id="${esc(e.id)}" data-m="${esc(m)}" ${isSettled(e, m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>` : ""}
           </div>
@@ -1648,6 +1778,67 @@ function renderMoney() {
         </li>`;
       }).join("")}</ul>`
     : `<p class="muted">ยังไม่มีรายการ — กด “＋ เพิ่มค่าใช้จ่าย” ด้านบน</p>`;
+}
+
+/* ---------- งบของฉัน (เห็นเฉพาะตัวเอง — เก็บใน private/{uid}) ---------- */
+const myExpList = () => (Array.isArray(priv.myExp) ? priv.myExp : []);
+function myBudgetStats() {
+  const me = getMe();
+  const shared = data.expenses.filter((e) => splitOf(e).includes(me)).reduce((s, e) => s + expShare(e), 0);
+  const own = myExpList().reduce((s, x) => s + toTHB(x.amount, x.currency), 0);
+  const shop = (data.shopping || []).filter((x) => x.owner === me && x.bought).reduce((s, x) => s + toTHB(num(x.price) * (num(x.qty) || 1), x.currency), 0);
+  return { shared, own, shop, total: shared + own + shop };
+}
+function renderMyBudget() {
+  const box = $("#my-budget");
+  if (!box) return;
+  const me = getMe();
+  if (!me) { box.innerHTML = `<h3>💰 งบของฉัน</h3><p class="muted">เลือก “ฉันคือใคร?” ก่อน เพื่อดูงบของตัวเอง</p>`; return; }
+  if (box.contains(document.activeElement) && document.activeElement.id === "budget-input") return;
+  const st = myBudgetStats();
+  const budget = num(priv.budget);
+  const pct = budget ? Math.min(100, Math.round((st.total / budget) * 100)) : 0;
+  const left = budget - st.total;
+  const days = tripDays();
+  const today = todayISO();
+  const daysLeft = days.filter((d) => d >= today).length || days.length;
+  const lvl = !budget ? "" : st.total > budget ? "over" : pct >= 80 ? "near" : "";
+  const list = [...myExpList()].sort((x, y) => `${y.date || ""}${y.id}`.localeCompare(`${x.date || ""}${x.id}`));
+  box.innerHTML = `
+    <div class="mb-head"><h3>💰 งบของฉัน</h3><span class="lock-note">🔒 เห็นเฉพาะคุณ</span></div>
+    <label class="mb-set">งบทั้งทริป (บาท)<input type="number" id="budget-input" min="0" step="500" inputmode="numeric" value="${budget || ""}" placeholder="เช่น 30000"></label>
+    ${budget ? `
+      <div class="mb-bar ${lvl}"><div style="width:${pct}%"></div></div>
+      <div class="mb-nums"><span>ใช้ไป <b>${money(st.total)}</b>${thbToTrip(st.total)}</span><span class="${left < 0 ? "neg" : "pos"}">${left < 0 ? `เกินงบ ${money(-left)}` : `เหลือ ${money(left)}`}</span></div>
+      ${left > 0 ? `<p class="muted small-note">ใช้ได้อีกวันละประมาณ ${money(left / daysLeft)}${thbToTrip(left / daysLeft)} (${daysLeft} วัน)</p>` : ""}
+      ${lvl === "near" ? `<p class="warn-soft small-note">⚠️ ใช้ไปแล้ว ${pct}% ของงบ</p>` : lvl === "over" ? `<p class="warn small-note">⚠️ เกินงบแล้ว</p>` : ""}`
+    : `<p class="muted small-note">ตั้งงบเพื่อดูว่าใช้ไปเท่าไรแล้ว (ยังนับยอดให้: ${money(st.total)})</p>`}
+    <ul class="mb-break">
+      <li><span>ส่วนของฉันในค่าใช้จ่ายกลุ่ม</span><b>${money(st.shared)}</b></li>
+      <li><span>ค่าใช้จ่ายส่วนตัว</span><b>${money(st.own)}</b></li>
+      <li><span>ของที่ซื้อแล้ว (ลิสต์ช้อป)</span><b>${money(st.shop)}</b></li>
+    </ul>
+    <details class="mb-own" ${list.length ? "" : ""}>
+      <summary>ค่าใช้จ่ายส่วนตัว (${list.length}) — เพิ่ม/ดูรายการ</summary>
+      <form id="myexp-form" class="inline-form mb-form">
+        <input name="title" required placeholder="เช่น ขนม, ค่ารถส่วนตัว">
+        <div class="amount-cur"><input type="number" name="amount" min="0" step="any" required inputmode="decimal" placeholder="จำนวน">${curSelect("currency", tripCur())}</div>
+        <button class="btn primary">เพิ่ม</button>
+      </form>
+      ${list.length ? `<ul class="rows">${list.map((x) => `<li class="row"><div class="body"><div class="title">${esc(x.title)} · <b>${fmtWithTHB(x.amount, x.currency)}</b></div>${x.date ? `<div class="meta"><span>📅 ${fmtDate(x.date)}</span></div>` : ""}</div>
+        <div class="row-actions"><button type="button" class="icon" data-action="budget-del" data-id="${esc(x.id)}" title="ลบ">✕</button></div></li>`).join("")}</ul>` : `<p class="muted small-note">ยังไม่มี</p>`}
+    </details>`;
+}
+function addMyExp(f) {
+  const rec = { id: Date.now().toString(36), title: f.title.trim(), amount: num(f.amount), currency: f.currency || "THB", date: tripDays().includes(todayISO()) ? todayISO() : "" };
+  if (!rec.title || !rec.amount) { toast("ใส่รายการและจำนวนเงิน"); return; }
+  store.setPrivate(trip.id, { myExp: [...myExpList(), rec] });
+  toast("บันทึกแล้ว — เห็นเฉพาะคุณ");
+}
+async function delMyExp(id) {
+  const x = myExpList().find((v) => v.id === id);
+  if (!x || !(await confirmDialog({ title: "ลบค่าใช้จ่ายส่วนตัว?", message: `จะลบ <b>“${esc(x.title)}”</b>` }))) return;
+  store.setPrivate(trip.id, { myExp: myExpList().filter((v) => v.id !== id) });
 }
 
 function newExpense() {
@@ -1661,6 +1852,8 @@ function startEditExpense(id) {
   editingExpenseId = id;
   const f = $("#expense-form").elements;
   ["title", "amount", "currency", "paidBy", "date"].forEach((k) => (f[k].value = e[k] ?? ""));
+  const sp = splitOf(e);
+  document.querySelectorAll("#expense-form [name=splitWith]").forEach((c) => (c.checked = sp.includes(c.value)));
   $("#expense-form-title").textContent = "แก้ไขค่าใช้จ่าย";
   $("#expense-submit").textContent = "บันทึก";
   updateExpensePreview();
@@ -1738,6 +1931,84 @@ function renderPacking() {
   }).join("");
 }
 
+/* ---------- ลิสต์ของที่อยากซื้อ (รายคน) + Tax-free ---------- */
+let packView = "pack";
+const SHOP_DONE_KEY = "shop-open-";
+function renderShopping() {
+  const box = $("#shop-view");
+  if (!box) return;
+  $("#seg-pack").classList.toggle("active", packView === "pack");
+  $("#seg-shop").classList.toggle("active", packView === "shop");
+  $("#pack-view").hidden = packView !== "pack";
+  box.hidden = packView !== "shop";
+  const nMine = (data.shopping || []).filter((x) => x.owner === getMe()).length;
+  $("#seg-shop").innerHTML = `🛍️ ของที่อยากซื้อ${nMine ? ` <span class="seg-n">${nMine}</span>` : ""}`;
+  if (packView !== "shop") return;
+  const me = getMe();
+  const info = destInfo();
+  const tf = info.taxFree;
+  const cur = tripCur();
+  const lineTotal = (x) => num(x.price) * (num(x.qty) || 1);
+  const mine = (data.shopping || []).filter((x) => x.owner === me).sort(byCreated);
+  const shops = [...new Set(mine.map((x) => (x.shop || "").trim() || "ไม่ระบุร้าน"))];
+  const totalTHB = mine.reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
+  const boughtTHB = mine.filter((x) => x.bought).reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
+  const tfLine = (list) => {
+    if (!tf) return "";
+    const yen = list.filter((x) => (x.currency || cur) === "JPY").reduce((s, x) => s + lineTotal(x), 0);
+    if (!yen) return "";
+    const need = Math.ceil(tf.min * 1.1);
+    return yen >= need ? `<span class="tf ok">✓ ถึงเกณฑ์ Tax-free (ซื้อวันเดียวกัน)</span>` : `<span class="tf">อีก ¥${(need - yen).toLocaleString()} ถึง Tax-free</span>`;
+  };
+  box.innerHTML = `
+    ${!me ? `<div class="card"><p class="muted">เลือก “ฉันคือใคร?” ก่อน เพื่อจดของที่อยากซื้อของตัวเอง</p><button type="button" class="btn" data-action="pick-me">เลือกชื่อ</button></div>` : `
+    <button type="button" class="btn add-btn add-wish-btn" data-action="shop-new">＋ เพิ่มของที่อยากซื้อ</button>
+    ${mine.length ? `<div class="card shop-sum">
+        <div><span class="muted">รวมทั้งหมด</span><b>${money(totalTHB)}</b>${thbToTrip(totalTHB)}</div>
+        <div><span class="muted">ซื้อแล้ว ${mine.filter((x) => x.bought).length}/${mine.length}</span><b>${money(boughtTHB)}</b></div>
+        <p class="muted small-note">ของที่ติ๊ก “ซื้อแล้ว” นับเข้า “งบของฉัน” ในแท็บค่าใช้จ่ายให้อัตโนมัติ</p>
+      </div>` : `<p class="empty">ยังไม่มีรายการ — จดของฝาก เครื่องสำอาง ของสะสม ไว้ก่อนได้เลย</p>`}
+    ${shops.map((shop) => {
+      const list = mine.filter((x) => ((x.shop || "").trim() || "ไม่ระบุร้าน") === shop);
+      const sub = list.reduce((s, x) => s + toTHB(lineTotal(x), x.currency), 0);
+      return `<div class="card shop-card">
+        <div class="shop-head"><h3>🏬 ${esc(shop)}</h3><div class="shop-sub">${money(sub)} ${tfLine(list)}</div></div>
+        <ul class="checks shop-list">${list.map((x) => `
+          <li class="${x.bought ? "is-bought" : ""}"><label><input type="checkbox" data-action="shop-bought" data-id="${esc(x.id)}" ${x.bought ? "checked" : ""}>
+            <span class="doc-text"><span class="doc-main">${esc(x.name)}${num(x.qty) > 1 ? ` ×${num(x.qty)}` : ""}</span>
+            ${num(x.price) ? `<small class="doc-why">${fmtWithTHB(lineTotal(x), x.currency || cur)}</small>` : ""}
+            ${x.note ? `<small class="doc-why">${esc(x.note)}</small>` : ""}</span></label>
+            <span class="row-actions"><button type="button" class="icon" data-action="shop-edit" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("shopping", x.id)}</span></li>`).join("")}</ul>
+      </div>`;
+    }).join("")}`}
+    ${tf ? `<details class="card tf-card" ${mine.length ? "" : "open"}><summary>🧾 Tax-free ญี่ปุ่น (ระบบใหม่ตั้งแต่ ${fmtDate(tf.from, "year")})</summary>
+      <ul class="immi-list">${tf.points.map((p) => `<li>${esc(p)}</li>`).join("")}</ul>
+      <p class="muted small-note">ที่มา: <a href="${esc(tf.source)}" target="_blank" rel="noopener">${esc(tf.source.replace(/^https?:\/\//, "").split("/")[0])}</a> — เกณฑ์ “ถึง Tax-free” ในหน้านี้คิดจากราคารวมภาษี ¥${Math.ceil(tf.min * 1.1).toLocaleString()} ต่อร้าน</p>
+    </details>` : ""}
+    ${(() => {
+      const others = members().filter((m) => m !== me && (data.shopping || []).some((x) => x.owner === m));
+      return others.length ? `<details class="card"><summary>ดูลิสต์ของเพื่อน (${others.length} คน)</summary>${others.map((m) => {
+        const l = data.shopping.filter((x) => x.owner === m);
+        return `<h4>${esc(m)} <small class="muted">${l.filter((x) => x.bought).length}/${l.length}</small></h4><ul class="checks readonly">${l.map((x) => `<li class="${x.bought ? "done" : ""}">${x.bought ? "✓" : "○"} ${esc(x.name)}${x.shop ? ` <small class="muted">· ${esc(x.shop)}</small>` : ""}</li>`).join("")}</ul>`;
+      }).join("")}</details>` : "";
+    })()}`;
+}
+
+let editingShopId = null;
+function openShopForm(x) {
+  const form = $("#shop-form");
+  form.reset();
+  editingShopId = x?.id || null;
+  const f = form.elements;
+  if (x) ["name", "shop", "price", "qty", "note"].forEach((k) => (f[k].value = x[k] ?? ""));
+  f.currency.value = x?.currency || tripCur();
+  const dl = $("#shop-names");
+  dl.innerHTML = [...new Set((data.shopping || []).map((s) => s.shop).filter(Boolean))].map((s) => `<option value="${esc(s)}">`).join("");
+  $("#shop-form-title").textContent = x ? "แก้ไขของที่อยากซื้อ" : "เพิ่มของที่อยากซื้อ";
+  openSheet("sheet-shop", x ? null : "[name=name]");
+}
+function closeShopForm() { editingShopId = null; $("#shop-form")?.reset(); closeSheet("sheet-shop"); }
+
 /* ---------- เช็กลิสต์ ---------- */
 function renderChecklist() {
   const el = $("#check-list");
@@ -1769,6 +2040,7 @@ function setMe(name) {
   syncMeForms();
   renderMoney();
   renderPacking();
+  renderShopping();
   renderPrep();
 }
 
@@ -1820,6 +2092,12 @@ function openTripEdit(id) {
       <form id="trip-form" class="card form">${tripFormFields(trip)}
         <div class="actions"><button class="btn primary">บันทึก</button><a class="btn" href="${back}">ยกเลิก</a></div>
       </form>
+      <div class="card backup-card">
+        <div class="danger-zone">
+          <div><b>💾 สำรองข้อมูลทริป</b><div class="muted">ดาวน์โหลดแพลน การจอง ค่าใช้จ่าย Wishlist ลิสต์ของ ทั้งหมดเป็นไฟล์ .json เก็บไว้ (รวมข้อมูลส่วนตัวของคุณเท่านั้น ไม่รวมของคนอื่น) — กู้คืนได้ที่หน้า “ทริปของเรา”</div></div>
+          <button type="button" class="btn" data-action="backup">ดาวน์โหลดไฟล์สำรอง</button>
+        </div>
+      </div>
       <div class="card danger-card">
         <div class="danger-zone">
           <div><b>ลบทริปนี้</b><div class="muted">ลบแพลน การจอง ค่าใช้จ่าย และรายการของทั้งหมด กู้คืนไม่ได้</div></div>
@@ -2250,12 +2528,82 @@ function privateFormHtml() {
       <label>อาชีพ (อังกฤษ)<input name="occupation" value="${esc(p.occupation || "")}" placeholder="เช่น Medical Technologist"></label>
       <label>ที่ทำงาน / สถานศึกษา (อังกฤษ)<input name="employer" value="${esc(p.employer || "")}" placeholder="เช่น ABC Hospital"></label>
       <label class="wide">วันหมดอายุพาสปอร์ต<input type="date" name="passportExpiry" value="${esc(p.passportExpiry || "")}"></label>
+      <label>บริษัทประกันเดินทาง<input name="insurer" value="${esc(p.insurer || "")}" placeholder="เช่น ชื่อบริษัทประกัน"></label>
+      <label>เลขกรมธรรม์<input name="policyNo" value="${esc(p.policyNo || "")}" autocomplete="off"></label>
+      <label class="wide">เบอร์ฉุกเฉินของประกัน (24 ชม.)<input name="insurerPhone" inputmode="tel" value="${esc(p.insurerPhone || "")}" placeholder="เช่น +66 2 xxx xxxx"></label>
+      <label class="wide">ผู้ติดต่อฉุกเฉินที่ไทย (ชื่อ + เบอร์)<input name="emergencyContact" value="${esc(p.emergencyContact || "")}" placeholder="เช่น แม่ 08x-xxx-xxxx"></label>
     </div>
     <p class="muted small-note">${useAccount() ? "🔒 บันทึกอัตโนมัติ — เก็บในบัญชีของคุณ คนอื่นในทริปมองไม่เห็น" : "โหมดทดลอง: เก็บในเครื่องนี้"} · ชื่อ อาชีพ และที่ทำงาน จะใส่ในเอกสารโชว์ ตม. ของคุณ</p>
   </form>`;
 }
 
+const telHref = (n) => "tel:" + String(n || "").replace(/[^\d+]/g, "");
+// ที่พักคืนนี้ (ก่อน/หลังทริป → คืนแรก)
+function hotelNow() {
+  const t = todayISO();
+  const d = tripDays().includes(t) ? t : trip.startDate;
+  return hotelForNight(d)[0] || hotels().find((h) => h.checkOutDate === d) || hotels()[0] || null;
+}
+function consulateFor() {
+  const list = destInfo().consulates || [];
+  const hay = `${trip.name} ${trip.country} ${hotels().map((h) => h.address).join(" ")}`.toLowerCase();
+  return list.find((c) => (c.match || []).some((m) => hay.includes(m.toLowerCase()))) || list[0] || null;
+}
+function renderSos() {
+  const box = $("#sos-card");
+  if (!box) return;
+  const info = destInfo();
+  const h = hotelNow();
+  const c = consulateFor();
+  const th = IMMI.thaiHotline;
+  const me = getMe();
+  const row = (label, num, note = "") => `<li><div><b>${esc(label)}</b>${note ? `<small>${esc(note)}</small>` : ""}</div><a class="tel-btn" href="${telHref(num)}">📞 ${esc(num)}</a></li>`;
+  box.innerHTML = `
+    <h3>🆘 ฉุกเฉิน & ที่พัก <small class="muted">ใช้ได้ตอนออฟไลน์ (ถ้าเคยเปิดหน้านี้ตอนมีเน็ต)</small></h3>
+    ${h ? `<div class="sos-hotel">
+        <div class="sh-label">🏨 ที่พัก${tripDays().includes(todayISO()) ? "คืนนี้" : "คืนแรก"}</div>
+        <div class="sh-name">${esc(h.title)}</div>
+        ${h.addressLocal ? `<div class="sh-local">${esc(h.addressLocal)}</div>` : ""}
+        ${h.address ? `<div class="sh-en">${esc(h.address)}</div>` : `<div class="warn-soft small-note">ยังไม่มีที่อยู่ — เพิ่มในแท็บการจอง</div>`}
+        <div class="sh-btns">
+          <button type="button" class="btn small primary" data-action="taxi-card" data-id="${esc(h.id)}">🚕 แสดงให้คนขับแท็กซี่</button>
+          ${h.phone ? `<a class="btn small" href="${telHref(h.phone)}">📞 โทรหาโรงแรม</a>` : ""}
+          <a class="btn small" href="${esc(mapUrl(h.address || h.place || h.title))}" target="_blank" rel="noopener">📍 แผนที่</a>
+        </div>
+        ${!h.addressLocal && destOf() !== "OTHER" ? `<p class="muted small-note">เพิ่ม “ที่อยู่ภาษาท้องถิ่น” ในการจองที่พัก คนขับแท็กซี่จะอ่านง่ายกว่าภาษาอังกฤษ</p>` : ""}
+      </div>` : `<p class="muted">ยังไม่มีที่พัก — เพิ่มในแท็บการจอง</p>`}
+    ${info.emergency?.length ? `<h4>เบอร์ฉุกเฉิน${esc(info.name ? " · " + info.name : "")}</h4><ul class="tel-list">${info.emergency.map((x) => row(x.label, x.number, x.note)).join("")}</ul>` : ""}
+    ${c || th ? `<h4>สถานทูต / กงสุลไทย</h4><ul class="tel-list">
+      ${c ? row(c.name, c.phone, `${c.address} · ${c.hours || ""}`) : ""}
+      ${th ? row(th.label, th.number, th.note) : ""}</ul>` : ""}
+    <h4>ประกันและผู้ติดต่อของฉัน <span class="lock-note">🔒 เห็นเฉพาะคุณ</span></h4>
+    ${!me ? `<p class="muted small-note">เลือก “ฉันคือใคร?” ก่อน</p>` : priv.insurer || priv.insurerPhone || priv.emergencyContact ? `<ul class="tel-list">
+      ${priv.insurer || priv.insurerPhone ? `<li><div><b>${esc(priv.insurer || "ประกันเดินทาง")}</b>${priv.policyNo ? `<small>เลขกรมธรรม์ ${esc(priv.policyNo)}</small>` : ""}</div>${priv.insurerPhone ? `<a class="tel-btn" href="${telHref(priv.insurerPhone)}">📞 ${esc(priv.insurerPhone)}</a>` : ""}</li>` : ""}
+      ${priv.emergencyContact ? `<li><div><b>ผู้ติดต่อที่ไทย</b><small>${esc(priv.emergencyContact)}</small></div></li>` : ""}</ul>`
+      : `<p class="muted small-note">ใส่ข้อมูลประกันใน “ข้อมูลของฉัน” ด้านล่าง</p>`}`;
+}
+function showTaxiCard(id) {
+  const h = data.bookings.find((b) => b.id === id);
+  if (!h) return;
+  const wrap = document.createElement("div");
+  wrap.className = "taxi-full";
+  wrap.innerHTML = `<button type="button" class="m-close" aria-label="ปิด">✕</button>
+    <div class="tx-in">
+      <div class="tx-hint">${destOf() === "JP" ? "このホテルまでお願いします" : "Please take me to this hotel"}</div>
+      <div class="tx-name">${esc(h.title)}</div>
+      ${h.addressLocal ? `<div class="tx-local">${esc(h.addressLocal)}</div>` : ""}
+      ${h.address ? `<div class="tx-en">${esc(h.address)}</div>` : ""}
+      ${h.phone ? `<div class="tx-en">TEL ${esc(h.phone)}</div>` : ""}
+    </div>`;
+  document.body.appendChild(wrap);
+  const close = () => { wrap.remove(); removeEventListener("keydown", onKey); };
+  const onKey = (e) => { if (e.key === "Escape") close(); };
+  addEventListener("keydown", onKey);
+  wrap.addEventListener("click", close);
+}
+
 function renderPrep() {
+  renderSos();
   const el = $("#prep-info");
   if (!el) return;
   const info = destInfo();
@@ -2500,6 +2848,12 @@ function onClick(e) {
   }
   else if (action === "edit-item") startEdit(id);
   else if (action === "item-new") newItem();
+  else if (action === "pack-view") { packView = b.dataset.v; renderShopping(); }
+  else if (action === "shop-new") openShopForm(null);
+  else if (action === "shop-edit") openShopForm(data.shopping.find((x) => x.id === id));
+  else if (action === "taxi-card") showTaxiCard(id);
+  else if (action === "split-all") { document.querySelectorAll("#expense-form [name=splitWith]").forEach((c) => (c.checked = true)); updateExpensePreview(); }
+  else if (action === "budget-del") delMyExp(b.dataset.id);
   else if (action === "book-new") newBooking();
   else if (action === "expense-new") newExpense();
   else if (action === "edit-expense") startEditExpense(id);
@@ -2565,6 +2919,7 @@ function onClick(e) {
     scrollTo({ top: 0, behavior: "smooth" });
   }
   else if (action === "delete-trip") deleteTrip();
+  else if (action === "backup") downloadBackup();
   else if (action === "forgot") forgotPassword();
 }
 
@@ -2612,7 +2967,7 @@ function confirmDialog({ title, message, okText = "ลบ", requireText = "", ic
   });
 }
 
-const SUB_LABEL = { items: "แพลน", wishlist: "Wishlist", bookings: "การจอง", expenses: "ค่าใช้จ่าย", packing: "ของที่ต้องเตรียม", checklist: "เช็กลิสต์" };
+const SUB_LABEL = { items: "แพลน", wishlist: "Wishlist", bookings: "การจอง", expenses: "ค่าใช้จ่าย", packing: "ของที่ต้องเตรียม", checklist: "เช็กลิสต์", shopping: "ลิสต์ช้อป" };
 
 async function confirmDelete(sub, id) {
   const x = (data[sub] || []).find((r) => r.id === id);
@@ -2634,7 +2989,46 @@ async function confirmDelete(sub, id) {
   if (id === editingBookingId) stopEditBooking();
   if (id === editingWishId) closeWishForm();
   if (id === editingExpenseId) stopEditExpense();
+  if (id === editingShopId) closeShopForm();
   toast("ลบแล้ว");
+}
+
+/* ---------- สำรอง / กู้คืนข้อมูล ---------- */
+async function downloadBackup() {
+  try {
+    toast("กำลังเตรียมไฟล์…");
+    const subs = await store.getAll(trip.id);
+    const { id, ...tripData } = trip;
+    // ข้อมูลส่วนตัวของฉัน (อ่านครั้งเดียว)
+    const mine = await new Promise((res) => { let un = null; let done = false; un = store.listenPrivate(id, (p) => { if (done) return; done = true; res(p || {}); setTimeout(() => un?.(), 0); }); setTimeout(() => { if (!done) { done = true; res({}); } }, 4000); });
+    const payload = { app: "trip-planner", version: 1, exportedAt: new Date().toISOString(), tripId: id, trip: tripData, subs, private: Object.keys(mine).length ? mine : undefined };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `backup-${trip.name}-${todayISO()}.json`;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+    toast("ดาวน์โหลดไฟล์สำรองแล้ว");
+  } catch (e) { console.error(e); toast("สำรองไม่สำเร็จ: " + (e.code || e.message)); }
+}
+
+async function restoreBackup(file) {
+  let j;
+  try { j = JSON.parse(await file.text()); } catch { toast("ไฟล์นี้ไม่ใช่ไฟล์สำรองของเว็บ"); return; }
+  if (j?.app !== "trip-planner" || !j.trip?.name) { toast("ไฟล์นี้ไม่ใช่ไฟล์สำรองของเว็บ"); return; }
+  const n = Object.values(j.subs || {}).reduce((s, l) => s + (l?.length || 0), 0);
+  const yes = await confirmDialog({
+    title: "กู้คืนทริปจากไฟล์?",
+    message: `จะสร้างทริปใหม่ <b>“${esc(j.trip.name)} (กู้คืน)”</b> พร้อมข้อมูล ${n} รายการ<br><small>ทริปเดิม (ถ้ายังอยู่) จะไม่ถูกแก้ไข · สำรองเมื่อ ${esc(new Date(j.exportedAt).toLocaleString("th-TH"))}</small>`,
+    okText: "กู้คืน", icon: "💾",
+  });
+  if (!yes) return;
+  const id = store.createTrip({ ...j.trip, name: `${j.trip.name} (กู้คืน)`, createdAt: Date.now() });
+  for (const s of SUBS) for (const { id: did, ...d } of j.subs?.[s] || []) store.set(id, s, did, d); // ใช้ id เดิม → ลิงก์ระหว่างแพลน/การจอง/Wishlist ยังอยู่ครบ
+  if (j.private && store.setPrivate) store.setPrivate(id, j.private);
+  toast("กู้คืนแล้ว");
+  location.hash = "#/trip/" + id;
 }
 
 async function deleteTrip() {
@@ -2675,6 +3069,13 @@ function onChange(e) {
       store.update(trip.id, "expenses", e.id, { settled: { ...(e.settled || {}), [el.dataset.m]: el.checked } });
       toast(el.checked ? `✓ ${el.dataset.m} โอนคืน ${e.paidBy} แล้ว (${e.title})` : "ยกเลิกติ๊กแล้ว");
     }
+  } else if (el.dataset.action === "shop-bought") {
+    store.update(trip.id, "shopping", el.dataset.id, { bought: el.checked });
+  } else if (el.name === "splitWith") {
+    updateExpensePreview();
+  } else if (el.id === "budget-input") {
+    store.setPrivate(trip.id, { budget: num(el.value) });
+    toast(num(el.value) ? `ตั้งงบ ${money(num(el.value))} แล้ว` : "ลบงบแล้ว");
   } else if (el.closest("#item-form") && ["date", "time", "place", "activity"].includes(el.name)) {
     updateLegSuggest();
   } else if (el.closest("#private-form")) {
@@ -2683,6 +3084,9 @@ function onChange(e) {
     togglePrep(el.dataset.key, el.checked);
   } else if (el.dataset.action === "toggle") {
     store.update(trip.id, el.dataset.sub, el.dataset.id, { done: el.checked });
+  } else if (el.id === "restore-file") {
+    if (el.files?.[0]) restoreBackup(el.files[0]);
+    el.value = "";
   } else if (el.closest("#book-form")) {
     if (el.name === "pax") renderPaxRefs();
     syncBookForm();
@@ -2776,6 +3180,8 @@ function onSubmit(e) {
         checkOutDate: hotel ? f.checkOutDate : "",
         checkOutTime: hotel ? f.checkOutTime : "",
         address: hotel ? (f.address || "").trim() : "",
+        addressLocal: hotel ? (f.addressLocal || "").trim() : "",
+        phone: hotel ? (f.phone || "").trim() : "",
         lat: null, lng: null, // ให้หาพิกัดใหม่เมื่อแก้ชื่อ/ที่อยู่
       };
       if (f.type === "เที่ยวบิน") {
@@ -2794,9 +3200,22 @@ function onSubmit(e) {
     case "expense-form": {
       const rec = { title: f.title.trim(), amount: num(f.amount), currency: f.currency || "THB", paidBy: f.paidBy, date: f.date };
       if (!rec.title || !rec.amount) { toast("ใส่รายการและจำนวนเงิน"); return; }
+      rec.splitWith = new FormData(form).getAll("splitWith");
+      if (!rec.splitWith.length) { toast("ติ๊กอย่างน้อย 1 คนที่หารรายการนี้"); return; }
+      if (rec.splitWith.length === 1 && rec.splitWith[0] === rec.paidBy) { toast("จ่ายเองคนเดียว ไม่ต้องหาร — ใส่ใน “งบของฉัน” แทน"); return; }
       if (editingExpenseId) store.update(trip.id, "expenses", editingExpenseId, rec);
       else store.add(trip.id, "expenses", { ...rec, settled: {}, createdAt: now });
       stopEditExpense();
+      toast("บันทึกแล้ว");
+      return;
+    }
+    case "myexp-form": addMyExp(f); return;
+    case "shop-form": {
+      const rec = { name: f.name.trim(), shop: f.shop.trim(), price: num(f.price), currency: f.currency || tripCur(), qty: Math.max(1, num(f.qty) || 1), note: f.note.trim() };
+      if (!rec.name || !getMe()) return;
+      if (editingShopId) store.update(trip.id, "shopping", editingShopId, rec);
+      else store.add(trip.id, "shopping", { ...rec, owner: getMe(), bought: false, createdAt: now });
+      closeShopForm();
       toast("บันทึกแล้ว");
       return;
     }

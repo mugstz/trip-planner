@@ -1,5 +1,5 @@
 {
-  "updated": "2026-10-01",
+  "updated": "2026-10-02",
   "note": "สถานที่แนะนำที่ Claude คัดจากแหล่งข้อมูลที่ระบุไว้ในแต่ละรายการ — time = เวลาที่ใช้เที่ยวที่นี่โดยประมาณ (ไม่รวมเดินทาง), access = สถานีใกล้สุด/วิธีไปโดยทั่วไป, พิกัดเป็นค่าประมาณ ตรวจเวลาเปิดปิดและเส้นทางล่าสุดก่อนไป",
   "places": [
     {
@@ -558,6 +558,54 @@
         }
       ],
       "access": "Kintetsu Nara Line จากโอซาก้า-นัมบะ ลงสถานีคินเท็ตสึนารา (ประมาณ 40 นาที) แล้วเดินประมาณ 5 นาที"
+    },
+    {
+      "id": "jp-osaka-tower-umeda",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "TOWER RECORDS อุเมดะ (NU chayamachi)",
+      "nameEn": "TOWER RECORDS Umeda NU chayamachi",
+      "cats": [
+        "kpop",
+        "shopping"
+      ],
+      "lat": 34.7076,
+      "lng": 135.4985,
+      "time": "30 นาที–1 ชม.",
+      "access": "สถานีอุเมดะ (Osaka Metro / Hankyu) เดินประมาณ 5 นาที · ชั้น 6 ตึก NU chayamachi",
+      "desc": "ร้านเพลงที่มีโซน K-pop ขายอัลบั้ม โฟโต้การ์ด และอุจิวะ (พัดเชียร์) — แวะหาอัลบั้ม NCT 127 / aespa ได้",
+      "kpop": "อัลบั้ม โฟโต้การ์ด และของเชียร์ศิลปินเกาหลี",
+      "sources": [
+        {
+          "title": "Your Osaka K-Pop Concert Trip Guide! Top 6 for CDs, Fan Items, and Korean Food",
+          "publisher": "Umeda Shopping & Culture (umeda-sc.jp)",
+          "url": "https://umeda-sc.jp/en/trip-ideas/32038/"
+        }
+      ]
+    },
+    {
+      "id": "jp-osaka-eggnam",
+      "country": "JP",
+      "city": "โอซาก้า",
+      "name": "eggnam (HEP FIVE ชั้น 9)",
+      "nameEn": "eggnam HEP FIVE Osaka",
+      "cats": [
+        "kpop",
+        "photo"
+      ],
+      "lat": 34.7038,
+      "lng": 135.5003,
+      "time": "30 นาที–1 ชม.",
+      "access": "สถานีอุเมดะ (Hankyu / Osaka Metro) เดินประมาณ 3 นาที · ตึก HEP FIVE ชั้น 9",
+      "desc": "ตู้ถ่ายรูปสไตล์เกาหลี มีชุดให้เช่าและพร็อพ/ป้ายไอดอลให้ถ่ายคู่ — ตึกเดียวกับชิงช้าสวรรค์สีแดง HEP FIVE",
+      "kpop": "ถ่ายรูปสติกเกอร์สไตล์เกาหลี พร้อมพร็อพไอดอล",
+      "sources": [
+        {
+          "title": "Your Osaka K-Pop Concert Trip Guide! Top 6 for CDs, Fan Items, and Korean Food",
+          "publisher": "Umeda Shopping & Culture (umeda-sc.jp)",
+          "url": "https://umeda-sc.jp/en/trip-ideas/32038/"
+        }
+      ]
     }
   ]
 }
