@@ -69,12 +69,25 @@ function daysBetween(start, end) {
 }
 
 let toastTimer;
-function toast(msg) {
+let toastUndoFn = null;
+function toast(msg, undo = null) {
   const el = document.getElementById("toast");
-  el.textContent = msg;
+  toastUndoFn = undo;
+  el.classList.toggle("has-undo", !!undo);
+  if (undo) {
+    el.innerHTML = "";
+    const s = document.createElement("span");
+    s.textContent = msg;
+    const b = document.createElement("button");
+    b.type = "button";
+    b.className = "toast-undo";
+    b.textContent = "เลิกทำ";
+    b.onclick = () => { const f = toastUndoFn; toastUndoFn = null; el.hidden = true; f?.(); };
+    el.append(s, b);
+  } else el.textContent = msg;
   el.hidden = false;
   clearTimeout(toastTimer);
-  toastTimer = setTimeout(() => (el.hidden = true), 2500);
+  toastTimer = setTimeout(() => { el.hidden = true; toastUndoFn = null; }, undo ? 5000 : 2500);
 }
 
 function lsGet(k) { try { return localStorage.getItem(k) || ""; } catch { return ""; } }
@@ -317,6 +330,7 @@ function cleanup() {
   priv = {};
   WX = {};
   packView = "pack";
+  if (dayMapObj) { try { dayMapObj.remove(); } catch {} dayMapObj = null; }
   wxState = "";
   closeAllSheets();
 }
@@ -411,6 +425,27 @@ function onUserDocChange() {
   updateMeChip(); syncMeForms(); renderMoney(); renderPacking(); renderPrep(); renderBookings();
 }
 
+/* ---------- ติดตั้งเป็นแอปบนหน้าจอ ---------- */
+let installEvt = null;
+addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); installEvt = e; if (location.hash === "" || location.hash === "#/") document.getElementById("install-box")?.replaceWith(htmlEl(installHintHtml())); });
+const isStandalone = () => matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+const htmlEl = (h) => { const t = document.createElement("template"); t.innerHTML = h.trim() || "<span></span>"; return t.content.firstChild; };
+function installHintHtml() {
+  if (isStandalone() || hintSeen("install")) return `<span id="install-box"></span>`;
+  const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  if (installEvt) return `<p class="hint install-hint" id="install-box"><span>📲 ติดตั้งเป็นแอปบนหน้าจอ เปิดได้เร็ว เต็มจอ</span><button type="button" class="btn small primary" data-action="install">ติดตั้ง</button><button type="button" class="hint-x" data-action="hint-x" data-k="install" aria-label="ปิด">✕</button></p>`;
+  if (ios) return `<p class="hint install-hint" id="install-box" data-hint="install"><span>📲 ติดตั้งเป็นแอป: แตะปุ่ม <b>แชร์</b> ⬆️ ใน Safari แล้วเลือก <b>“เพิ่มไปยังหน้าจอโฮม”</b></span><button type="button" class="hint-x" data-action="hint-x" data-k="install" aria-label="ปิด">✕</button></p>`;
+  return `<span id="install-box"></span>`;
+}
+
+/* ---------- กรอบเทาระหว่างโหลด (skeleton) ---------- */
+const skelCards = (n) => Array.from({ length: n }, () => `<div class="trip-card skel-card"><div class="sk sk-band"></div><div class="tc-body"><div class="sk sk-h"></div><div class="sk sk-l"></div><div class="sk sk-s"></div></div></div>`).join("");
+const skelTrip = () => `<div class="skel" aria-label="กำลังโหลด" role="status">
+  <div class="card"><div class="sk sk-h"></div><div class="sk sk-l"></div><div class="sk sk-s"></div></div>
+  <div class="sk-row">${'<div class="sk sk-pill"></div>'.repeat(4)}</div>
+  ${'<div class="card sk-item"><div class="sk sk-dot"></div><div style="flex:1"><div class="sk sk-l"></div><div class="sk sk-s"></div></div></div>'.repeat(3)}
+</div>`;
+
 /* ---------- หน้า: รายการทริป ---------- */
 function renderList() {
   app.innerHTML = `
@@ -420,21 +455,40 @@ function renderList() {
         <a class="btn primary" href="#/new">+ Create plan</a>
       </div></div>
     ${modeBanner()}
-    <div id="trip-grid" class="trip-grid"><p class="muted">กำลังโหลด…</p></div>`;
+    ${installHintHtml()}
+    <div id="trip-grid" class="trip-grid">${skelCards(2)}</div>`;
   unsubs.push(store.listenTrips((list) => {
     const grid = $("#trip-grid");
     if (!grid) return;
     list.sort((a, b) => (a.startDate || "").localeCompare(b.startDate || ""));
     grid.innerHTML = list.length
-      ? list.map((t) => `
-          <a class="trip-card" href="#/trip/${encodeURIComponent(t.id)}">
-            <h2>${esc(t.name)}</h2>
-            <div class="muted">${esc(t.country)} · ${fmtDate(t.startDate)} – ${fmtDate(t.endDate, "year")}</div>
-            <div class="muted">${(t.members || []).length} คน · ${daysBetween(t.startDate, t.endDate).length} วัน</div>
-          </a>`).join("")
+      ? list.map((t, i) => {
+          const cd = countdown(t);
+          return `
+          <a class="trip-card tc-${i % 4} ${cd.cls}" href="#/trip/${encodeURIComponent(t.id)}">
+            <div class="tc-band"><span class="tc-flag">${FLAG[destOf(t)] || "✈️"}</span><span class="tc-cd">${cd.text}</span></div>
+            <div class="tc-body">
+              <h2>${esc(t.name)}</h2>
+              <div class="muted">${esc(t.country)}${t.country ? " · " : ""}${fmtDate(t.startDate)} – ${fmtDate(t.endDate, "year")}</div>
+              <div class="tc-meta"><span>👥 ${(t.members || []).length} คน</span><span>🗓️ ${daysBetween(t.startDate, t.endDate).length} วัน</span></div>
+            </div>
+          </a>`;
+        }).join("")
       : `<div class="empty">ยังไม่มีทริป — กด <b>+ Create plan</b> เพื่อสร้าง<br><br>
            <button class="btn" type="button" data-action="import">นำเข้าทริปโอซาก้าจากไฟล์เดิม</button></div>`;
   }));
+}
+
+const FLAG = { JP: "🇯🇵", KR: "🇰🇷" };
+// นับถอยหลังวันเดินทาง (ใช้วันที่ของเครื่อง)
+function countdown(t) {
+  const today = localToday();
+  const diff = Math.round((new Date(t.startDate + "T00:00:00") - new Date(today + "T00:00:00")) / 864e5);
+  const days = daysBetween(t.startDate, t.endDate);
+  if (diff > 1) return { text: `อีก ${diff} วัน ✈️`, cls: "is-soon" };
+  if (diff === 1) return { text: "พรุ่งนี้แล้ว! ✈️", cls: "is-soon" };
+  if (today <= t.endDate && today >= t.startDate) return { text: `กำลังเที่ยว · วันที่ ${days.indexOf(today) + 1}`, cls: "is-now" };
+  return { text: "จบทริปแล้ว", cls: "is-past" };
 }
 
 async function importSample() {
@@ -494,7 +548,7 @@ function renderCreate() {
 
 /* ---------- หน้า: รายละเอียดทริป ---------- */
 function openTrip(id) {
-  app.innerHTML = `<p class="muted">กำลังโหลด…</p>`;
+  app.innerHTML = skelTrip();
   SUBS.forEach((s) => (data[s] = []));
   unsubs.push(store.listenTrip(id, (t) => {
     if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
@@ -520,6 +574,9 @@ function openTrip(id) {
     data[s] = list;
     if (skeletonSig) renderSection(s);
   })));
+  // การ์ด "ถัดไป": อัปเดตทุกนาที (เฉพาะช่วงที่อยู่ในทริป)
+  const tick = setInterval(() => { if (trip && tripDays().includes(localToday())) refreshNextCard(); }, 60000);
+  unsubs.push(() => clearInterval(tick));
   unsubs.push(store.listenPrivate(id, (p) => {
     priv = p || {};
     if (skeletonSig) { renderPrep(); syncBookForm(); renderMyBudget(); renderShopping(); }
@@ -575,6 +632,8 @@ function renderTripSkeleton() {
           <label>เวลาถึง<input type="time" name="time"></label>
           <label class="check wide prev-night"><input type="checkbox" name="prevNight"> เวลานี้เป็นของ <b>คืนก่อนหน้า</b> <small class="muted">(เช่น ไปสนามบิน 22:00 ก่อนไฟลท์ตี 1)</small></label>
           <label class="wide">กิจกรรม*<input name="activity" required placeholder="เช่น ปราสาทโอซาก้า"></label>
+          <div class="wide kind-field"><span class="field-label">ประเภท</span>
+            <div class="kind-opts">${KINDS.map(([k, ic, l]) => `<label class="kind-opt"><input type="radio" name="kind" value="${k}"><span><i>${ic}</i>${l}</span></label>`).join("")}</div></div>
           <label class="wide">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)<input name="place" placeholder="เช่น Osaka Castle"></label>
           <div class="wide stay-field"><span class="field-label">อยู่ที่นี่ประมาณ</span>
             <div class="hm"><input type="number" name="stayH" min="0" max="23" inputmode="numeric" placeholder="0"><span>ชม.</span><input type="number" name="stayM" min="0" max="59" step="5" inputmode="numeric" placeholder="0"><span>นาที</span></div></div>
@@ -597,7 +656,8 @@ function renderTripSkeleton() {
         </div>
         <div class="actions">
           <button class="btn primary" id="item-submit">เพิ่ม</button>
-          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-item">ยกเลิก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-item">ปิด</button>
+          <button class="btn danger" type="button" data-action="item-cancel-sheet" id="item-cancel-btn" hidden>ยกเลิก ไม่ไปแล้ว</button>
         </div>
       </form>`)}
     </section>
@@ -630,7 +690,8 @@ function renderTripSkeleton() {
         </div>
         <div class="actions">
           <button class="btn primary" id="wish-submit">บันทึก</button>
-          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-wish">ยกเลิก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-wish">ปิด</button>
+          <button class="btn danger" type="button" data-action="wish-drop-sheet" id="wish-drop-btn" hidden>ยกเลิก ไม่ไปแล้ว</button>
         </div>
       </form>`)}
     </section>
@@ -777,6 +838,7 @@ function renderTripSkeleton() {
 
   updateMeChip();
   makeSortable($("#plan-list"), ".item-row", reorderDay);
+  setupSwipe($("#plan-list"));
   makeSortable($("#wish-list"), ".wish-card", reorderWish);
   const d = days[dayIdx];
   if (d) $("#item-form [name=date]").value = d;
@@ -911,11 +973,147 @@ function renderPlan() {
   });
   const nDone = list.filter((x) => x.status === "done").length;
   loadWeather();
-  el.innerHTML = `<h3 class="day-title">${fmtDate(d, "long")}</h3>` + dayWxHtml(d) + dayHotelHtml(d) + (list.length
-    ? `${list.length > 1 ? `<p class="muted small-note drag-hint">ลาก ⋮⋮ เพื่อสลับลำดับ — เวลาจะเรียงให้ใหม่อัตโนมัติ</p>` : ""}
+  const withPins = active.filter((x) => itemCoords(x)).length;
+  el.innerHTML = nextCardHtml(d, active) + `<div class="day-head"><h3 class="day-title">${fmtDate(d, "long")}</h3>${withPins ? `<button type="button" class="chip-toggle ${mapOpen ? "on" : ""}" data-action="day-map">🗺️ ${mapOpen ? "ซ่อนแผนที่" : "ดูแผนที่วันนี้"}</button>` : ""}</div>` +
+    (mapOpen && withPins ? `<div id="day-map" class="day-map"></div>` : "") + dayWxHtml(d) + dayHotelHtml(d) + (list.length
+    ? `${coarse() && days.length > 1 ? hintHtml("swipe", "ปัดซ้าย–ขวาที่รายการเพื่อเปลี่ยนวัน") : ""}${list.length > 1 ? hintHtml("drag", "ลาก ⋮⋮ เพื่อสลับลำดับ — เวลาจะเรียงให้ใหม่อัตโนมัติ") : ""}
        <ul class="rows timeline" id="plan-rows">${rows.join("")}</ul>
        <p class="total">${nDone ? `ไปแล้ว ${nDone}/${active.length} · ` : ""}รวมวันนี้ ${money(total)}${travelTotal ? ` · เดินทางรวม ~${fmtDur(travelTotal)}` : ""}</p>`
     : `<p class="empty">ยังไม่มีแพลนวันนี้ — กด “＋ เพิ่มกิจกรรม” ด้านบน หรือดึงจากแท็บ Wishlist</p>`);
+  if (mapOpen && withPins) drawDayMap(d, active);
+}
+
+/* ---------- ประเภทกิจกรรม (ไอคอน + สี) ---------- */
+const KINDS = [
+  ["sight", "📸", "เที่ยว/ถ่ายรูป"], ["food", "🍜", "กิน"], ["cafe", "☕", "คาเฟ่"], ["shop", "🛍️", "ช้อป"],
+  ["kpop", "💚", "K-pop"], ["hotel", "🏨", "ที่พัก"], ["move", "✈️", "เดินทาง"], ["other", "📌", "อื่นๆ"],
+];
+const KIND_OF_WISH = { "คาเฟ่": "cafe", "ร้านอาหาร": "food", "ช้อปปิ้ง": "shop", "ตามรอยศิลปิน": "kpop", "ที่เที่ยว": "sight" };
+function kindOf(x) {
+  if (x.kind && KINDS.some((k) => k[0] === x.kind)) return x.kind;
+  const w = x.wishId && data.wishlist?.find((v) => v.id === x.wishId);
+  if (w && KIND_OF_WISH[w.category]) return KIND_OF_WISH[w.category];
+  const t = `${x.activity} ${x.place || ""}`.toLowerCase();
+  if (/บิน|สนามบิน|airport|flight|แลนด์|รถไฟ|shinkansen|ชินคันเซ็น|station|สถานี/.test(t)) return "move";
+  if (/เช็คอิน|เช็คเอาท์|check.?in|check.?out|โรงแรม|hotel|ryokan/.test(t)) return "hotel";
+  if (/คาเฟ่|cafe|café|coffee|กาแฟ|ขนม|dessert/.test(t)) return "cafe";
+  if (/ราเมน|ซูชิ|กิน|ข้าว|อาหาร|ramen|sushi|yakiniku|ยากินิกุ|ทาโกะ|takoyaki|ตลาด|market|izakaya|food/.test(t)) return "food";
+  if (/ช้อป|shop|mall|ห้าง|don quijote|ดองกี้|uniqlo|outlet|loft|parco/.test(t)) return "shop";
+  if (/nct|aespa|k-?pop|เคป๊อป|โคเรียทาวน์|korea ?town|dome|โดม/.test(t)) return "kpop";
+  return "sight";
+}
+const kindIcon = (k) => (KINDS.find((x) => x[0] === k) || KINDS.at(-1))[1];
+
+/* ---------- ข้อความแนะนำ: ขึ้นจนกว่าจะปิด / ใช้ครั้งแรก ---------- */
+const hintSeen = (k) => !!lsGet("hint-" + k);
+const hideHint = (k) => { lsSet("hint-" + k, "1"); document.querySelectorAll(`[data-hint="${k}"]`).forEach((e) => e.remove()); };
+const hintHtml = (k, text) => (hintSeen(k) ? "" : `<p class="hint" data-hint="${k}"><span>💡 ${text}</span><button type="button" class="hint-x" data-action="hint-x" data-k="${k}" aria-label="ปิด">✕</button></p>`);
+
+/* ---------- การ์ด "ถัดไป" (เฉพาะวันที่อยู่ในทริปจริง) ---------- */
+const nowMin = () => { const d = new Date(Date.now() + 7 * 3600e3); return d.getUTCHours() * 60 + d.getUTCMinutes(); }; // เวลาไทย
+// ญี่ปุ่น/เกาหลีเร็วกว่าไทย 2 ชม. — ใช้เวลาท้องถิ่นของเครื่อง (มือถือเปลี่ยนโซนเวลาให้เองเมื่ออยู่ต่างประเทศ)
+const localNowMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+function nextCardHtml(d, active) {
+  if (d !== localToday()) return "";
+  const now = localNowMin();
+  const timed = active.filter((x) => effMin(x) !== null && x.status !== "done");
+  const cur = timed.find((x) => effMin(x) <= now && now < effMin(x) + (num(x.stay) || 60));
+  const next = timed.find((x) => effMin(x) > now);
+  if (!cur && !next) return active.length ? `<div class="next-card done-day">🌙 วันนี้ครบทุกแพลนแล้ว พักผ่อนเยอะๆ</div>` : "";
+  const nav = (x) => { const c = itemCoords(x); const dest = c ? `${c.lat},${c.lng}` : placeQuery(x.place) || x.activity; return `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(dest)}&travelmode=transit`; };
+  const mins = next ? effMin(next) - now : 0;
+  return `<div class="next-card">
+    ${cur ? `<div class="nc-now"><span class="nc-tag now">ตอนนี้</span> ${kindIcon(kindOf(cur))} <b>${esc(cur.activity)}</b></div>` : ""}
+    ${next ? `<div class="nc-next"><span class="nc-tag">ถัดไป · ${esc(next.time)} (อีก ${fmtDur(mins)})</span>
+      <div class="nc-title">${kindIcon(kindOf(next))} ${esc(next.activity)}</div>
+      <div class="nc-btns"><a class="btn small primary" href="${esc(nav(next))}" target="_blank" rel="noopener">🧭 นำทางไปที่นี่</a><button type="button" class="btn small" data-action="goto-item" data-id="${esc(next.id)}">ดูในแพลน</button></div></div>` : ""}
+  </div>`;
+}
+
+function refreshNextCard() {
+  const el = $("#plan-list");
+  if (!el || dragging) return;
+  const d = tripDays()[dayIdx];
+  const html = nextCardHtml(d, sortItems(data.items.filter((x) => x.date === d && x.status !== "cancel")));
+  const old = el.querySelector(".next-card");
+  if (old) { if (html) old.outerHTML = html; else old.remove(); }
+  else if (html) el.insertAdjacentHTML("afterbegin", html);
+}
+
+/* ---------- แผนที่รายวัน (Leaflet + OpenStreetMap ฟรี — โหลดเมื่อกดดูเท่านั้น) ---------- */
+let mapOpen = false;
+let leafletP = null;
+let dayMapObj = null;
+function loadLeaflet() {
+  if (window.L) return Promise.resolve(window.L);
+  if (leafletP) return leafletP;
+  leafletP = new Promise((res, rej) => {
+    const css = document.createElement("link");
+    css.rel = "stylesheet";
+    css.href = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css";
+    document.head.appendChild(css);
+    const s = document.createElement("script");
+    s.src = "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload = () => res(window.L);
+    s.onerror = () => { leafletP = null; rej(new Error("leaflet")); };
+    document.head.appendChild(s);
+  });
+  return leafletP;
+}
+async function drawDayMap(d, active) {
+  const box = document.getElementById("day-map");
+  if (!box) return;
+  let L;
+  try { L = await loadLeaflet(); } catch { box.innerHTML = `<p class="muted small-note">โหลดแผนที่ไม่ได้ — ต้องต่ออินเทอร์เน็ต</p>`; return; }
+  if (!document.body.contains(box)) return;
+  if (dayMapObj) { try { dayMapObj.remove(); } catch {} dayMapObj = null; }
+  const pts = active.map((x) => ({ x, c: itemCoords(x) })).filter((p) => p.c);
+  const map = L.map(box, { scrollWheelZoom: false, attributionControl: true, zoomControl: true });
+  dayMapObj = map;
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 19, attribution: "© OpenStreetMap" }).addTo(map);
+  const ll = pts.map((p) => [p.c.lat, p.c.lng]);
+  pts.forEach((p, i) => {
+    const icon = L.divIcon({ className: "pin-wrap", html: `<div class="pin k-${kindOf(p.x)} ${p.x.status === "done" ? "is-done" : ""}">${i + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
+    L.marker([p.c.lat, p.c.lng], { icon }).addTo(map).bindPopup(`<b>${i + 1}. ${esc(p.x.activity)}</b>${p.x.time ? `<br>${esc(p.x.time)}` : ""}`);
+  });
+  const h = hotelForNight(d)[0];
+  const hc = h && hotelCoords(h);
+  if (hc) { L.marker([hc.lat, hc.lng], { icon: L.divIcon({ className: "pin-wrap", html: `<div class="pin pin-hotel">🏨</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map).bindPopup(esc(h.title)); ll.push([hc.lat, hc.lng]); }
+  // เส้นเชื่อมตามลำดับ (ไม่ลากข้ามประเทศ — ตัดช่วงที่ห่างเกิน 80 กม.)
+  for (let i = 1; i < pts.length; i++) {
+    if (distKm(pts[i - 1].c, pts[i].c) > 80) continue;
+    L.polyline([[pts[i - 1].c.lat, pts[i - 1].c.lng], [pts[i].c.lat, pts[i].c.lng]], { color: "#B0505C", weight: 3, opacity: .7, dashArray: "6 6" }).addTo(map);
+  }
+  const near = ll.filter((p) => !pts.length || distKm({ lat: p[0], lng: p[1] }, pts.at(-1).c) < 80);
+  if (near.length > 1) map.fitBounds(near, { padding: [30, 30], maxZoom: 15 });
+  else map.setView(near[0] || ll[0], 14);
+}
+
+/* ---------- ปัดซ้าย/ขวาเปลี่ยนวัน (มือถือ) ---------- */
+function setupSwipe(el) {
+  let sx = 0, sy = 0, st = 0, ok = false;
+  el.addEventListener("touchstart", (e) => {
+    const t = e.touches[0];
+    ok = e.touches.length === 1 && !e.target.closest(".drag-handle, .day-map, input, select, textarea, .tabs");
+    sx = t.clientX; sy = t.clientY; st = Date.now();
+  }, { passive: true });
+  el.addEventListener("touchend", (e) => {
+    if (!ok || dragging) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - sx, dy = t.clientY - sy;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > Math.abs(dx) * 0.6 || Date.now() - st > 700) return;
+    const n = tripDays().length;
+    const ni = dayIdx + (dx < 0 ? 1 : -1);
+    if (ni < 0 || ni >= n) return;
+    dayIdx = ni;
+    renderPlan();
+    hideHint("swipe");
+    el.classList.remove("swipe-l", "swipe-r");
+    void el.offsetWidth;
+    el.classList.add(dx < 0 ? "swipe-l" : "swipe-r");
+    if (!editingItemId) $("#item-form [name=date]").value = tripDays()[dayIdx];
+  }, { passive: true });
 }
 
 /* ---------- พยากรณ์อากาศ (Open-Meteo ฟรี ไม่ต้องใช้คีย์) ----------
@@ -1096,7 +1294,15 @@ function connectorHtml(prev, x) {
       : `<span class="muted">(ใส่ “อยู่ที่นี่ประมาณ” ของจุดก่อนหน้า เพื่อคำนวณเวลาถึง)</span>`;
   }
   const empty = !legs.length && !x.transport && !est && !route && !far;
-  return `<li class="connector ${empty ? "is-empty" : ""}" aria-hidden="${empty}">
+  const late = !flight && pt !== null && min && num(prev.stay) && effMin(x) !== null && pt + num(prev.stay) + min > effMin(x);
+  const arriveT = !flight && pt !== null && min && num(prev.stay) ? fromMin((pt + num(prev.stay) + min + 1440) % 1440) : "";
+  const icon = flight ? "✈️" : legs.length ? (legs.some(isFlightLeg) ? "✈️" : "🚃") : est ? est.icon : "🚃";
+  const sum = flight ? "บิน · เวลาถึงตามไฟลท์"
+    : min ? `~${fmtDur(min)}${legs.length ? "" : " (ประมาณ)"}${arriveT ? ` · ถึง ~${arriveT}` : ""}`
+    : far ? "ไกลเกินจะประมาณ — ใส่วิธีเดินทางเอง"
+    : legs.length || x.transport ? "ดูวิธีเดินทาง" : "ดูเส้นทาง";
+  return `<li class="connector ${empty ? "is-empty" : ""} ${late ? "is-late" : ""}" aria-hidden="${empty}">
+    <details class="conn-d"><summary class="conn-sum">${icon} ${late ? "⚠️ อาจไม่ทัน · " : ""}${esc(sum)}</summary>
     <div class="conn-body">
     ${legs.length
       ? `<ol class="legs">${legs.map((l) => `<li>${isFlightLeg(l) ? "✈️" : "🚃"} ${esc(legText(l))}</li>`).join("")}</ol>`
@@ -1104,7 +1310,7 @@ function connectorHtml(prev, x) {
     ${far && !flight && !legs.length ? `<div class="muted">ห่างกัน ~${Math.round(far).toLocaleString()} กม. — ไกลเกินจะประมาณให้ ใส่วิธีเดินทางเองในกิจกรรมนี้</div>` : ""}
     ${est ? `<div class="conn-est">${est.icon} ห่างกัน ~${fmtKm(est.km)} · ${est.mode} ~${est.min} นาที <small class="muted">(ประมาณจากระยะทาง)</small></div>` : ""}
     ${legs.length || eta || route ? `<div class="conn-meta">${legs.length && legsMinutes(x) ? `<b>เดินทางรวม ${fmtDur(legsMinutes(x))}</b>` : ""}${eta}${route && !flight ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทางจริง</a>` : ""}</div>` : ""}
-    </div>
+    </div></details>
   </li>`;
 }
 
@@ -1118,16 +1324,15 @@ function itemHtml(x) {
   return `
     <li class="row item-row st-${st || "none"}" id="item-${esc(x.id)}" data-id="${esc(x.id)}">
       <button type="button" class="drag-handle" aria-label="ลากเพื่อสลับลำดับ" title="ลากเพื่อสลับลำดับ">⋮⋮</button>
-      <div class="time">${esc(x.time) || "—"}${x.prevNight && x.time ? `<small class="prev-tag">คืนก่อน</small>` : ""}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}</div>
+      <div class="time">${esc(x.time) || "—"}${x.prevNight && x.time ? `<small class="prev-tag">คืนก่อน</small>` : ""}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}
+        ${st === "cancel" ? "" : `<label class="done-tick" title="ไปแล้ว"><input type="checkbox" data-action="item-done" data-id="${esc(x.id)}" ${st === "done" ? "checked" : ""} aria-label="ไปแล้ว"><span></span></label>`}</div>
+      <div class="kind-ic k-${kindOf(x)}" aria-hidden="true">${kindIcon(kindOf(x))}</div>
       <div class="body">
-        <div class="title">${st === "done" ? `<span class="st-badge done">✓ ไปแล้ว</span> ` : st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
+        <div class="title">${st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
         <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
         ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${refOf(bk, getMe()) ? ` · ${esc(refOf(bk, getMe()))}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
-        <div class="status-btns">
-          <label class="st-check"><input type="checkbox" data-action="item-done" data-id="${esc(x.id)}" ${st === "done" ? "checked" : ""} ${st === "cancel" ? "disabled" : ""}><span>ไปแล้ว</span></label>
-          <button type="button" class="link-plain" data-action="item-cancel" data-id="${esc(x.id)}">${st === "cancel" ? "เอากลับมา" : "ยกเลิก ไม่ไปแล้ว"}</button>
-        </div>
+        ${st === "cancel" ? `<button type="button" class="link-plain" data-action="item-cancel" data-id="${esc(x.id)}">เอากลับมา</button>` : ""}
       </div>
       <div class="row-actions">
         <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
@@ -1237,6 +1442,10 @@ function startEdit(id) {
   ["date", "time", "activity", "place", "cost", "costCurrency", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
     .forEach((k) => (f[k].value = x[k] ?? ""));
   fillStay(form, x.stay);
+  form.querySelectorAll("[name=kind]").forEach((r) => (r.checked = r.value === kindOf(x)));
+  const cb = $("#item-cancel-btn");
+  cb.hidden = false;
+  cb.textContent = x.status === "cancel" ? "เอากลับมาในแพลน" : "ยกเลิก ไม่ไปแล้ว";
   f.prevNight.checked = !!x.prevNight;
   const closed = (x.closedDays || []).map(String);
   form.querySelectorAll("[name=closed]").forEach((cb) => (cb.checked = closed.includes(cb.value)));
@@ -1263,6 +1472,7 @@ function stopEdit() {
   f.elements.date.value = tripDays()[dayIdx] || "";
   $("#item-form-title").textContent = "เพิ่มกิจกรรม";
   $("#item-submit").textContent = "เพิ่ม";
+  $("#item-cancel-btn").hidden = true;
   $("#leg-suggest").hidden = true;
   closeSheet("sheet-item");
 }
@@ -1307,7 +1517,7 @@ function makeSortable(container, itemSel, onDrop) {
       list.classList.remove("is-dragging");
       dragging = false;
       const after = [...list.querySelectorAll(itemSel)].map((s) => s.dataset.id);
-      if (after.join() !== before.join()) onDrop(after);
+      if (after.join() !== before.join()) { onDrop(after); hideHint("drag"); hideHint("wdrag"); }
       renderPlan();
       renderWishlist();
     };
@@ -1389,7 +1599,7 @@ function renderWishlist() {
       </div>
       ${cats.length > 1 ? `<div class="chip-row">${["all", ...cats].map((c) => `<button type="button" class="fchip ${wishCatFilter === c ? "active" : ""}" data-action="wish-cat" data-v="${esc(c)}">${c === "all" ? "ทุกหมวด" : esc(c)}</button>`).join("")}</div>` : ""}
       ${originPickerHtml()}
-      ${list.length > 1 ? `<p class="muted small-note">ลาก ⋮⋮ เพื่อจัดลำดับ</p>` : ""}
+      ${list.length > 1 ? hintHtml("wdrag", "ลาก ⋮⋮ เพื่อจัดลำดับ") : ""}
     </div>
     <div id="wish-cards">
     ${list.length ? list.map((w) => {
@@ -1415,7 +1625,7 @@ function renderWishlist() {
         </div>
         ${status}
         <div class="meta wish-meta">
-          <span class="badge">${esc(w.category || "อื่นๆ")}</span>
+          <span class="badge">${kindIcon(KIND_OF_WISH[w.category] || "other")} ${esc(w.category || "อื่นๆ")}</span>
           ${w.place || w.name ? `<a href="${esc(mapUrl(w.place || w.name))}" target="_blank" rel="noopener">📍 ${esc(placeLabel(w.place, w.name))}</a>` : ""}
           ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
         </div>
@@ -1434,7 +1644,7 @@ function renderWishlist() {
           : `<button type="button" class="btn small plan-btn" data-action="plan-open" data-id="${esc(w.id)}">${w.dates.length ? "ใส่อีกวัน" : "ใส่ลงแพลน"}</button>`}
           <div class="status-btns">
             ${w.state === "cancel" ? "" : `<label class="st-check"><input type="checkbox" data-action="wish-done" data-id="${esc(w.id)}" ${w.state === "done" ? "checked" : ""}><span>ไปแล้ว</span></label>`}
-            <button type="button" class="link-plain" data-action="wish-drop" data-id="${esc(w.id)}">${w.state === "cancel" ? "เอากลับมา" : "ยกเลิก ไม่ไปแล้ว"}</button>
+            ${w.state === "cancel" ? `<button type="button" class="link-plain" data-action="wish-drop" data-id="${esc(w.id)}">เอากลับมา</button>` : ""}
           </div>
         </div>
       </article>`;
@@ -1469,6 +1679,9 @@ function openWishForm(w) {
     form.querySelectorAll("[name=priority]").forEach((r) => (r.checked = r.value === pr));
   }
   $("#wish-form-title").textContent = w ? "แก้ไขที่อยากไป" : "เพิ่มที่อยากไป";
+  const db = $("#wish-drop-btn");
+  db.hidden = !w;
+  if (w) db.textContent = w.visit === "cancel" ? "เอากลับมา" : "ยกเลิก ไม่ไปแล้ว";
   openSheet("sheet-wish", w ? null : "[name=name]");
 }
 
@@ -1837,8 +2050,10 @@ function addMyExp(f) {
 }
 async function delMyExp(id) {
   const x = myExpList().find((v) => v.id === id);
-  if (!x || !(await confirmDialog({ title: "ลบค่าใช้จ่ายส่วนตัว?", message: `จะลบ <b>“${esc(x.title)}”</b>` }))) return;
-  store.setPrivate(trip.id, { myExp: myExpList().filter((v) => v.id !== id) });
+  if (!x) return;
+  const before = myExpList();
+  store.setPrivate(trip.id, { myExp: before.filter((v) => v.id !== id) });
+  toast(`ลบ “${x.title}” แล้ว`, () => store.setPrivate(trip.id, { myExp: before }));
 }
 
 function newExpense() {
@@ -1995,10 +2210,11 @@ const shopList = () => (Array.isArray(priv.shop) ? priv.shop : []);
 const saveShop = (list) => store.setPrivate(trip.id, { shop: list });
 async function delShop(id) {
   const x = shopList().find((v) => v.id === id);
-  if (!x || !(await confirmDialog({ title: "ลบจากลิสต์ช้อป?", message: `จะลบ <b>“${esc(x.name)}”</b>` }))) return;
-  saveShop(shopList().filter((v) => v.id !== id));
+  if (!x) return;
+  const before = shopList();
+  saveShop(before.filter((v) => v.id !== id));
   if (id === editingShopId) closeShopForm();
-  toast("ลบแล้ว");
+  toast(`ลบ “${x.name}” แล้ว`, () => saveShop(before));
 }
 // ย้ายรายการเก่าที่เคยเก็บแบบแชร์ (shopping) มาเป็นส่วนตัว
 let shopMigrating = false;
@@ -2097,7 +2313,7 @@ function showMePicker() {
    แก้ไขทริป (หน้าแยก)
    ============================================================ */
 function openTripEdit(id) {
-  app.innerHTML = `<p class="muted">กำลังโหลด…</p>`;
+  app.innerHTML = skelTrip();
   let rendered = false;
   unsubs.push(store.listenTrip(id, (t) => {
     if (!t) { app.innerHTML = `<p>ไม่พบทริปนี้ <a href="#/">กลับหน้าแรก</a></p>`; return; }
@@ -2895,6 +3111,17 @@ function onClick(e) {
   }
   else if (action === "edit-item") startEdit(id);
   else if (action === "item-new") newItem();
+  else if (action === "hint-x") { hideHint(b.dataset.k); if (b.dataset.k === "install") document.getElementById("install-box")?.remove(); }
+  else if (action === "install") { installEvt?.prompt(); installEvt?.userChoice.finally(() => { installEvt = null; document.getElementById("install-box")?.remove(); }); }
+  else if (action === "wish-drop-sheet") {
+    const w = data.wishlist.find((v) => v.id === editingWishId);
+    if (w) { setWishVisit(w.id, w.visit === "cancel" ? "" : "cancel"); closeWishForm(); }
+  }
+  else if (action === "day-map") { mapOpen = !mapOpen; renderPlan(); }
+  else if (action === "item-cancel-sheet") {
+    const x = data.items.find((i) => i.id === editingItemId);
+    if (x) { setItemStatus(x.id, x.status === "cancel" ? "" : "cancel"); stopEdit(); }
+  }
   else if (action === "pack-view") { packView = b.dataset.v; renderShopping(); }
   else if (action === "shop-new") openShopForm(null);
   else if (action === "shop-edit") openShopForm(shopList().find((x) => x.id === id));
@@ -3017,28 +3244,19 @@ function confirmDialog({ title, message, okText = "ลบ", requireText = "", ic
 
 const SUB_LABEL = { items: "แพลน", wishlist: "Wishlist", bookings: "การจอง", expenses: "ค่าใช้จ่าย", packing: "ของที่ต้องเตรียม", checklist: "เช็กลิสต์", shopping: "ลิสต์ช้อป" };
 
+// ลบทันที + ปุ่ม "เลิกทำ" 5 วินาที (แทน pop-up ยืนยัน) — การลบทริปยังต้องยืนยันเหมือนเดิม
 async function confirmDelete(sub, id) {
   const x = (data[sub] || []).find((r) => r.id === id);
   if (!x) return;
   const name = x.activity || x.name || x.title || x.text || "รายการนี้";
-  let extra = "";
-  if (sub === "expenses") extra = ` (${fmtWithTHB(x.amount, x.currency)} จ่ายโดย ${esc(x.paidBy)})`;
-  if (sub === "bookings") {
-    const n = data.items.filter((i) => i.bookingId === id).length;
-    if (n) extra = `<br><small>มีกิจกรรมในแพลน ${n} รายการที่ลิงก์อยู่ — ลิงก์จะหายไป แต่กิจกรรมยังอยู่</small>`;
-  }
-  const yes = await confirmDialog({
-    title: `ลบจาก${SUB_LABEL[sub] || ""}?`,
-    message: `จะลบ <b>“${esc(name)}”</b>${extra}<br>ทุกคนในทริปจะไม่เห็นรายการนี้อีก`,
-  });
-  if (!yes) return;
-  store.remove(trip.id, sub, id);
+  const { id: _id, ...copy } = x;
+  const tripId = trip.id;
+  store.remove(tripId, sub, id);
   if (id === editingItemId) stopEdit();
   if (id === editingBookingId) stopEditBooking();
   if (id === editingWishId) closeWishForm();
   if (id === editingExpenseId) stopEditExpense();
-  if (id === editingShopId) closeShopForm();
-  toast("ลบแล้ว");
+  toast(`ลบ “${name}” แล้ว`, () => { store.set(tripId, sub, id, copy); toast("กู้คืนแล้ว"); });
 }
 
 /* ---------- สำรอง / กู้คืนข้อมูล ---------- */
@@ -3183,6 +3401,7 @@ function onSubmit(e) {
       const rec = {
         date: f.date, time: f.time, activity: f.activity.trim(), place: f.place.trim(),
         prevNight: !!f.prevNight && !!f.time,
+        kind: f.kind || "",
         stay: Math.min(num(f.stayH), 23) * 60 + Math.min(num(f.stayM), 59), cost: num(f.cost), costCurrency: f.costCurrency || "THB", note: f.note.trim(),
         openTime: f.openTime, closeTime: f.closeTime, hoursNote: f.hoursNote.trim(),
         closedDays: new FormData(form).getAll("closed").map(Number),
@@ -3318,7 +3537,7 @@ async function init() {
   setupToTop();
   if (!useAccount()) { route(); return; }
   // โหมด Firebase: ต้องล็อกอินก่อน
-  app.innerHTML = `<p class="muted">กำลังตรวจสอบการเข้าสู่ระบบ…</p>`;
+  app.innerHTML = skelTrip();
   let userUnsub = null;
   store.onAuth((u) => {
     currentUser = u;

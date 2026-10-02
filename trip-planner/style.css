@@ -16,6 +16,8 @@
   --line: #F3E1E1;
   --ok: #2e8b57;
   --neg: #c0392b;
+  --ok-bg: #e3f4ea; --ok-bg2: #f6fbf8; --neg-bg: #fdecea; --neg-bg2: #fff8f7; --warn-bg: #fff1e0; --yellow-bg: #fff3c4; --gray-bg: #eee; --blue-bg: #eef3fb;
+  --warn-ink: #b45f00; --yellow-ink: #8a6d00; --glass: rgba(255, 255, 255, .95);
   --ctl-h: 42px;          /* ความสูงมาตรฐานของช่องกรอก/ปุ่ม */
   --topbar-h: 53px;
   --nav-h: 64px;          /* แถบเมนูล่าง (มือถือ) */
@@ -53,7 +55,7 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 .btn.primary { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
 .btn.small { min-height: 32px; padding: 0 12px; font-size: .85rem; }
-.btn.danger { background: #fff; border-color: var(--neg); color: var(--neg); }
+.btn.danger { background: var(--card); border-color: var(--neg); color: var(--neg); }
 .danger-zone { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-top: 16px; padding-top: 16px; border-top: 1px dashed var(--line); }
 .icon { border: none; background: none; color: var(--muted); font-size: 1rem; cursor: pointer; padding: 6px 8px; border-radius: 8px; min-width: 32px; min-height: 32px; }
 .icon:hover { color: var(--accent-ink); background: var(--accent-soft); }
@@ -95,7 +97,7 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 .d-num { font-weight: 700; font-size: .85rem; }
 .d-date { font-size: .75rem; opacity: .85; }
 .d-count { position: absolute; top: -6px; right: -4px; background: var(--accent-ink); color: #fff; font-size: .68rem; font-weight: 700; min-width: 18px; height: 18px; line-height: 18px; border-radius: 999px; padding: 0 5px; }
-.day-btn.active .d-count { background: #fff; color: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent-ink); }
+.day-btn.active .d-count { background: var(--card); color: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent-ink); }
 #day-tabs { padding-top: 8px; }
 
 /* ---------- ฟอร์ม ---------- */
@@ -103,7 +105,7 @@ main { max-width: 960px; margin: 0 auto; padding: 16px; }
 .form label { display: flex; flex-direction: column; font-size: .85rem; color: var(--muted); gap: 4px; min-width: 0; }
 .form label.wide { grid-column: 1 / -1; }
 .form label.check { flex-direction: row; align-items: center; gap: 8px; margin-top: 12px; color: var(--text); }
-input, select, textarea { font: inherit; font-size: 16px; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: #fff; width: 100%; min-width: 0; }
+input, select, textarea { font: inherit; font-size: 16px; color: var(--text); border: 1px solid var(--line); border-radius: 10px; padding: 8px 10px; background: var(--card); width: 100%; min-width: 0; }
 input, select { min-height: var(--ctl-h); }
 input:focus, select:focus, textarea:focus { outline: 2px solid rgba(245, 175, 175, .45); border-color: var(--accent-ink); }
 input[type=date], input[type=time] { -webkit-appearance: none; appearance: none; display: block; line-height: 1.4; }
@@ -127,7 +129,7 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .row-actions { display: flex; align-items: flex-start; flex: 0 0 auto; }
 .total { text-align: right; font-weight: 700; }
 .badge { display: inline-block; font-size: .75rem; background: var(--accent-soft); color: var(--rose-ink); border-radius: 6px; padding: 0 8px; font-weight: 400; vertical-align: middle; }
-.badge.ok { background: #e3f4ea; color: var(--ok); }
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
 .to-plan { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .to-plan select { width: auto; min-height: 32px; padding: 2px 8px; font-size: .85rem; }
 
@@ -158,11 +160,11 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .legs li { padding: 1px 0; }
 .conn-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 2px; }
 .row .time small { display: block; font-weight: 400; color: var(--muted); font-size: .75rem; }
-.badge.warn { background: #fdecea; color: var(--neg); }
+.badge.warn { background: var(--neg-bg); color: var(--neg); }
 .warn { color: var(--neg); font-weight: 600; }
 .link-btn { display: block; border: none; background: var(--tint); color: var(--accent-ink); border-radius: 8px; padding: 6px 10px; margin-top: 6px; font: inherit; font-size: .85rem; cursor: pointer; text-align: left; max-width: 100%; }
 .flash { animation: flash 1.6s ease-out; }
-@keyframes flash { 0%, 30% { background: #fff3c4; } 100% { background: transparent; } }
+@keyframes flash { 0%, 30% { background: var(--yellow-bg); } 100% { background: transparent; } }
 
 /* ---------- ที่พัก ---------- */
 .form:not(.is-hotel) .hotel-only, .form.is-hotel .not-hotel { display: none !important; }
@@ -178,9 +180,9 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .night-strip::-webkit-scrollbar { display: none; }
 .night { flex: 0 0 auto; display: flex; flex-direction: column; align-items: center; min-width: 62px; padding: 4px 8px; border-radius: 10px; font-size: .8rem; font-weight: 700; line-height: 1.3; }
 .night small { font-weight: 400; font-size: .72rem; }
-.night.ok { background: #e3f4ea; color: var(--ok); }
-.night.none { background: #fdecea; color: var(--neg); }
-.night.dup { background: #fff3c4; color: #8a6d00; }
+.night.ok { background: var(--ok-bg); color: var(--ok); }
+.night.none { background: var(--neg-bg); color: var(--neg); }
+.night.dup { background: var(--yellow-bg); color: var(--yellow-ink); }
 .day-hotel { background: var(--tint); color: #5A2F36; border-radius: 10px; padding: 8px 12px; margin: 0 0 10px; font-size: .9rem; display: flex; flex-direction: column; gap: 2px; }
 .day-hotel a { margin-left: 4px; font-size: .85rem; }
 .day-hotel .warn { font-weight: 600; }
@@ -195,7 +197,7 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .me-text b { font-size: .95rem; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .me-caret { color: var(--muted); font-size: .8rem; }
 .me-options { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
-.me-option { min-height: 52px; border: 1px solid var(--line); background: #fff; border-radius: 12px; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text); }
+.me-option { min-height: 52px; border: 1px solid var(--line); background: var(--card); border-radius: 12px; font: inherit; font-weight: 700; font-size: 1.05rem; cursor: pointer; color: var(--text); }
 .me-option:hover, .me-option.active { border-color: var(--accent); background: var(--tint); color: var(--accent-ink); }
 .me-skip { width: 100%; }
 .small-note { font-size: .8rem; margin: 8px 0 0; }
@@ -212,10 +214,10 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .immi-list li { margin: 4px 0; }
 .immi-list a { font-size: .85rem; overflow-wrap: anywhere; }
 .risk { display: inline-block; border-radius: 999px; padding: 4px 12px; font-size: .85rem; font-weight: 700; white-space: nowrap; }
-.risk-low { background: #e3f4ea; color: var(--ok); }
-.risk-mid { background: #fff3c4; color: #8a6d00; }
-.risk-high { background: #fdecea; color: var(--neg); }
-.risk-unk { background: #eee; color: var(--muted); }
+.risk-low { background: var(--ok-bg); color: var(--ok); }
+.risk-mid { background: var(--yellow-bg); color: var(--yellow-ink); }
+.risk-high { background: var(--neg-bg); color: var(--neg); }
+.risk-unk { background: var(--gray-bg); color: var(--muted); }
 .sources { margin-top: 14px; font-size: .88rem; }
 .sources summary { cursor: pointer; color: var(--muted); }
 .sources ul { padding-left: 20px; margin: 6px 0 0; }
@@ -223,27 +225,27 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .ready-list li { display: flex; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .ready-list li:last-child { border-bottom: none; }
 .r-icon { flex: 0 0 26px; height: 26px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .85rem; }
-.ready-list .ok .r-icon { background: #e3f4ea; color: var(--ok); }
-.ready-list .no .r-icon { background: #fdecea; color: var(--neg); }
+.ready-list .ok .r-icon { background: var(--ok-bg); color: var(--ok); }
+.ready-list .no .r-icon { background: var(--neg-bg); color: var(--neg); }
 .ready-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 
 /* ---------- Wishlist: ของเรา / สถานที่แนะนำ ---------- */
 .seg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 4px 0 14px; }
 .seg button { border: 2px solid var(--line); background: var(--card); border-radius: 12px; min-height: 46px; font: inherit; font-size: .95rem; font-weight: 600; color: var(--text); cursor: pointer; }
 .seg button.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; box-shadow: 0 2px 8px rgba(245, 175, 175, .5); }
-.seg button.active .seg-n { background: #fff; color: var(--accent-ink); }
+.seg button.active .seg-n { background: var(--card); color: var(--accent-ink); }
 .seg-n { display: inline-block; min-width: 20px; padding: 0 6px; border-radius: 999px; background: var(--accent-ink); color: #fff; font-size: .72rem; line-height: 20px; margin-left: 4px; }
 .chip-row { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; margin-bottom: 6px; scrollbar-width: none; }
 .chip-row::-webkit-scrollbar { display: none; }
-.fchip { flex: 0 0 auto; border: 1px solid var(--line); background: #fff; border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; color: var(--text); white-space: nowrap; }
+.fchip { flex: 0 0 auto; border: 1px solid var(--line); background: var(--card); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .85rem; cursor: pointer; color: var(--text); white-space: nowrap; }
 .fchip.active { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .sg-hotel { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); margin-top: 6px; }
 .sg-card h3 { margin: 0; }
 .sg-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-.sg-added { flex: 0 0 auto; font-size: .82rem; font-weight: 700; color: var(--ok); background: #e3f4ea; border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
+.sg-added { flex: 0 0 auto; font-size: .82rem; font-weight: 700; color: var(--ok); background: var(--ok-bg); border-radius: 999px; padding: 4px 10px; white-space: nowrap; }
 .sg-tags { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; }
 .sg-card p { margin: 8px 0 0; }
-.sg-kpop { background: #eefaf3; border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
+.sg-kpop { background: var(--ok-bg); border-radius: 8px; padding: 6px 10px; font-size: .9rem; }
 .sg-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; color: var(--muted); margin-top: 8px; }
 .sg-dist { color: var(--text); font-weight: 600; }
 .sg-links { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: .88rem; margin-top: 6px; }
@@ -253,7 +255,7 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .add-wish-btn { width: 100%; margin-bottom: 14px; min-height: 48px; font-size: 1rem; }
 .wish-summary { margin-bottom: 10px; }
 .wish-card { padding: 14px 16px; }
-.wish-card.is-planned { background: #FFFDFD; }
+.wish-card.is-planned { background: var(--card); }
 .wish-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .wish-title { min-width: 0; }
 .wish-title h3 { margin: 0; overflow-wrap: anywhere; }
@@ -262,8 +264,8 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .prio small { color: var(--muted); font-size: .75rem; letter-spacing: 0; margin-left: 4px; }
 .prio.p3 small { color: var(--neg); font-weight: 700; }
 .wstatus { display: inline-block; margin-top: 6px; font-size: .8rem; font-weight: 700; border-radius: 999px; padding: 2px 10px; }
-.wstatus.todo { background: #fff1e0; color: #b45f00; }
-.wstatus.done { background: #e3f4ea; color: var(--ok); }
+.wstatus.todo { background: var(--warn-bg); color: var(--warn-ink); }
+.wstatus.done { background: var(--ok-bg); color: var(--ok); }
 .wish-meta { margin-top: 8px; align-items: center; }
 .wish-line { font-size: .88rem; margin-top: 4px; overflow-wrap: anywhere; }
 .plan-btn { margin-top: 10px; }
@@ -272,7 +274,7 @@ input[type=checkbox] { width: auto; min-height: 0; accent-color: var(--accent-in
 .prio-opts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
 .form label.prio-opt { flex-direction: row; cursor: pointer; }
 .prio-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
-.prio-opt span { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; color: #f0a500; font-size: 1rem; line-height: 1.2; background: #fff; }
+.prio-opt span { flex: 1; display: flex; flex-direction: column; align-items: center; border: 1px solid var(--line); border-radius: 10px; padding: 6px 4px; color: #f0a500; font-size: 1rem; line-height: 1.2; background: var(--card); }
 .prio-opt span small { color: var(--text); font-size: .75rem; }
 .prio-opt input:checked + span { border-color: var(--accent-ink); background: var(--tint); box-shadow: 0 0 0 1px var(--accent-ink); }
 .prio-opt input:focus-visible + span { outline: 2px solid var(--accent-ink); }
@@ -311,7 +313,7 @@ th { background: var(--bg); white-space: nowrap; }
 .pstat { text-align: right; font-size: .88rem; }
 .ok-text { color: var(--ok); }
 .sugg { display: flex; flex-wrap: wrap; gap: 6px; }
-.chip-btn { border: 1px dashed var(--accent-ink); background: #fff; color: var(--accent-ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
+.chip-btn { border: 1px dashed var(--accent-ink); background: var(--card); color: var(--accent-ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .88rem; cursor: pointer; }
 .chip-btn small { color: var(--muted); }
 
 /* ---------- สกุลเงิน ---------- */
@@ -364,7 +366,7 @@ th { background: var(--bg); white-space: nowrap; }
     position: fixed; left: 0; right: 0; bottom: 0; top: auto; z-index: 30;
     display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; margin: 0;
     padding: 4px 4px calc(4px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, .97); border-top: 1px solid var(--line);
+    background: var(--glass); border-top: 1px solid var(--line);
     box-shadow: 0 -4px 16px rgba(0, 0, 0, .06); overflow: visible;
   }
   .main-tabs button {
@@ -423,7 +425,7 @@ th { background: var(--bg); white-space: nowrap; }
 
 /* ---------- ตอนพิมพ์ / Export PDF ---------- */
 @media print {
-  body { background: #fff; font-size: 11pt; }
+  body { background: var(--card); font-size: 11pt; }
   .screen, .toast { display: none !important; }
   .print-only { display: block !important; }
   main { padding: 0 !important; max-width: none; }
@@ -440,7 +442,7 @@ th { background: var(--bg); white-space: nowrap; }
 }
 
 /* ---------- อื่นๆ ---------- */
-.warn-soft { color: #b45f00; }
+.warn-soft { color: var(--warn-ink); }
 textarea { resize: vertical; }
 .sg-kpop { background: var(--tint); }
 .btn.small.primary { color: var(--on-accent); }
@@ -494,14 +496,14 @@ body.sheet-open { overflow: hidden; }
 .user-email { font-size: .82rem; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 220px; }
 
 /* ปุ่มขึ้นบนสุด */
-.to-top { position: fixed; right: 14px; bottom: 20px; z-index: 25; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--pink); background: rgba(255, 255, 255, .9); color: var(--accent-ink); font-size: 1.15rem; font-weight: 700; box-shadow: 0 3px 10px rgba(0, 0, 0, .1); cursor: pointer; opacity: .85; }
-.to-top:hover { opacity: 1; background: #fff; }
+.to-top { position: fixed; right: 14px; bottom: 20px; z-index: 25; width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--pink); background: var(--glass); color: var(--accent-ink); font-size: 1.15rem; font-weight: 700; box-shadow: 0 3px 10px rgba(0, 0, 0, .1); cursor: pointer; opacity: .85; }
+.to-top:hover { opacity: 1; background: var(--card); }
 body.sheet-open .to-top { display: none; }
 
 /* ลากจัดลำดับ */
 .drag-handle { flex: 0 0 auto; align-self: flex-start; width: 26px; min-height: 36px; border: none; background: none; color: #d3b5b8; font-size: 1rem; letter-spacing: -3px; cursor: grab; touch-action: none; padding: 0; border-radius: 6px; -webkit-user-select: none; user-select: none; }
 .drag-handle:hover { color: var(--accent-ink); background: var(--accent-soft); }
-.dragging { box-shadow: 0 10px 30px rgba(0, 0, 0, .18); background: #fff; border-radius: 12px; opacity: .97; cursor: grabbing; }
+.dragging { box-shadow: 0 10px 30px rgba(0, 0, 0, .18); background: var(--card); border-radius: 12px; opacity: .97; cursor: grabbing; }
 .drag-ph { list-style: none; border: 2px dashed var(--accent); border-radius: 12px; background: var(--tint); margin: 4px 0; }
 .is-dragging .connector { display: none; }
 .is-dragging { -webkit-user-select: none; user-select: none; }
@@ -510,20 +512,20 @@ body.sheet-open .to-top { display: none; }
 
 /* สถานะ ไปแล้ว / ยกเลิก */
 .status-btns { display: flex; align-items: center; gap: 6px 16px; flex-wrap: wrap; margin-top: 8px; font-size: .85rem; }
-.st-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 3px 10px 3px 6px; border: 1px solid var(--line); border-radius: 999px; background: #fff; }
+.st-check { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; padding: 3px 10px 3px 6px; border: 1px solid var(--line); border-radius: 999px; background: var(--card); }
 .st-check input { width: 18px; height: 18px; accent-color: var(--ok); }
-.st-check:has(input:checked) { background: #e3f4ea; border-color: #bfe5cd; color: var(--ok); font-weight: 600; }
+.st-check:has(input:checked) { background: var(--ok-bg); border-color: #bfe5cd; color: var(--ok); font-weight: 600; }
 .st-badge { display: inline-block; font-size: .72rem; font-weight: 700; border-radius: 6px; padding: 0 6px; vertical-align: 1px; }
-.st-badge.done { background: #e3f4ea; color: var(--ok); }
-.st-badge.cancel { background: #eee; color: #777; }
+.st-badge.done { background: var(--ok-bg); color: var(--ok); }
+.st-badge.cancel { background: var(--gray-bg); color: #777; }
 .item-row.st-done .time, .item-row.st-done .t-text { color: var(--ok); }
 .item-row.st-cancel { opacity: .6; }
 .item-row.st-cancel .t-text { text-decoration: line-through; }
-.wish-card.st-done { background: #f6fbf8; }
+.wish-card.st-done { background: var(--ok-bg2); }
 .wish-card.st-cancel { opacity: .65; }
 .wish-card.st-cancel h3 { text-decoration: line-through; }
-.wstatus.visited { background: #e3f4ea; color: var(--ok); }
-.wstatus.cancel { background: #eee; color: #777; }
+.wstatus.visited { background: var(--ok-bg); color: var(--ok); }
+.wstatus.cancel { background: var(--gray-bg); color: #777; }
 .wish-actions { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; margin-top: 10px; }
 .wish-actions .plan-btn, .wish-actions .status-btns { margin-top: 0; }
 
@@ -539,7 +541,7 @@ body.sheet-open .to-top { display: none; }
 .pax { display: flex; flex-wrap: wrap; gap: 6px; }
 .form label.pax-opt { flex-direction: row; cursor: pointer; }
 .pax-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
-.pax-opt span { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; color: var(--text); font-size: .9rem; background: #fff; }
+.pax-opt span { display: inline-block; border: 1px solid var(--line); border-radius: 999px; padding: 5px 14px; color: var(--text); font-size: .9rem; background: var(--card); }
 .pax-opt input:checked + span { background: var(--accent); border-color: var(--accent); color: var(--on-accent); font-weight: 700; }
 .pax-opt input:focus-visible + span { outline: 2px solid var(--accent-ink); }
 .pax-line { font-size: .88rem; margin-top: 4px; display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
@@ -551,9 +553,9 @@ body.sheet-open .to-top { display: none; }
 .rate-big b { font-size: 1.25rem; color: var(--accent-ink); }
 .converter .btn { margin-left: auto; }
 .tx-list { list-style: none; margin: 0 0 10px; padding: 0; }
-.tx { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: #fff; }
-.tx.me-owe { border-color: #f1b8b0; background: #fff8f7; }
-.tx.me-get { border-color: #bfe5cd; background: #f6fbf8; }
+.tx { border: 1px solid var(--line); border-radius: 12px; margin-bottom: 8px; background: var(--card); }
+.tx.me-owe { border-color: #f1b8b0; background: var(--neg-bg2); }
+.tx.me-get { border-color: #bfe5cd; background: var(--ok-bg2); }
 .tx summary { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 10px; padding: 10px 12px; cursor: pointer; list-style: none; }
 .tx summary::-webkit-details-marker { display: none; }
 .tx summary::after { content: "▾ ดูรายการ"; margin-left: auto; font-size: .78rem; color: var(--muted); }
@@ -561,16 +563,16 @@ body.sheet-open .to-top { display: none; }
 .tx-who { flex: 1 1 auto; }
 .tx-arrow { color: var(--accent-ink); font-weight: 700; margin: 0 2px; }
 .tx-amt { font-weight: 700; }
-.tx-tag { font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: #fdecea; color: var(--neg); }
-.tx-tag.get { background: #e3f4ea; color: var(--ok); }
+.tx-tag { font-size: .72rem; font-weight: 700; border-radius: 999px; padding: 1px 8px; background: var(--neg-bg); color: var(--neg); }
+.tx-tag.get { background: var(--ok-bg); color: var(--ok); }
 .tx-items { margin: 0; padding: 0 12px 10px 32px; font-size: .88rem; }
 .tx-items li { padding: 1px 0; }
 .paid-table { margin-top: 6px; font-size: .9rem; }
 .paid-table summary { cursor: pointer; color: var(--muted); }
 .settle-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin-top: 6px; font-size: .85rem; }
-.settle-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px 2px 6px; cursor: pointer; background: #fff; }
+.settle-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--line); border-radius: 999px; padding: 2px 10px 2px 6px; cursor: pointer; background: var(--card); }
 .settle-chip input { width: 17px; height: 17px; accent-color: var(--ok); }
-.settle-chip:has(input:checked) { background: #e3f4ea; border-color: #bfe5cd; color: var(--ok); font-weight: 600; }
+.settle-chip:has(input:checked) { background: var(--ok-bg); border-color: #bfe5cd; color: var(--ok); font-weight: 600; }
 .settle-chip.is-me { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .exp-row.all-settled .title { color: var(--muted); }
 .exp-row.all-settled .title::after { content: " ✓ เคลียร์แล้ว"; color: var(--ok); font-size: .8rem; font-weight: 700; }
@@ -578,7 +580,7 @@ body.sheet-open .to-top { display: none; }
 /* ตม. รายคน */
 .private-card { border-color: var(--accent); }
 .private-card .form .grid { margin-top: 4px; }
-.ready-list .unk .r-icon { background: #eee; color: var(--muted); }
+.ready-list .unk .r-icon { background: var(--gray-bg); color: var(--muted); }
 .doc-checks label { align-items: flex-start; }
 .doc-checks input[type=checkbox] { margin-top: 3px; }
 .doc-text { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
@@ -586,9 +588,9 @@ body.sheet-open .to-top { display: none; }
 .doc-link { font-size: .8rem; overflow-wrap: anywhere; }
 .checks input:checked + .doc-text { text-decoration: none; color: var(--muted); }
 .lvl { display: inline-block; font-size: .7rem; font-weight: 700; border-radius: 6px; padding: 0 6px; margin-right: 2px; vertical-align: 1px; }
-.lvl-required { background: #fdecea; color: var(--neg); }
-.lvl-recommended { background: #fff1e0; color: #b45f00; }
-.lvl-optional { background: #eef3fb; color: #3f6aa6; }
+.lvl-required { background: var(--neg-bg); color: var(--neg); }
+.lvl-recommended { background: var(--warn-bg); color: var(--warn-ink); }
+.lvl-optional { background: var(--blue-bg); color: #3f6aa6; }
 
 @media (max-width: 640px) {
   .head-actions { width: 100%; grid-template-columns: 1fr 1fr; }
@@ -625,7 +627,7 @@ body.sheet-open .to-top { display: none; }
 .pax-ref input { flex: 1; text-transform: uppercase; }
 
 /* ปุ่ม "＋ เพิ่ม…": โทนชมพูเดียวกัน แต่เป็นแบบขอบ (แท็บที่เลือก = พื้นชมพูทึบ) */
-.btn.add-btn { background: #fff; border: 1.5px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
+.btn.add-btn { background: var(--card); border: 1.5px solid var(--accent); color: var(--accent-ink); font-weight: 700; }
 .btn.add-btn:hover { background: var(--accent-soft); border-color: var(--accent-hover); }
 .btn.add-btn:active { background: var(--pink); }
 
@@ -701,17 +703,17 @@ body.sheet-open .to-top { display: none; }
 .tel-list li > div { display: flex; flex-direction: column; min-width: 0; }
 .tel-list small { color: var(--muted); font-size: .8rem; overflow-wrap: anywhere; }
 .tel-btn { flex: 0 0 auto; white-space: nowrap; border: 1px solid var(--accent); border-radius: 999px; padding: 4px 12px; font-weight: 700; font-size: .9rem; }
-.taxi-full { position: fixed; inset: 0; z-index: 200; background: #fff; display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade .15s; }
+.taxi-full { position: fixed; inset: 0; z-index: 200; background: var(--card); display: flex; align-items: center; justify-content: center; padding: 24px; animation: fade .15s; }
 .taxi-full .m-close { top: 16px; right: 16px; width: 44px; height: 44px; font-size: 1.3rem; }
 .tx-in { text-align: center; display: flex; flex-direction: column; gap: 16px; max-width: 760px; }
 .tx-hint { font-size: 1.1rem; color: var(--muted); }
 .tx-name { font-size: 2rem; font-weight: 700; line-height: 1.3; }
 .tx-local { font-size: 1.8rem; line-height: 1.5; }
-.tx-en { font-size: 1.15rem; color: #444; }
+.tx-en { font-size: 1.15rem; color: var(--muted); }
 
 /* อากาศ */
 .d-wx { font-size: .72rem; margin-top: 1px; }
-.wx-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; margin: 0 0 10px; font-size: .9rem; }
+.wx-line { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 6px 12px; margin: 0 0 10px; font-size: .9rem; }
 .wx-line.ly { background: var(--bg); }
 .wx-line small { font-size: .78rem; flex-basis: 100%; }
 .wx-ic { font-size: 1.15rem; }
@@ -724,8 +726,8 @@ body.sheet-open .to-top { display: none; }
 .shop-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 12px; }
 .shop-head h3 { margin: 0; }
 .shop-sub { font-size: .9rem; font-weight: 600; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.tf { font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 1px 10px; background: #fff1e0; color: #b45f00; }
-.tf.ok { background: #e3f4ea; color: var(--ok); }
+.tf { font-size: .75rem; font-weight: 700; border-radius: 999px; padding: 1px 10px; background: var(--warn-bg); color: var(--warn-ink); }
+.tf.ok { background: var(--ok-bg); color: var(--ok); }
 .shop-list li.is-bought .doc-main { text-decoration: line-through; color: var(--muted); }
 .shop-list label { align-items: flex-start; }
 .shop-list input[type=checkbox] { margin-top: 3px; }
@@ -744,3 +746,156 @@ details.card > summary { cursor: pointer; font-weight: 600; }
 .immi-card.ck > .immi-head { padding-right: 38px; }
 .ck.collapsed .sos-sub { display: none; }
 .private-note { margin: 0 0 10px; font-size: .85rem; color: var(--rose-ink); background: var(--accent-soft); border-radius: 10px; padding: 8px 12px; }
+
+/* ============================================================
+   v16: ไอคอนประเภท · การ์ดถัดไป · แผนที่ · ปัดเปลี่ยนวัน · เลิกทำ · การ์ดทริป · skeleton · โหมดมืด
+   ============================================================ */
+:root {
+  --k-sight: #E7F0FB; --k-sight-i: #3f6aa6;
+  --k-food: #FFEBDD; --k-food-i: #b45f00;
+  --k-cafe: #F3E9E1; --k-cafe-i: #7a5236;
+  --k-shop: #FBE5EC; --k-shop-i: #B0505C;
+  --k-kpop: #E2F5EA; --k-kpop-i: #2e8b57;
+  --k-hotel: #EEE9F7; --k-hotel-i: #6E5486;
+  --k-move: #E6F2F4; --k-move-i: #2f6f7a;
+  --k-other: #F1F1F1; --k-other-i: #666;
+}
+/* แถวกิจกรรม: ไอคอนประเภท + ติ๊กไปแล้วใต้เวลา */
+.item-row { align-items: flex-start; }
+.kind-ic { flex: 0 0 34px; width: 34px; height: 34px; border-radius: 10px; display: grid; place-items: center; font-size: 1.05rem; background: var(--k-other); }
+.kind-ic.k-sight, .pin.k-sight { background: var(--k-sight); } .kind-ic.k-food, .pin.k-food { background: var(--k-food); }
+.kind-ic.k-cafe, .pin.k-cafe { background: var(--k-cafe); } .kind-ic.k-shop, .pin.k-shop { background: var(--k-shop); }
+.kind-ic.k-kpop, .pin.k-kpop { background: var(--k-kpop); } .kind-ic.k-hotel, .pin.k-hotel { background: var(--k-hotel); }
+.kind-ic.k-move, .pin.k-move { background: var(--k-move); }
+.item-row.st-done .kind-ic { opacity: .55; }
+.item-row .time { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; }
+.done-tick { position: relative; display: inline-flex; margin-top: 6px; cursor: pointer; }
+.done-tick input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
+.done-tick span { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--line); background: var(--card); display: grid; place-items: center; transition: background .15s, border-color .15s; }
+.done-tick span::after { content: ""; width: 6px; height: 11px; border-right: 2.5px solid transparent; border-bottom: 2.5px solid transparent; transform: rotate(45deg) translate(-1px, -1px); }
+.done-tick:hover span { border-color: var(--ok); }
+.done-tick input:checked + span { background: var(--ok); border-color: var(--ok); }
+.done-tick input:checked + span::after { border-color: #fff; }
+.done-tick input:focus-visible + span { outline: 2px solid var(--accent-ink); outline-offset: 2px; }
+.item-row.st-done .t-text { text-decoration: line-through; text-decoration-color: rgba(46, 139, 87, .5); }
+/* ฟอร์ม: เลือกประเภท */
+.kind-field { display: flex; flex-direction: column; gap: 4px; }
+.kind-opts { display: flex; flex-wrap: wrap; gap: 6px; }
+.form label.kind-opt { flex-direction: row; cursor: pointer; }
+.kind-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
+.kind-opt span { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px 4px 8px; font-size: .85rem; color: var(--text); background: var(--card); }
+.kind-opt i { font-style: normal; }
+.kind-opt input:checked + span { border-color: var(--accent-ink); background: var(--tint); font-weight: 700; box-shadow: 0 0 0 1px var(--accent-ink); }
+.kind-opt input:focus-visible + span { outline: 2px solid var(--accent-ink); }
+.sheet .actions .btn.danger { margin-left: auto; flex: 0 0 auto; }
+
+/* ลูกศรเชื่อม: บรรทัดเดียว กดกางดูรายละเอียด */
+.connector .conn-d { display: block; }
+.conn-sum { list-style: none; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; background: var(--tint); font-size: .85rem; font-weight: 600; color: var(--text); }
+.conn-sum::-webkit-details-marker { display: none; }
+.conn-sum::after { content: ""; width: 6px; height: 6px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg); margin: -3px 0 0 2px; }
+.conn-d[open] .conn-sum::after { transform: rotate(-135deg); margin-top: 3px; }
+.connector.is-late .conn-sum { background: var(--neg-bg); color: var(--neg); }
+.conn-d .conn-body { margin-top: 6px; }
+.timeline .connector { padding-top: 4px; padding-bottom: 14px; }
+
+/* หัววัน + ปุ่มแผนที่ */
+.day-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin: 4px 0 8px; }
+.day-head .day-title { margin: 0; }
+.chip-toggle { border: 1px solid var(--accent); background: var(--card); color: var(--accent-ink); border-radius: 999px; padding: 4px 12px; font: inherit; font-size: .85rem; font-weight: 600; cursor: pointer; }
+.chip-toggle.on { background: var(--accent-soft); }
+.day-map { height: 280px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); margin: 0 0 12px; background: var(--tint); z-index: 0; position: relative; }
+.pin-wrap { background: none; border: none; }
+.pin { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: .8rem; color: #2E2A33; background: var(--k-other); border: 2px solid #fff; box-shadow: 0 2px 6px rgba(0, 0, 0, .3); font-family: "Noto Sans Thai", sans-serif; }
+.pin.is-done { opacity: .5; }
+.pin-hotel { background: #fff; font-size: .9rem; }
+.leaflet-container { font: inherit; }
+
+/* การ์ดถัดไป */
+.next-card { background: linear-gradient(135deg, var(--accent-soft), var(--card)); border: 1.5px solid var(--accent); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; display: flex; flex-direction: column; gap: 8px; }
+.next-card.done-day { font-weight: 600; color: var(--muted); border-style: dashed; }
+.nc-tag { display: inline-block; font-size: .78rem; font-weight: 700; color: var(--accent-ink); }
+.nc-tag.now { background: var(--accent); color: var(--on-accent); border-radius: 999px; padding: 0 8px; }
+.nc-title { font-size: 1.1rem; font-weight: 700; margin: 2px 0 6px; }
+.nc-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+
+/* ข้อความแนะนำ (ปิดได้) */
+.hint { display: flex; align-items: center; gap: 8px; margin: 0 0 8px; padding: 6px 6px 6px 12px; border-radius: 10px; background: var(--tint); font-size: .82rem; color: var(--muted); }
+.hint > span { flex: 1; }
+.hint-x { border: none; background: none; color: var(--muted); width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: .85rem; flex: 0 0 auto; }
+.hint-x:hover { background: var(--accent-soft); }
+.install-hint { margin-bottom: 14px; color: var(--text); }
+
+/* ปัดเปลี่ยนวัน */
+#plan-list.swipe-l { animation: swl .22s ease-out; }
+#plan-list.swipe-r { animation: swr .22s ease-out; }
+@keyframes swl { from { transform: translateX(28px); opacity: .4; } }
+@keyframes swr { from { transform: translateX(-28px); opacity: .4; } }
+
+/* toast + เลิกทำ */
+.toast.has-undo { display: flex; align-items: center; gap: 12px; padding: 8px 8px 8px 18px; }
+.toast-undo { border: none; background: var(--accent); color: var(--on-accent); font: inherit; font-weight: 700; font-size: .85rem; border-radius: 999px; padding: 6px 14px; cursor: pointer; flex: 0 0 auto; }
+
+/* การ์ดทริปหน้าแรก */
+.trip-card { padding: 0; overflow: hidden; display: flex; flex-direction: column; }
+.tc-band { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 14px 16px; background: linear-gradient(120deg, var(--accent), #F9C9C4); }
+.tc-1 .tc-band { background: linear-gradient(120deg, #F5AFAF, #E8C5DE); }
+.tc-2 .tc-band { background: linear-gradient(120deg, #F5AFAF, #F7D9B8); }
+.tc-3 .tc-band { background: linear-gradient(120deg, #F5AFAF, #C9DCEB); }
+.is-past .tc-band { filter: grayscale(.6); opacity: .8; }
+.tc-flag { font-size: 1.6rem; line-height: 1; }
+.tc-cd { background: rgba(255, 255, 255, .85); color: #8E3A47; font-weight: 700; font-size: .85rem; border-radius: 999px; padding: 3px 12px; }
+.is-now .tc-cd { background: #fff; color: var(--ok); }
+.tc-body { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 4px; }
+.tc-body h2 { margin: 0; }
+.tc-meta { display: flex; gap: 14px; font-size: .85rem; color: var(--muted); }
+.list-head { flex-wrap: wrap; }
+.list-head label.btn { cursor: pointer; }
+
+/* skeleton */
+.sk { background: linear-gradient(90deg, var(--line) 0%, var(--tint) 50%, var(--line) 100%); background-size: 200% 100%; animation: shimmer 1.2s linear infinite; border-radius: 8px; }
+@keyframes shimmer { from { background-position: 200% 0; } to { background-position: -200% 0; } }
+.sk-h { height: 24px; width: 45%; margin-bottom: 10px; }
+.sk-l { height: 14px; width: 80%; margin-bottom: 8px; }
+.sk-s { height: 14px; width: 55%; }
+.sk-band { height: 56px; border-radius: 0; }
+.sk-row { display: flex; gap: 8px; margin: 0 0 14px; }
+.sk-pill { height: 36px; flex: 1; border-radius: 999px; }
+.sk-item { display: flex; gap: 12px; align-items: center; }
+.sk-dot { width: 34px; height: 34px; border-radius: 10px; flex: 0 0 auto; }
+.skel-card { pointer-events: none; }
+@media (prefers-reduced-motion: reduce) { .sk { animation: none; } #plan-list.swipe-l, #plan-list.swipe-r { animation: none; } }
+
+/* แอปที่ติดตั้ง: เว้นขอบบนสำหรับ notch */
+@media (display-mode: standalone) { .topbar { padding-top: max(12px, env(safe-area-inset-top)); } }
+
+/* ============================================================
+   โหมดมืด (ตามการตั้งค่ามือถือ/คอม)
+   ============================================================ */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #1B1517; --card: #262022; --text: #F1E9EA; --muted: #B3A4A7; --line: #3D3135;
+    --pink: #4A3439; --pink-soft: #3A2A2E; --tint: #33282B;
+    --accent: #E59A9C; --accent-hover: #EFAAAC; --on-accent: #2A1418; --accent-ink: #F2A7AE; --accent-soft: #3A2A2E; --rose-ink: #F0B4BA;
+    --ok: #5FC48A; --neg: #FF7A6E;
+    --ok-bg: #1F3528; --ok-bg2: #1E2A23; --neg-bg: #3E2222; --neg-bg2: #2E2020; --warn-bg: #3A2D1B; --yellow-bg: #3A3418; --gray-bg: #333; --blue-bg: #1F2A3A;
+    --warn-ink: #F2B266; --yellow-ink: #E6CD6A; --glass: rgba(38, 32, 34, .96);
+    --k-sight: #233247; --k-food: #3D2B1C; --k-cafe: #36291F; --k-shop: #402630; --k-kpop: #1F3A2B; --k-hotel: #2E2740; --k-move: #1E3337; --k-other: #333;
+  }
+  body { background: var(--bg); color: var(--text); }
+  input, select, textarea { background: var(--card); color: var(--text); border-color: var(--line); color-scheme: dark; }
+  .modal-backdrop, .sheet-backdrop { background: rgba(0, 0, 0, .6); }
+  .toast { background: #F1E9EA; color: #1B1517; }
+  .tc-cd { background: rgba(0, 0, 0, .35); color: #fff; }
+  .is-now .tc-cd { background: rgba(0, 0, 0, .45); color: #8EE0AE; }
+  .prio span { color: #555; }
+  .pin { color: #F1E9EA; border-color: #262022; }
+  .pin-hotel { background: #262022; }
+  .leaflet-tile-pane { filter: brightness(.75) contrast(1.1) saturate(.8); }
+  .leaflet-popup-content-wrapper, .leaflet-popup-tip { background: var(--card); color: var(--text); }
+  .taxi-full { background: #fff; color: #111; }       /* หน้าแท็กซี่: ขาวเสมอ อ่านง่าย */
+  .taxi-full .tx-en, .taxi-full .tx-hint { color: #444; }
+  .done-tick input:checked + span::after { border-color: #1B1517; }
+  .day-hotel { color: var(--text); }
+  .sg-kpop { color: var(--text); }
+}

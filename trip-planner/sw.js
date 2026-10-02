@@ -1,7 +1,7 @@
 // เก็บไฟล์เว็บไว้ในเครื่อง เพื่อให้เปิดได้ตอนไม่มีเน็ต
-const CACHE = "trip-planner-v8";
-const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json", "./data/immigration.json", "./data/places.json"];
-const ALLOWED_HOSTS = ["www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com"];
+const CACHE = "trip-planner-v9";
+const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json", "./data/immigration.json", "./data/places.json", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/apple-touch-icon.png"];
+const ALLOWED_HOSTS = ["www.gstatic.com", "fonts.googleapis.com", "fonts.gstatic.com", "cdnjs.cloudflare.com"];
 
 self.addEventListener("install", (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
