@@ -939,3 +939,24 @@ body.pdf-mode { overflow: hidden; }
 .taxi-cta .tc-go { flex: 0 0 auto; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; background: rgba(255, 255, 255, .55); font-size: 1.4rem; font-weight: 700; line-height: 1; }
 .sh-local[data-action] { cursor: pointer; }
 @media (prefers-color-scheme: dark) { .taxi-cta { box-shadow: none; } .taxi-cta .tc-go { background: rgba(0, 0, 0, .2); } }
+
+/* ---------- v17: ลิงก์ตั๋ว + ใครแก้ล่าสุด ---------- */
+.tix { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 2px; }
+.tix-chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; border: 1.5px solid var(--accent); background: var(--accent-soft); color: var(--accent-ink); text-decoration: none; font-size: .88rem; line-height: 1.2; max-width: 100%; }
+.tix-chip b { font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+.tix-chip small { color: var(--muted); font-size: .75rem; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tix-chip .tix-go { opacity: .6; }
+.tix-chip:active { transform: scale(.97); }
+.next-card .tix { margin-top: 8px; }
+.links-field .links-box { display: flex; flex-direction: column; gap: 8px; }
+.links-field .links-box:empty { display: none; }
+.lnk { display: grid; grid-template-columns: 1fr auto; gap: 6px; align-items: center; }
+.lnk [data-k=url] { grid-column: 1; }
+.lnk [data-k=label] { grid-column: 1; }
+.lnk .icon { grid-column: 2; grid-row: 1 / span 2; }
+.lnk + .lnk { border-top: 1px dashed var(--line); padding-top: 8px; }
+.links-field > small { line-height: 1.4; }
+.edited { color: var(--muted); font-size: .75rem; white-space: nowrap; }
+.edited.fresh { color: var(--accent-ink); font-weight: 600; }
+.sheet-edited { margin: 0 0 8px; font-size: .8rem; color: var(--muted); }
+.sheet-edited:empty { display: none; }

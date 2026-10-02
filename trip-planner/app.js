@@ -699,6 +699,7 @@ function renderTripSkeleton() {
       <div id="plan-list"></div>
       ${sheetHtml("sheet-item", "item-form-title", "เพิ่มกิจกรรม", `
       <form id="item-form" class="form">
+        <p class="sheet-edited" id="item-edited"></p>
         <div class="grid">
           <label>วันที่<select name="date">${dayOpts}</select></label>
           <label>เวลาถึง<input type="time" name="time"></label>
@@ -724,6 +725,7 @@ function renderTripSkeleton() {
             <input name="hoursNote" placeholder="หมายเหตุ เช่น เข้าครั้งสุดท้าย 16:30 / หยุดวันนักขัตฤกษ์">
           </fieldset>
           <label class="wide">ลิงก์กับการจอง<select name="bookingId"><option value="">— ไม่มี —</option></select></label>
+          ${linksFieldHtml()}
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -776,6 +778,7 @@ function renderTripSkeleton() {
       <div id="book-list"></div>
       ${sheetHtml("sheet-book", "book-form-title", "เพิ่มการจอง", `
       <form id="book-form" class="form">
+        <p class="sheet-edited" id="book-edited"></p>
         <div class="grid">
           <label>ประเภท<select name="type">${BOOK_TYPES.map((c) => `<option>${c}</option>`).join("")}</select></label>
           <label class="not-hotel">วันที่<input type="date" name="date" value="${esc(t.startDate)}"></label>
@@ -804,6 +807,7 @@ function renderTripSkeleton() {
             <textarea name="addressLocal" rows="2" placeholder="例: 大阪府大阪市中央区難波千日前8-9"></textarea></label>
           <label class="wide hotel-only">เบอร์โทรโรงแรม<input name="phone" inputmode="tel" placeholder="เช่น +81 6-xxxx-xxxx"></label>
           <label class="wide"><span class="hotel-only">ลิงก์ Google Maps / ชื่อบนแผนที่ (ไม่บังคับ)</span><span class="not-hotel">สถานที่ (พิมพ์ชื่อ หรือวางลิงก์ Google Maps)</span><input name="place"></label>
+          ${linksFieldHtml()}
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -1099,7 +1103,7 @@ function nextCardHtml(d, active) {
     ${cur ? `<div class="nc-now"><span class="nc-tag now">ตอนนี้</span> ${kindIcon(kindOf(cur))} <b>${esc(cur.activity)}</b></div>` : ""}
     ${next ? `<div class="nc-next"><span class="nc-tag">ถัดไป · ${esc(next.time)} (อีก ${fmtDur(mins)})</span>
       <div class="nc-title">${kindIcon(kindOf(next))} ${esc(next.activity)}</div>
-      <div class="nc-btns"><a class="btn small primary" href="${esc(nav(next))}" target="_blank" rel="noopener">🧭 นำทางไปที่นี่</a><button type="button" class="btn small" data-action="goto-item" data-id="${esc(next.id)}">ดูในแพลน</button></div></div>` : ""}
+      <div class="nc-btns"><a class="btn small primary" href="${esc(nav(next))}" target="_blank" rel="noopener">🧭 นำทางไปที่นี่</a><button type="button" class="btn small" data-action="goto-item" data-id="${esc(next.id)}">ดูในแพลน</button></div>${linkChipsHtml(itemLinks(next))}</div>` : ""}
   </div>`;
 }
 
@@ -1401,7 +1405,8 @@ function itemHtml(x) {
       <div class="kind-ic k-${kindOf(x)}" aria-hidden="true">${kindIcon(kindOf(x))}</div>
       <div class="body">
         <div class="title">${st === "cancel" ? `<span class="st-badge cancel">ยกเลิก</span> ` : ""}<span class="t-text">${esc(x.activity)}</span> ${warns.map((w) => `<span class="badge warn">⚠️ ${esc(w)}</span>`).join(" ")}</div>
-        <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}</div>
+        <div class="meta">${mapLinkItem(x)}${hrs ? `<span>🕘 ${esc(hrs)}</span>` : ""}${num(x.cost) ? `<span>💰 ${fmtWithTHB(x.cost, x.costCurrency)}</span>` : ""}${editedHtml(x)}</div>
+        ${st === "cancel" ? "" : linkChipsHtml(itemLinks(x))}
         ${bk ? `<button type="button" class="link-btn" data-action="goto-booking" data-id="${esc(bk.id)}">🎫 ${esc(bk.type)}: ${esc(bk.title)}${refOf(bk, getMe()) ? ` · ${esc(refOf(bk, getMe()))}` : ""} →</button>` : ""}
         ${x.note ? `<div class="note">${esc(x.note)}</div>` : ""}
         ${st === "cancel" ? `<button type="button" class="link-plain" data-action="item-cancel" data-id="${esc(x.id)}">เอากลับมา</button>` : ""}
@@ -1415,7 +1420,7 @@ function itemHtml(x) {
 function setItemStatus(id, status) {
   const x = data.items.find((i) => i.id === id);
   if (!x) return;
-  store.update(trip.id, "items", id, { status });
+  store.update(trip.id, "items", id, stamp({ status }));
   // กิจกรรมที่มาจาก Wishlist → อัปเดตสถานะใน Wishlist ด้วย
   if (x.wishId && data.wishlist.some((w) => w.id === x.wishId)) {
     if (status === "done") store.update(trip.id, "wishlist", x.wishId, { visit: "done" });
@@ -1436,7 +1441,7 @@ function reorderDay(ids) {
     if ((x.time || "") !== time) patch.time = time;
     if (!!x.prevNight !== prevNight) patch.prevNight = prevNight;
     if (x.order !== i) patch.order = i;
-    if (Object.keys(patch).length) store.update(trip.id, "items", x.id, patch);
+    if (Object.keys(patch).length) store.update(trip.id, "items", x.id, stamp(patch));
   });
   toast("สลับลำดับแล้ว — เรียงเวลาให้ใหม่");
 }
@@ -1523,6 +1528,8 @@ function startEdit(id) {
   form.querySelectorAll("[name=closed]").forEach((cb) => (cb.checked = closed.includes(cb.value)));
   // รายการเก่าที่มีแค่ช่อง "การเดินทาง" → แปลงเป็นสายแรกให้
   setLegs(legsOf(x).length ? legsOf(x) : x.transport ? [{ line: x.transport }] : []);
+  setLinks(form, linksOf(x));
+  $("#item-edited").innerHTML = x.editedBy ? `แก้ล่าสุดโดย <b>${esc(x.editedBy)}</b> · ${ago(x.editedAt)}` : "";
   $("#item-form-title").textContent = "แก้ไขกิจกรรม";
   $("#item-submit").textContent = "บันทึก";
   openSheet("sheet-item");
@@ -1541,6 +1548,8 @@ function stopEdit() {
   if (!f) return;
   f.reset();
   setLegs([]);
+  setLinks(f, []);
+  $("#item-edited").innerHTML = "";
   f.elements.date.value = tripDays()[dayIdx] || "";
   $("#item-form-title").textContent = "เพิ่มกิจกรรม";
   $("#item-submit").textContent = "เพิ่ม";
@@ -1618,6 +1627,82 @@ const wishState = (w) => wishVisit(w) || (w.dates.length ? "planned" : "todo");
 const linkLabel = (url = "") =>
   /instagram\.com/i.test(url) ? "📷 IG" : /tiktok\.com/i.test(url) ? "🎵 TikTok" : /youtu/i.test(url) ? "▶️ YouTube" :
   /facebook\.com|fb\.watch/i.test(url) ? "📘 Facebook" : /tabelog/i.test(url) ? "🍽️ Tabelog" : "🔗 ลิงก์รีวิว";
+
+/* ---------- ลิงก์ตั๋ว / voucher (Klook, KKday ฯลฯ) — ใส่ได้ทั้งในแพลนและการจอง ---------- */
+// รับเฉพาะ http/https (กันลิงก์ javascript: แปลกๆ) + ดึง URL ออกจากข้อความที่ก๊อปมาทั้งก้อน
+const safeUrl = (u = "") => {
+  const m = String(u).match(/https?:\/\/[^\s"'<>]+/i);
+  if (!m) return "";
+  try { const x = new URL(m[0]); return /^https?:$/.test(x.protocol) ? x.href : ""; } catch { return ""; }
+};
+const TICKET_SITES = [
+  [/klook\./i, "Klook"], [/kkday\./i, "KKday"], [/trip\.com/i, "Trip.com"], [/agoda\./i, "Agoda"], [/booking\.com/i, "Booking.com"],
+  [/airasia\./i, "AirAsia"], [/usj\.co\.jp/i, "USJ"], [/odekake|westjr|jr-west/i, "JR West"], [/japanrailpass|jrpass/i, "JR Pass"],
+  [/pia\.jp/i, "Ticket Pia"], [/eplus\./i, "e+"], [/ticketmaster/i, "Ticketmaster"], [/drive\.google|docs\.google/i, "Google Drive"],
+  [/photos\.google|photos\.app\.goo/i, "Google Photos"], [/icloud\.com/i, "iCloud"], [/dropbox/i, "Dropbox"], [/line\.me/i, "LINE"],
+];
+const siteName = (u) => {
+  const hit = TICKET_SITES.find(([re]) => re.test(u));
+  if (hit) return hit[1];
+  try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return "ลิงก์"; }
+};
+const linksOf = (x) => (Array.isArray(x?.links) ? x.links : []).map((l) => ({ url: safeUrl(l?.url), label: String(l?.label || "").trim() })).filter((l) => l.url);
+// กิจกรรมที่ลิงก์กับการจอง → รวมลิงก์ของการจองนั้นด้วย (ไม่ซ้ำ)
+function itemLinks(x) {
+  const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
+  const seen = new Set();
+  return [...linksOf(x), ...linksOf(bk)].filter((l) => !seen.has(l.url) && seen.add(l.url));
+}
+const linkChipsHtml = (links) => links.length
+  ? `<div class="tix">${links.map((l) => `<a class="tix-chip" href="${esc(l.url)}" target="_blank" rel="noopener">🎟️ <b>${esc(l.label || siteName(l.url))}</b>${l.label ? `<small>${esc(siteName(l.url))}</small>` : ""}<span class="tix-go" aria-hidden="true">↗</span></a>`).join("")}</div>`
+  : "";
+const linkRowHtml = (l = {}) => `
+  <div class="lnk">
+    <input data-k="url" type="text" inputmode="url" autocapitalize="off" spellcheck="false" autocomplete="off" placeholder="วางลิงก์ เช่น https://www.klook.com/…" value="${esc(l.url)}">
+    <input data-k="label" placeholder="ชื่อ (ไม่บังคับ) เช่น ตั๋วมิว" value="${esc(l.label)}">
+    <button type="button" class="icon" data-action="del-link" title="ลบลิงก์นี้">✕</button>
+  </div>`;
+const linksFieldHtml = () => `
+  <fieldset class="sub links-field">
+    <legend>🎟️ ลิงก์ตั๋ว / voucher <small class="muted">(Klook, KKday, ไฟล์ใน Drive ฯลฯ)</small></legend>
+    <div class="links-box"></div>
+    <button type="button" class="btn small" data-action="add-link">+ เพิ่มลิงก์</button>
+    <small class="muted">ลิงก์ที่ต้องล็อกอินบัญชีคนจอง เพื่อนจะเปิดไม่ได้ — ให้เซฟ voucher เป็น PDF/รูปไว้ใน Google Drive ตั้งค่าแชร์ “ทุกคนที่มีลิงก์” แล้ววางลิงก์ Drive แทน</small>
+  </fieldset>`;
+function setLinks(form, links = []) { const box = form?.querySelector(".links-box"); if (box) box.innerHTML = links.map(linkRowHtml).join(""); }
+// คืน null ถ้ามีช่องที่ไม่ใช่ลิงก์ (ให้ผู้ใช้แก้ก่อน)
+function readLinks(form) {
+  const out = [];
+  for (const row of form.querySelectorAll(".links-box .lnk")) {
+    const raw = row.querySelector("[data-k=url]").value.trim();
+    const label = row.querySelector("[data-k=label]").value.trim();
+    if (!raw) continue;
+    const url = safeUrl(raw);
+    if (!url) { row.querySelector("[data-k=url]").focus(); return null; }
+    out.push({ url, label });
+  }
+  return out;
+}
+
+/* ---------- ใครแก้ล่าสุด ---------- */
+const editorName = () => getMe() || (myEmail() ? myEmail().split("@")[0] : "");
+const stamp = (rec) => { const n = editorName(); return n ? { ...rec, editedBy: n, editedAt: Date.now() } : rec; };
+function ago(ts) {
+  const s = (Date.now() - num(ts)) / 1000;
+  if (!ts || s < 0) return "";
+  if (s < 90) return "เมื่อกี้";
+  if (s < 3600) return `${Math.round(s / 60)} นาทีที่แล้ว`;
+  if (s < 86400) return `${Math.round(s / 3600)} ชม.ที่แล้ว`;
+  if (s < 2 * 86400) return "เมื่อวาน";
+  if (s < 7 * 86400) return `${Math.floor(s / 86400)} วันที่แล้ว`;
+  return new Date(ts).toLocaleDateString("th-TH", { day: "numeric", month: "short" });
+}
+// เพื่อนแก้ภายใน 24 ชม. → เน้นสีให้เห็น
+const editedHtml = (x) => {
+  if (!x?.editedBy) return "";
+  const fresh = Date.now() - num(x.editedAt) < 86400000 && x.editedBy !== editorName();
+  return `<span class="edited ${fresh ? "fresh" : ""}" title="แก้ล่าสุดโดย ${esc(x.editedBy)}">✎ ${esc(x.editedBy)} · ${ago(x.editedAt)}</span>`;
+};
 
 // ลำดับ: จัดเองได้ (ลาก) → ถ้ายังไม่เคยจัด เรียงตาม ยังไม่ใส่แพลน → ใส่แล้ว → ไปแล้ว → ยกเลิก, ความอยากไป, เวลาที่เพิ่ม
 const STATE_RANK = { todo: 0, planned: 1, done: 2, cancel: 3 };
@@ -1700,6 +1785,7 @@ function renderWishlist() {
           <span class="badge">${kindIcon(KIND_OF_WISH[w.category] || "other")} ${esc(w.category || "อื่นๆ")}</span>
           ${w.place || w.name ? `<a href="${esc(mapUrl(w.place || w.name))}" target="_blank" rel="noopener">📍 ${esc(placeLabel(w.place, w.name))}</a>` : ""}
           ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
+          ${editedHtml(w)}
         </div>
         ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
         ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
@@ -1730,11 +1816,11 @@ function wishToPlan(id) {
   if (!w || !sel) return;
   const note = [w.access ? `การเดินทาง: ${w.access}` : "", w.mustTry ? `ต้องลอง: ${w.mustTry}` : "", w.note || ""].filter(Boolean).join(" · ");
   const c = wishCoords(w);
-  store.add(trip.id, "items", {
+  store.add(trip.id, "items", stamp({
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
     transport: "", cost: 0, costCurrency: tripCur(), note, wishId: w.id, createdAt: Date.now(),
     ...(c ? { lat: c.lat, lng: c.lng } : {}),
-  });
+  }));
   store.update(trip.id, "wishlist", id, { plannedDate: sel.value, planLinked: true });
   planOpenId = null;
   toast(`ใส่ “${w.name}” ลงแพลน ${fmtDate(sel.value)} แล้ว`);
@@ -1794,7 +1880,9 @@ function renderBookings() {
               : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place, b.title)}</div>`}
             ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
             ${refsText(b) ? `<div class="ref">เลขการจอง: <b>${esc(refsText(b))}</b></div>` : ""}
+            ${linkChipsHtml(linksOf(b))}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
+            ${b.editedBy ? `<div class="meta">${editedHtml(b)}</div>` : ""}
             ${used.map((i) => `<button type="button" class="link-btn" data-action="goto-item" data-id="${esc(i.id)}">← ใช้ในแพลน วันที่ ${days.indexOf(i.date) + 1} · ${esc(i.time || "")} ${esc(i.activity)}</button>`).join("")}
           </div>
           <div class="row-actions">
@@ -1875,6 +1963,8 @@ function startEditBooking(id) {
   const pax = paxOf(b);
   form.querySelectorAll("[name=pax]").forEach((cb) => (cb.checked = pax.includes(cb.value)));
   renderPaxRefs(Object.fromEntries(members().map((m) => [m, refOf(b, m)])));
+  setLinks(form, linksOf(b));
+  $("#book-edited").innerHTML = b.editedBy ? `แก้ล่าสุดโดย <b>${esc(b.editedBy)}</b> · ${ago(b.editedAt)}` : "";
   if (isHotel(b)) {
     f.checkInDate.value = b.date || "";
     f.checkInTime.value = b.time || "";
@@ -1905,6 +1995,8 @@ function stopEditBooking() {
   const f = $("#book-form");
   if (!f) return;
   f.reset();
+  setLinks(f, []);
+  $("#book-edited").innerHTML = "";
   $("#book-form-title").textContent = "เพิ่มการจอง";
   $("#book-submit").textContent = "เพิ่ม";
   syncBookForm();
@@ -2052,7 +2144,7 @@ function renderMoney() {
         <li class="row exp-row ${others.length && done === others.length ? "all-settled" : ""}">
           <div class="body">
             <div class="title">${esc(e.title)} · <b>${fmtWithTHB(e.amount, e.currency)}</b></div>
-            <div class="meta"><span>💳 ${esc(e.paidBy)} จ่ายไปก่อน</span>${e.date ? `<span>📅 ${fmtDate(e.date)}</span>` : ""}</div>
+            <div class="meta"><span>💳 ${esc(e.paidBy)} จ่ายไปก่อน</span>${e.date ? `<span>📅 ${fmtDate(e.date)}</span>` : ""}${editedHtml(e)}</div>
             <div class="exp-share">👥 ${split.length === members().length ? `หารทุกคน (${split.length})` : `หาร ${split.length} คน: ${split.map(esc).join(", ")}`} · คนละ <b>${shareText(e)}</b></div>
             ${others.length ? `<div class="settle-label muted">โอนคืน ${esc(e.paidBy)} แล้ว (${done}/${others.length})</div><div class="settle-row">
               ${others.map((m) => `<label class="settle-chip ${m === me ? "is-me" : ""}"><input type="checkbox" data-action="settle" data-id="${esc(e.id)}" data-m="${esc(m)}" ${isSettled(e, m) ? "checked" : ""}><span>${esc(m)}</span></label>`).join("")}</div>` : ""}
@@ -3386,6 +3478,11 @@ function onClick(e) {
     $("#legs .leg:last-child input").focus();
   }
   else if (action === "del-leg") b.closest(".leg").remove();
+  else if (action === "add-link") {
+    const box = b.closest("form")?.querySelector(".links-box");
+    if (box) { box.insertAdjacentHTML("beforeend", linkRowHtml()); box.querySelector(".lnk:last-child input").focus(); }
+  }
+  else if (action === "del-link") b.closest(".lnk").remove();
   else if (action === "goto-booking") {
     setTab("bookings");
     flash(document.getElementById("booking-" + id));
@@ -3567,7 +3664,7 @@ function onChange(e) {
   } else if (el.dataset.action === "settle") {
     const e = data.expenses.find((x) => x.id === el.dataset.id);
     if (e) {
-      store.update(trip.id, "expenses", e.id, { settled: { ...(e.settled || {}), [el.dataset.m]: el.checked } });
+      store.update(trip.id, "expenses", e.id, stamp({ settled: { ...(e.settled || {}), [el.dataset.m]: el.checked } }));
       toast(el.checked ? `✓ ${el.dataset.m} โอนคืน ${e.paidBy} แล้ว (${e.title})` : "ยกเลิกติ๊กแล้ว");
     }
   } else if (el.dataset.action === "shop-bought") {
@@ -3645,13 +3742,15 @@ function onSubmit(e) {
         legs, transport: "", bookingId: f.bookingId || "",
       };
       if (!rec.activity) return;
+      rec.links = readLinks(form);
+      if (!rec.links) { toast("ลิงก์ตั๋วต้องขึ้นต้นด้วย https://"); return; }
       const c = coordsFromLink(rec.place);
       if (editingItemId) {
         const old = data.items.find((i) => i.id === editingItemId);
         if (old && (old.place || "") !== rec.place) { Object.assign(rec, { lat: c?.lat ?? null, lng: c?.lng ?? null, geoFail: false }); geoTried.delete(old.id); }
-        store.update(trip.id, "items", editingItemId, rec);
+        store.update(trip.id, "items", editingItemId, stamp(rec));
       }
-      else store.add(trip.id, "items", { ...rec, ...(c ? { lat: c.lat, lng: c.lng } : {}), createdAt: now });
+      else store.add(trip.id, "items", stamp({ ...rec, ...(c ? { lat: c.lat, lng: c.lng } : {}), createdAt: now }));
       stopEdit();
       const i = tripDays().indexOf(rec.date);
       if (i >= 0) { dayIdx = i; renderPlan(); }
@@ -3667,8 +3766,8 @@ function onSubmit(e) {
       if (!rec.name) return;
       const old = editingWishId && data.wishlist.find((w) => w.id === editingWishId);
       if (old && (old.place || "") !== rec.place) { rec.lat = null; rec.lng = null; geoTried.delete(old.id); } // เปลี่ยนสถานที่ → หาพิกัดใหม่
-      if (editingWishId) store.update(trip.id, "wishlist", editingWishId, rec);
-      else store.add(trip.id, "wishlist", { ...rec, plannedDate: "", planLinked: true, createdAt: now });
+      if (editingWishId) store.update(trip.id, "wishlist", editingWishId, stamp(rec));
+      else store.add(trip.id, "wishlist", stamp({ ...rec, plannedDate: "", planLinked: true, createdAt: now }));
       wishFilter = "all";
       closeWishForm();
       toast(editingWishId ? "บันทึกแล้ว" : `เพิ่ม “${rec.name}” แล้ว — ยังไม่ได้ใส่ในแพลน`);
@@ -3695,8 +3794,10 @@ function onSubmit(e) {
         if (!rec.passengers.length) { toast("ติ๊กอย่างน้อย 1 คนที่อยู่ในไฟลท์นี้"); return; }
       }
       if (!rec.title) return;
-      if (editingBookingId) { geoTried.delete(editingBookingId); store.update(trip.id, "bookings", editingBookingId, rec); }
-      else store.add(trip.id, "bookings", { ...rec, createdAt: now });
+      rec.links = readLinks(form);
+      if (!rec.links) { toast("ลิงก์ตั๋วต้องขึ้นต้นด้วย https://"); return; }
+      if (editingBookingId) { geoTried.delete(editingBookingId); store.update(trip.id, "bookings", editingBookingId, stamp(rec)); }
+      else store.add(trip.id, "bookings", stamp({ ...rec, createdAt: now }));
       stopEditBooking();
       toast("บันทึกแล้ว");
       return;
@@ -3707,8 +3808,8 @@ function onSubmit(e) {
       rec.splitWith = new FormData(form).getAll("splitWith");
       if (!rec.splitWith.length) { toast("ติ๊กอย่างน้อย 1 คนที่หารรายการนี้"); return; }
       if (rec.splitWith.length === 1 && rec.splitWith[0] === rec.paidBy) { toast("จ่ายเองคนเดียว ไม่ต้องหาร — ใส่ใน “งบของฉัน” แทน"); return; }
-      if (editingExpenseId) store.update(trip.id, "expenses", editingExpenseId, rec);
-      else store.add(trip.id, "expenses", { ...rec, settled: {}, createdAt: now });
+      if (editingExpenseId) store.update(trip.id, "expenses", editingExpenseId, stamp(rec));
+      else store.add(trip.id, "expenses", stamp({ ...rec, settled: {}, createdAt: now }));
       stopEditExpense();
       toast("บันทึกแล้ว");
       return;
