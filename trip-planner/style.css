@@ -969,3 +969,7 @@ body.pdf-mode { overflow: hidden; }
 .item-row > .body { flex: 1 1 0; min-width: 0; }
 .row-tix { flex: 0 0 100%; min-width: 0; padding-left: 38px; margin-top: -6px; }
 .row-tix .tix { margin: 0; }
+/* ที่พัก/ไฟลท์: ติ๊กคนในการจอง + เลขจองรายคน */
+.form:not(.has-pax) .pax-only { display: none !important; }
+.form.has-pax .no-pax { display: none !important; }
+.pax-only legend small { font-weight: 400; }

@@ -783,11 +783,11 @@ function renderTripSkeleton() {
           <label>ประเภท<select name="type">${BOOK_TYPES.map((c) => `<option>${c}</option>`).join("")}</select></label>
           <label class="not-hotel">วันที่<input type="date" name="date" value="${esc(t.startDate)}"></label>
           <label class="wide"><span class="hotel-only">ชื่อที่พัก*</span><span class="not-hotel">รายละเอียด*</span><input name="title" required placeholder="เช่น Thai AirAsia FD xxx DMK→KIX"></label>
-          <fieldset class="sub flight-only">
-            <legend>ใครอยู่ในไฟลท์นี้</legend>
+          <fieldset class="sub pax-only">
+            <legend><span class="flight-only">ใครอยู่ในไฟลท์นี้</span><span class="hotel-only">ใครพักในการจองนี้ <small class="muted">(จองแยกห้อง = แยกเป็นคนละรายการ แล้วติ๊กคนพักของแต่ละห้อง)</small></span></legend>
             <div class="pax" id="pax-box">${members().map((m) => `<label class="pax-opt"><input type="checkbox" name="pax" value="${esc(m)}"><span>${esc(m)}</span></label>`).join("")}</div>
             <div class="pax-refs" id="pax-refs"></div>
-            <small class="muted">เอกสารโชว์ ตม. ของแต่ละคนจะมีเฉพาะไฟลท์ที่ติ๊กชื่อไว้</small>
+            <small class="muted">เอกสารโชว์ ตม. ของแต่ละคนจะมีเฉพาะ<span class="flight-only">ไฟลท์</span><span class="hotel-only">ที่พัก</span>ที่ติ๊กชื่อไว้ พร้อมเลขการจองของคนนั้น</small>
           </fieldset>
           <fieldset class="sub hotel-only">
             <legend>เข้าพัก</legend>
@@ -800,7 +800,7 @@ function renderTripSkeleton() {
             <small class="muted" id="nights-preview"></small>
           </fieldset>
           <label class="not-hotel">เวลา<input type="time" name="time"></label>
-          <label class="not-flight">เลขการจอง<input name="ref"></label>
+          <label class="no-pax">เลขการจอง<input name="ref"></label>
           <label class="wide hotel-only">ที่อยู่โรงแรม <small class="muted">(ภาษาอังกฤษ — ใช้ในเอกสารโชว์ ตม. และหาตำแหน่งที่พัก)</small>
             <textarea name="address" rows="2" placeholder="เช่น 8-9 Namba-sennichimae, Chuo-ku, Osaka 542-0075"></textarea></label>
           <label class="wide hotel-only">ที่อยู่ภาษาท้องถิ่น <small class="muted">(เช่น ภาษาญี่ปุ่น — ก๊อปจาก Google Maps / อีเมลยืนยันการจอง ไว้ยื่นให้คนขับแท็กซี่)</small>
@@ -1002,9 +1002,10 @@ const mapLink = (place, fallback = "") =>
 const isFlight = (b) => b?.type === "เที่ยวบิน";
 const paxOf = (b) => (Array.isArray(b.passengers) ? b.passengers.filter((m) => members().includes(m)) : members());
 // เลขการจอง (Booking ref.) ของเที่ยวบินแยกรายคน — รายการเก่าที่มีเลขเดียวใช้กับทุกคน
-const refOf = (b, m) => (b ? (isFlight(b) && m && b.refs?.[m]) || b.ref || "" : "");
+const hasPax = (b) => isFlight(b) || isHotel(b);
+const refOf = (b, m) => (b ? (hasPax(b) && m && b.refs?.[m]) || b.ref || "" : "");
 const refsText = (b) => {
-  if (!isFlight(b)) return b.ref || "";
+  if (!hasPax(b)) return b.ref || "";
   const list = paxOf(b).map((m) => [m, refOf(b, m)]).filter(([, r]) => r);
   return [...new Set(list.map(([, r]) => r))].length === 1 && list.length === paxOf(b).length ? list[0][1] : list.map(([m, r]) => `${m}: ${r}`).join(" · ");
 };
@@ -1153,7 +1154,7 @@ async function drawDayMap(d, active) {
     const icon = L.divIcon({ className: "pin-wrap", html: `<div class="pin k-${kindOf(p.x)} ${p.x.status === "done" ? "is-done" : ""}">${i + 1}</div>`, iconSize: [28, 28], iconAnchor: [14, 14] });
     L.marker([p.c.lat, p.c.lng], { icon }).addTo(map).bindPopup(`<b>${i + 1}. ${esc(p.x.activity)}</b>${p.x.time ? `<br>${esc(p.x.time)}` : ""}`);
   });
-  const h = hotelForNight(d)[0];
+  const h = myHotelForNight(d)[0];
   const hc = h && hotelCoords(h);
   if (hc) { L.marker([hc.lat, hc.lng], { icon: L.divIcon({ className: "pin-wrap", html: `<div class="pin pin-hotel">🏨</div>`, iconSize: [28, 28], iconAnchor: [14, 14] }) }).addTo(map).bindPopup(esc(h.title)); ll.push([hc.lat, hc.lng]); }
   // เส้นเชื่อมตามลำดับ (ไม่ลากข้ามประเทศ — ตัดช่วงที่ห่างเกิน 80 กม.)
@@ -1878,7 +1879,7 @@ function renderBookings() {
                  ${b.addressLocal ? `<div class="note">${esc(b.addressLocal)}</div>` : ""}${b.phone ? `<div class="note">📞 <a href="tel:${esc(b.phone.replace(/[^\d+]/g, ""))}">${esc(b.phone)}</a></div>` : ""}
                  <div class="meta">${mapLink(b.place || b.address || b.title, b.title)}</div>`
               : `<div class="meta"><span>📅 ${fmtDate(b.date, "weekday")}${b.time ? " · " + esc(b.time) : ""}</span>${mapLink(b.place, b.title)}</div>`}
-            ${isFlight(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
+            ${hasPax(b) ? `<div class="pax-line">👤 ${paxOf(b).map((m) => `<span class="pax-chip ${m === getMe() ? "is-me" : ""}">${esc(m)}</span>`).join("")}${Array.isArray(b.passengers) ? "" : ` <small class="muted">(ยังไม่ได้ระบุ — นับเป็นทุกคน)</small>`}</div>` : ""}
             ${refsText(b) ? `<div class="ref">เลขการจอง: <b>${esc(refsText(b))}</b></div>` : ""}
             ${linkChipsHtml(linksOf(b))}
             ${b.note ? `<div class="note">${esc(b.note)}</div>` : ""}
@@ -1901,35 +1902,47 @@ const nightsOf = (b) => Math.max(0, daysBetween(b.date, b.checkOutDate).length -
 const tripNights = () => tripDays().slice(0, -1);
 // ที่พักของคืนวันที่ d (เช็คอิน <= d < เช็คเอาท์)
 const hotelForNight = (d) => hotels().filter((h) => h.date && h.checkOutDate && h.date <= d && d < h.checkOutDate);
+// ที่พักของคนคนนี้ (ติ๊กชื่อในการจอง / รายการเก่าที่ไม่ได้ติ๊ก = ทุกคน)
+const hotelsOf = (m) => hotels().filter((h) => !m || paxOf(h).includes(m));
+const hotelForNightOf = (d, m) => hotelForNight(d).filter((h) => !m || paxOf(h).includes(m));
+// ของฉัน (ยังไม่เลือกชื่อ → ทั้งหมด)
+const myHotelForNight = (d) => hotelForNightOf(d, getMe());
+const myHotels = () => hotelsOf(getMe());
+const uniqTitle = (arr) => arr.filter((h, i) => arr.findIndex((x) => x.title === h.title) === i);
 
 function hotelSummaryHtml() {
   const nights = tripNights();
   const hs = hotels();
   if (!nights.length) return "";
-  const missing = nights.filter((d) => !hotelForNight(d).length);
-  const overlap = nights.filter((d) => hotelForNight(d).length > 1);
+  const ms = members();
+  // คืนที่ยังมีบางคนไม่มีที่พัก / มีคนถูกจองซ้อน 2 ที่
+  const noneWho = (d) => ms.filter((m) => !hotelForNightOf(d, m).length);
+  const dupWho = (d) => ms.filter((m) => hotelForNightOf(d, m).length > 1);
+  const missing = nights.filter((d) => noneWho(d).length);
+  const overlap = nights.filter((d) => dupWho(d).length);
+  const who = (arr) => (arr.length && arr.length < ms.length ? ` (${arr.join(", ")})` : "");
   const days = tripDays();
   return `<div class="card hotel-card">
     <h3>🏨 ที่พักตลอดทริป <small class="muted">${nights.length - missing.length}/${nights.length} คืน</small></h3>
     ${hs.length ? `<ul class="hotel-list">${hs.map((h) => `
       <li>
         <button type="button" class="hotel-name" data-action="goto-booking" data-id="${esc(h.id)}">${esc(h.title)}</button>
-        <div class="muted">${fmtDate(h.date)} ${esc(h.time || "")} → ${fmtDate(h.checkOutDate)} ${esc(h.checkOutTime || "")} · ${nightsOf(h)} คืน</div>
+        <div class="muted">${fmtDate(h.date)} ${esc(h.time || "")} → ${fmtDate(h.checkOutDate)} ${esc(h.checkOutTime || "")} · ${nightsOf(h)} คืน${Array.isArray(h.passengers) && paxOf(h).length < ms.length ? ` · 👤 ${paxOf(h).map(esc).join(", ")}` : ""}</div>
       </li>`).join("")}</ul>` : ""}
     <div class="night-strip">${nights.map((d) => {
-      const h = hotelForNight(d);
-      const cls = !h.length ? "none" : h.length > 1 ? "dup" : "ok";
+      const h = uniqTitle(hotelForNight(d));
+      const cls = noneWho(d).length ? "none" : dupWho(d).length ? "dup" : "ok";
       return `<span class="night ${cls}" title="${esc(h.map((x) => x.title).join(", ") || "ยังไม่มีที่พัก")}">คืน${days.indexOf(d) + 1}<small>${fmtDate(d)}</small></span>`;
     }).join("")}</div>
-    ${missing.length ? `<p class="warn">⚠️ ยังไม่มีที่พัก ${missing.length} คืน: ${missing.map((d) => fmtDate(d)).join(", ")}</p>` : `<p class="ok-text">✓ มีที่พักครบทุกคืน</p>`}
-    ${overlap.length ? `<p class="warn">⚠️ จองซ้อนกัน: ${overlap.map((d) => fmtDate(d)).join(", ")}</p>` : ""}
+    ${missing.length ? `<p class="warn">⚠️ ยังไม่มีที่พัก ${missing.length} คืน: ${missing.map((d) => fmtDate(d) + who(noneWho(d))).join(", ")}</p>` : `<p class="ok-text">✓ มีที่พักครบทุกคืน ทุกคน</p>`}
+    ${overlap.length ? `<p class="warn">⚠️ จองซ้อนกัน: ${overlap.map((d) => fmtDate(d) + who(dupWho(d))).join(", ")} — ถ้าเป็นคนละห้อง ให้ติ๊กชื่อคนพักในแต่ละการจอง</p>` : ""}
   </div>`;
 }
 
 // แถบที่พักบนหัวแต่ละวันในแพลน
 function dayHotelHtml(d) {
-  const out = hotels().filter((h) => h.checkOutDate === d);
-  const tonight = hotelForNight(d);
+  const out = uniqTitle(myHotels().filter((h) => h.checkOutDate === d));
+  const tonight = uniqTitle(myHotelForNight(d));
   const isLastDay = d === tripDays().at(-1);
   const parts = [];
   out.forEach((h) => parts.push(`<div>🛫 เช็คเอาท์ <b>${esc(h.title)}</b>${h.checkOutTime ? ` ภายใน ${esc(h.checkOutTime)}` : ""}</div>`));
@@ -1947,6 +1960,7 @@ function syncBookForm() {
   const hotel = f.type.value === "ที่พัก";
   form.classList.toggle("is-hotel", hotel);
   form.classList.toggle("is-flight", f.type.value === "เที่ยวบิน");
+  form.classList.toggle("has-pax", f.type.value === "เที่ยวบิน" || hotel);
   f.title.placeholder = hotel ? "เช่น Hotel Gracery Namba" : "เช่น Thai AirAsia FD xxx DMK→KIX";
   const n = Math.max(0, daysBetween(f.checkInDate.value, f.checkOutDate.value).length - 1);
   $("#nights-preview").textContent = hotel && f.checkInDate.value && f.checkOutDate.value
@@ -2905,7 +2919,7 @@ function readinessChecks() {
   const me = getMe();
   const days = tripDays();
   const info = destInfo();
-  const missing = tripNights().filter((d) => !hotelForNight(d).length);
+  const missing = tripNights().filter((d) => !hotelForNightOf(d, me).length);
   const mine = myFlights(me);
   const out = mine.some((b) => b.date === trip.startDate);
   const ret = mine.some((b) => b.date === trip.endDate);
@@ -2966,7 +2980,7 @@ const telHref = (n) => {
 function hotelNow() {
   const t = todayISO();
   const d = tripDays().includes(t) ? t : trip.startDate;
-  return hotelForNight(d)[0] || hotels().find((h) => h.checkOutDate === d) || hotels()[0] || null;
+  return myHotelForNight(d)[0] || myHotels().find((h) => h.checkOutDate === d) || myHotels()[0] || hotels()[0] || null;
 }
 function consulateFor() {
   const list = destInfo().consulates || [];
@@ -3125,7 +3139,7 @@ function buildImmiPrintView() {
   const days = tripDays();
   const table = (head, rows, cls = "") => `<table class="${cls}"><thead><tr>${head.map((h) => `<th>${h}</th>`).join("")}</tr></thead><tbody>${rows.join("")}</tbody></table>`;
   const fl = myFlights(me);
-  const hs = hotels();
+  const hs = hotelsOf(me);
   const others = data.bookings.filter((b) => !isFlight(b) && !isHotel(b));
   const comp = members().filter((m) => m !== me);
   $("#print-view").innerHTML = `
@@ -3142,12 +3156,12 @@ function buildImmiPrintView() {
     <h2>Flights</h2>
     ${fl.length ? table(["Date", "Flight / Route", "Time", "Booking ref."], fl.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.time || "")}</td><td>${esc(refOf(b, me))}</td></tr>`), "c-flight") : "<p>—</p>"}
     <h2>Accommodation</h2>
-    ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${esc(h.address || placeQuery(h.place) || "")}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(h.ref || "")}</td></tr>`), "c-hotel") : "<p>—</p>"}
+    ${hs.length ? table(["Hotel", "Address", "Check-in", "Check-out", "Nights", "Booking ref."], hs.map((h) => `<tr><td>${esc(h.title)}</td><td>${esc(h.address || placeQuery(h.place) || "")}</td><td>${enDate(h.date, false)} ${esc(h.time || "")}</td><td>${enDate(h.checkOutDate, false)} ${esc(h.checkOutTime || "")}</td><td>${nightsOf(h)}</td><td>${esc(refOf(h, me))}</td></tr>`), "c-hotel") : "<p>—</p>"}
     ${others.length ? `<h2>Other reservations</h2>${table(["Date", "Details", "Booking ref."], others.map((b) => `<tr><td>${enDate(b.date)}</td><td>${esc(b.title)}</td><td>${esc(b.ref || "")}</td></tr>`), "c-other")}` : ""}
     <h2>Daily plan</h2>
     ${table(["Day", "Date", "Stay", "Plan"], days.map((d, i) => {
       const acts = sortItems(data.items.filter((x) => x.date === d && x.status !== "cancel")).map((x) => `${x.time ? esc(x.time) + " " : ""}${esc(x.activity)}`);
-      const stay = hotelForNight(d).map((h) => esc(h.title)).join(", ");
+      const stay = uniqTitle(hotelForNightOf(d, me)).map((h) => esc(h.title)).join(", ");
       return `<tr><td>${i + 1}</td><td>${enDate(d)}</td><td>${stay || (i === days.length - 1 ? "Return home" : "")}</td><td>${acts.join("<br>") || "Sightseeing"}</td></tr>`;
     }), "c-days")}
     <p class="p-foot">Prepared for immigration inspection · ${enDate(todayISO(), false)}</p>`;
@@ -3165,8 +3179,8 @@ function buildPrintView() {
     ${days.map((d, i) => {
       const list = sortItems(data.items.filter((x) => x.date === d && x.status !== "cancel"));
       const ph = [
-        ...hotels().filter((h) => h.checkOutDate === d).map((h) => `เช็คเอาท์ ${esc(h.title)} ${esc(h.checkOutTime || "")}`),
-        ...hotelForNight(d).map((h) => (h.date === d ? `เช็คอิน ${esc(h.title)} ${esc(h.time || "")}` : `พักที่ ${esc(h.title)}`)),
+        ...uniqTitle(hotels().filter((h) => h.checkOutDate === d)).map((h) => `เช็คเอาท์ ${esc(h.title)} ${esc(h.checkOutTime || "")}`),
+        ...uniqTitle(hotelForNight(d)).map((h) => (h.date === d ? `เช็คอิน ${esc(h.title)} ${esc(h.time || "")}` : `พักที่ ${esc(h.title)}`)),
       ];
       return `<div class="p-day"><h3>วันที่ ${i + 1} · ${fmtDate(d, "long")}</h3>${ph.length ? `<p class="p-hotel">${ph.join(" · ")}</p>` : ""}${list.length
         ? table(["เวลา", "กิจกรรม", "สถานที่", "เวลาเปิด–ปิด", "การเดินทางมาที่นี่", "หมายเหตุ"],
@@ -3809,11 +3823,11 @@ function onSubmit(e) {
         phone: hotel ? (f.phone || "").trim() : "",
         lat: null, lng: null, // ให้หาพิกัดใหม่เมื่อแก้ชื่อ/ที่อยู่
       };
-      if (f.type === "เที่ยวบิน") {
+      if (f.type === "เที่ยวบิน" || hotel) {
         rec.passengers = new FormData(form).getAll("pax");
         rec.refs = readPaxRefs();
         rec.ref = "";
-        if (!rec.passengers.length) { toast("ติ๊กอย่างน้อย 1 คนที่อยู่ในไฟลท์นี้"); return; }
+        if (!rec.passengers.length) { toast(hotel ? "ติ๊กอย่างน้อย 1 คนที่พักในการจองนี้" : "ติ๊กอย่างน้อย 1 คนที่อยู่ในไฟลท์นี้"); return; }
       }
       if (!rec.title) return;
       rec.links = readLinks(form);
