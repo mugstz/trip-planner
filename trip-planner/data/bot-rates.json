@@ -2,7 +2,7 @@
   "source": "ธนาคารแห่งประเทศไทย",
   "dataset": "อัตราแลกเปลี่ยนถัวเฉลี่ยของธนาคารพาณิชย์ในกรุงเทพมหานคร",
   "note": "ค่าเป็นบาทต่อ 1 หน่วยเงินต่างประเทศ (แปลงจากหน่วยที่ ธปท. ประกาศแล้ว)",
-  "fetchedAt": "2026-10-15T15:39:57.632Z",
+  "fetchedAt": "2026-10-16T15:25:15.754Z",
   "rates": {
     "JPY": {
       "period": "2026-10-15",
@@ -78,9 +78,9 @@
     }
   },
   "errors": {
-    "KRW": "ไม่มีข้อมูลในช่วง 2026-10-01 ถึง 2026-10-15: {\"result\":{\"timestamp\":\"2026-10-15 22:39:50\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "TWD": "ไม่มีข้อมูลในช่วง 2026-10-01 ถึง 2026-10-15: {\"result\":{\"timestamp\":\"2026-10-15 22:39:52\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "VND": "ไม่มีข้อมูลในช่วง 2026-10-01 ถึง 2026-10-15: {\"result\":{\"timestamp\":\"2026-10-15 22:39:55\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "LAK": "ไม่มีข้อมูลในช่วง 2026-10-01 ถึง 2026-10-15: {\"result\":{\"timestamp\":\"2026-10-15 22:39:55\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}"
+    "KRW": "ไม่มีข้อมูลในช่วง 2026-10-02 ถึง 2026-10-16: {\"result\":{\"timestamp\":\"2026-10-16 22:25:08\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "TWD": "ไม่มีข้อมูลในช่วง 2026-10-02 ถึง 2026-10-16: {\"result\":{\"timestamp\":\"2026-10-16 22:25:10\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "VND": "ไม่มีข้อมูลในช่วง 2026-10-02 ถึง 2026-10-16: {\"result\":{\"timestamp\":\"2026-10-16 22:25:12\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "LAK": "ไม่มีข้อมูลในช่วง 2026-10-02 ถึง 2026-10-16: {\"result\":{\"timestamp\":\"2026-10-16 22:25:13\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}"
   }
 }
