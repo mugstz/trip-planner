@@ -834,7 +834,7 @@ function renderTripSkeleton() {
         </div>
         <div class="actions">
           <button class="btn primary" id="book-submit">เพิ่ม</button>
-          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-book">ยกเลิก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-book">ปิด</button>
         </div>
       </form>`)}
     </section>
@@ -866,7 +866,7 @@ function renderTripSkeleton() {
         </div>
         <div class="actions">
           <button class="btn primary" id="expense-submit">เพิ่ม</button>
-          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-expense">ยกเลิก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-expense">ปิด</button>
         </div>
       </form>`)}
     </section>
@@ -902,7 +902,7 @@ function renderTripSkeleton() {
         </div>
         <div class="actions">
           <button class="btn primary">บันทึก</button>
-          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-shop">ยกเลิก</button>
+          <button class="btn" type="button" data-action="sheet-close" data-sheet="sheet-shop">ปิด</button>
         </div>
       </form>`)}
     </section>
@@ -963,6 +963,24 @@ function openSheet(id, focusSel) {
   document.body.classList.add("sheet-open");
   // คอมพิวเตอร์: โฟกัสช่องแรกให้พิมพ์ได้เลย / มือถือ: ไม่เด้งคีย์บอร์ดเอง
   if (focusSel && !coarse()) setTimeout(() => s.querySelector(focusSel)?.focus(), 30);
+  setTimeout(() => (s.dataset.sig = formSig(s)), 0); // จำค่าตอนเปิด → ไว้เช็กว่าแก้อะไรไปหรือยัง
+}
+// ค่าทุกช่องในฟอร์ม (รวมแถวที่เพิ่มเอง เช่น สายรถ ลิงก์ ตัวเลือก และรูปที่รอบันทึก)
+function formSig(s) {
+  const f = s?.querySelector("form");
+  if (!f) return "";
+  const v = [...f.querySelectorAll("input, select, textarea")].filter((e) => e.type !== "file").map((e) => (e.type === "checkbox" || e.type === "radio" ? e.checked : e.value));
+  return JSON.stringify([v, s.id === "sheet-item" ? pendingPhotos.length : 0]);
+}
+// ปิด pop-up: ถ้ามีอะไรที่ยังไม่ได้บันทึก → ถามก่อน
+async function requestCloseSheet(id) {
+  const s = document.getElementById(id);
+  const doClose = SHEET_CANCEL[id] || (() => closeSheet(id));
+  if (s && !s.hidden && s.dataset.sig !== undefined && formSig(s) !== s.dataset.sig) {
+    const ok = await confirmDialog({ title: "ปิดโดยไม่บันทึก?", message: "ข้อมูลที่กรอกหรือแก้ไขไว้จะหายไป", okText: "ปิดเลย", cancelText: "กลับไปแก้ต่อ", icon: "📝" });
+    if (!ok) return;
+  }
+  doClose();
 }
 function closeSheet(id) {
   const s = document.getElementById(id);
@@ -3741,7 +3759,7 @@ function onClick(e) {
   else if (action === "book-new") newBooking();
   else if (action === "expense-new") newExpense();
   else if (action === "edit-expense") startEditExpense(id);
-  else if (action === "sheet-close") (SHEET_CANCEL[b.dataset.sheet] || (() => closeSheet(b.dataset.sheet)))();
+  else if (action === "sheet-close") requestCloseSheet(b.dataset.sheet);
   else if (action === "item-cancel") {
     const x = data.items.find((i) => i.id === id);
     if (x) setItemStatus(id, x.status === "cancel" ? "" : "cancel");
@@ -3834,7 +3852,7 @@ function onClick(e) {
 }
 
 /* ---------- Pop-up ยืนยัน ---------- */
-function confirmDialog({ title, message, okText = "ลบ", requireText = "", icon = "🗑️" }) {
+function confirmDialog({ title, message, okText = "ลบ", cancelText = "ยกเลิก", requireText = "", icon = "🗑️" }) {
   return new Promise((resolve) => {
     const prevFocus = document.activeElement;
     const wrap = document.createElement("div");
@@ -3846,7 +3864,7 @@ function confirmDialog({ title, message, okText = "ลบ", requireText = "", ic
         <p id="m-msg">${message}</p>
         ${requireText ? `<label class="m-req">พิมพ์ <b>${esc(requireText)}</b> เพื่อยืนยัน<input id="m-input" autocomplete="off"></label>` : ""}
         <div class="m-actions">
-          <button type="button" class="btn" data-m="cancel">ยกเลิก</button>
+          <button type="button" class="btn" data-m="cancel">${esc(cancelText)}</button>
           <button type="button" class="btn danger-solid" data-m="ok" ${requireText ? "disabled" : ""}>${esc(okText)}</button>
         </div>
       </div>`;
@@ -4188,7 +4206,7 @@ async function init() {
   document.addEventListener("keydown", (e) => {
     if (e.key !== "Escape" || document.querySelector(".modal-backdrop")) return;
     const open = [...document.querySelectorAll(".sheet-backdrop:not([hidden])")].at(-1);
-    if (open) (SHEET_CANCEL[open.id] || (() => closeSheet(open.id)))();
+    if (open) requestCloseSheet(open.id);
   });
   window.addEventListener("hashchange", route);
   window.addEventListener("online", updateNet);

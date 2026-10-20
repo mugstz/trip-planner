@@ -1040,3 +1040,7 @@ body.pdf-mode { overflow: hidden; }
 .opt-more > summary { cursor: pointer; font-size: .82rem; color: var(--accent-ink); padding: 4px 2px; list-style: none; }
 .opt-more > summary::-webkit-details-marker { display: none; }
 .opt-more[open] > summary { margin-bottom: 6px; }
+/* ปุ่มใน pop-up: ปิด (ซ้าย) · ยกเลิกไม่ไปแล้ว · เพิ่ม/บันทึก (ขวา) */
+.sheet .actions [data-action="sheet-close"] { order: 1; }
+.sheet .actions .btn.danger { order: 2; margin-left: 0; }
+.sheet .actions .btn.primary { order: 3; margin-left: auto; }
