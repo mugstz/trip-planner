@@ -732,16 +732,7 @@ function renderTripSkeleton() {
           </fieldset>
           <label class="wide">ลิงก์กับการจอง<select name="bookingId"><option value="">— ไม่มี —</option></select></label>
           ${linksFieldHtml()}
-          <fieldset class="sub opt-field">
-            <legend>🔀 ตัวเลือกสถานที่ <small class="muted">(ยังไม่ตัดสินใจ — ใส่ไว้หลายที่ แล้วค่อยเลือก)</small></legend>
-            <div class="opt-tpl bag-only"><span class="muted">ตัวเลือกยอดนิยม:</span>
-              <button type="button" class="chip-btn" data-action="opt-tpl" data-t="hotel">🏨 ฝากที่โรงแรม</button>
-              <button type="button" class="chip-btn" data-action="opt-tpl" data-t="locker">🚉 ล็อกเกอร์สถานี</button>
-              <button type="button" class="chip-btn" data-action="opt-tpl" data-t="service">📦 บริการรับฝาก</button></div>
-            <div class="opts-box"></div>
-            <button type="button" class="btn small" data-action="opt-add">+ เพิ่มตัวเลือก</button>
-            <small class="muted">ติ๊ก ◉ ที่ตัวเลือกที่จะไป → ใช้เป็น “สถานที่” และ “ค่าใช้จ่าย” ของกิจกรรมนี้ (เลือก/เปลี่ยนทีหลังในหน้าแพลนได้)</small>
-          </fieldset>
+          ${optFieldHtml(true)}
           <fieldset class="sub photo-field">
             <legend>📷 รูปตัวอย่าง <small class="muted">(มุมถ่ายรูป ท่าโพส เมนู หน้าร้าน — สูงสุด ${MAX_PHOTOS} รูป)</small></legend>
             <div id="item-photos" class="ph-edit"></div>
@@ -782,6 +773,7 @@ function renderTripSkeleton() {
           <label class="wide">เมนูเด็ด / ต้องลอง<input name="mustTry" placeholder="เช่น ราเมนต้นตำรับ + ไข่ต้ม"></label>
           <label class="wide">ใช้เวลาเที่ยวที่นี่ประมาณ <small class="muted">(ไม่รวมเดินทาง)</small><input name="timeNeeded" placeholder="เช่น 1 ชม., 2–3 ชม., ครึ่งวัน"></label>
           <label class="wide">การเดินทาง / สถานีใกล้สุด<input name="access" placeholder="เช่น สถานีนัมบะ (สาย Midosuji) เดิน 5 นาที"></label>
+          ${optFieldHtml(false)}
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -1025,7 +1017,7 @@ function renderAll() { renderPlan(); renderWishlist(); renderSuggest(); renderBo
 function renderSection(s) {
   ({
     items: () => { renderPlan(); renderMoney(); renderBookings(); renderPrep(); renderWishlist(); renderSuggest(); },
-    wishlist: () => { renderWishlist(); renderSuggest(); },
+    wishlist: () => { renderWishlist(); renderSuggest(); renderPlan(); },
     bookings: () => { if (wxState === "done") { wxState = ""; } renderBookings(); renderPlan(); renderPrep(); renderSuggest(); renderWishlist(); },
     expenses: renderMoney,
     packing: renderPacking,
@@ -1572,7 +1564,7 @@ function startEdit(id) {
   // รายการเก่าที่มีแค่ช่อง "การเดินทาง" → แปลงเป็นสายแรกให้
   setLegs(legsOf(x).length ? legsOf(x) : x.transport ? [{ line: x.transport }] : []);
   setLinks(form, linksOf(x));
-  setOptions(form, optionsOf(x), x.optionPick);
+  { const h = optHost("items", x.id); setOptions(form, optionsOf(h?.doc), picksOf(h?.doc)); }
   pendingPhotos = [];
   renderItemSheetPhotos();
   $("#item-edited").innerHTML = x.editedBy ? `แก้ล่าสุดโดย <b>${esc(x.editedBy)}</b> · ${ago(x.editedAt)}` : "";
@@ -1595,7 +1587,7 @@ function stopEdit() {
   f.reset();
   setLegs([]);
   setLinks(f, []);
-  setOptions(f, [], "");
+  setOptions(f, [], []);
   f.classList.remove("is-bag");
   pendingPhotos = [];
   renderItemSheetPhotos();
@@ -1735,36 +1727,86 @@ function readLinks(form) {
   return out;
 }
 
-/* ---------- ตัวเลือกสถานที่ในกิจกรรม (เช่น ฝากกระเป๋าที่ไหนดี) ----------
-   item.options = [{ id, name, place, cost, costCurrency, hours, note }], item.optionPick = id ของที่เลือก */
+/* ---------- ตัวเลือก / ที่ย่อยที่จะแวะ (ใช้ได้ทั้งกิจกรรมในแพลนและ Wishlist) ----------
+   doc.options = [{ id, name, place, cost, costCurrency, hours, note }]
+   doc.optionPicks = [id…] (ติ๊กได้หลายที่) · doc.optionDone = [id…] (ไปแล้ว)
+   กิจกรรมที่มาจาก Wishlist ใช้ลิสต์ชุดเดียวกับ Wishlist (เก็บไว้ที่ Wishlist) → แก้ที่ไหนก็เห็นตรงกัน */
 const optionsOf = (x) => (Array.isArray(x?.options) ? x.options.filter((o) => o && (o.name || o.place)) : []);
-const optionPatch = (o) => ({ place: o.place || o.name || "", ...(num(o.cost) ? { cost: num(o.cost), costCurrency: o.costCurrency || tripCur() } : {}) });
+const picksOf = (x) => {
+  const ids = new Set(optionsOf(x).map((o) => o.id));
+  const arr = Array.isArray(x?.optionPicks) ? x.optionPicks : x?.optionPick ? [x.optionPick] : []; // รุ่นเก่าเลือกได้ที่เดียว
+  return arr.filter((id) => ids.has(id));
+};
+const doneOf = (x) => (Array.isArray(x?.optionDone) ? x.optionDone : []);
+const optName = (o) => o.name || placeLabel(o.place, "");
+// ลิสต์อยู่ที่ไหน: กิจกรรมจาก Wishlist → ที่ Wishlist
+function optHost(sub, id) {
+  if (sub === "wishlist") { const w = data.wishlist.find((v) => v.id === id); return w ? { sub: "wishlist", doc: w } : null; }
+  const x = data.items.find((i) => i.id === id);
+  if (!x) return null;
+  const w = x.wishId && data.wishlist.find((v) => v.id === x.wishId);
+  return w ? { sub: "wishlist", doc: w } : { sub: "items", doc: x };
+}
+// ติ๊กไว้ที่เดียว → ใช้เป็นสถานที่ของกิจกรรม · มีราคา → รวมเป็นค่าใช้จ่ายของกิจกรรม
+function itemPatchFromPicks(x, ops, picks) {
+  const sel = ops.filter((o) => picks.includes(o.id));
+  if (!sel.length) return {};
+  const patch = {};
+  if (sel.length === 1) patch.place = sel[0].place || sel[0].name || "";
+  const priced = sel.filter((o) => num(o.cost));
+  const cur = priced[0]?.costCurrency || tripCur();
+  if (priced.length && priced.every((o) => (o.costCurrency || tripCur()) === cur)) { patch.cost = priced.reduce((t, o) => t + num(o.cost), 0); patch.costCurrency = cur; }
+  if (patch.place !== undefined) {
+    if ((x.place || "") === patch.place) delete patch.place;
+    else { const c = coordsFromLink(patch.place); Object.assign(patch, { lat: c?.lat ?? null, lng: c?.lng ?? null, geoFail: false }); if (x.id) geoTried.delete(x.id); }
+  }
+  return patch;
+}
+function applyPicksToItems(host, ops, picks, skipId = "") {
+  if (!picks.length) return;
+  const items = host.sub === "wishlist" ? data.items.filter((i) => i.wishId === host.doc.id) : [host.doc];
+  items.filter((x) => x.id !== skipId).forEach((x) => {
+    const p = itemPatchFromPicks(x, ops, picks);
+    if (Object.keys(p).length) store.update(trip.id, "items", x.id, stamp(p));
+  });
+}
 const optRowHtml = (o = {}) => `
   <div class="opt-row" data-oid="${esc(o.id || newId())}">
-    <label class="opt-pick-in" title="เลือกอันนี้"><input type="radio" name="optPick" ${o.picked ? "checked" : ""}><span></span></label>
+    <label class="opt-pick-in" title="จะแวะที่นี่"><input type="checkbox" name="optPick" ${o.picked ? "checked" : ""}><span></span></label>
     <div class="opt-fields">
-      <input data-k="name" placeholder="ชื่อ เช่น Coin locker สถานีนัมบะ" value="${esc(o.name)}">
+      <input data-k="name" placeholder="ชื่อ เช่น ร้านปูยักษ์ Kani Doraku" value="${esc(o.name)}">
       <input data-k="place" placeholder="สถานที่ / ลิงก์ Google Maps (ไม่บังคับ)" value="${esc(o.place)}">
-      <div class="opt-2"><input data-k="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="ราคา (${esc(tripCur())})" value="${num(o.cost) || ""}"><input data-k="hours" placeholder="เวลาเปิด เช่น 06:00–24:00" value="${esc(o.hours)}"></div>
-      <input data-k="note" placeholder="หมายเหตุ เช่น ตู้ใหญ่เต็มไว ต้องจองก่อน" value="${esc(o.note)}">
+      <div class="opt-2"><input data-k="cost" type="number" min="0" step="any" inputmode="decimal" placeholder="ราคา (${esc(tripCur())})" value="${num(o.cost) || ""}"><input data-k="hours" placeholder="เวลาเปิด เช่น 10:00–22:00" value="${esc(o.hours)}"></div>
+      <input data-k="note" placeholder="หมายเหตุ เช่น ต้องลองเมนูนี้ / คิวยาวช่วงเย็น" value="${esc(o.note)}">
     </div>
-    <button type="button" class="icon" data-action="opt-del" title="ลบตัวเลือกนี้">✕</button>
+    <button type="button" class="icon" data-action="opt-del" title="ลบรายการนี้">✕</button>
   </div>`;
-function setOptions(form, list = [], pick = "") {
+const optFieldHtml = (bag) => `
+  <fieldset class="sub opt-field">
+    <legend>🔀 ตัวเลือก / ที่ย่อยที่จะแวะ <small class="muted">(ใส่ไว้หลายที่ แล้วติ๊กที่จะไป — ติ๊กได้หลายที่)</small></legend>
+    ${bag ? `<div class="opt-tpl bag-only"><span class="muted">ตัวเลือกยอดนิยม:</span>
+      <button type="button" class="chip-btn" data-action="opt-tpl" data-t="hotel">🏨 ฝากที่โรงแรม</button>
+      <button type="button" class="chip-btn" data-action="opt-tpl" data-t="locker">🚉 ล็อกเกอร์สถานี</button>
+      <button type="button" class="chip-btn" data-action="opt-tpl" data-t="service">📦 บริการรับฝาก</button></div>` : ""}
+    <div class="opts-box"></div>
+    <button type="button" class="btn small" data-action="opt-add">+ เพิ่มตัวเลือก / ที่ย่อย</button>
+    <small class="muted">${bag ? "ติ๊ก ☑ ที่จะไป (ติ๊กที่เดียว = ใช้เป็นสถานที่ของกิจกรรมนี้ · มีราคา = รวมเป็นค่าใช้จ่าย) — ติ๊ก/เปลี่ยนทีหลังในหน้าแพลนได้" : "ติ๊ก ☑ ที่อยากแวะ — ตอนใส่ลงแพลน ลิสต์นี้จะติดไปด้วย และติ๊ก “ไปแล้ว” ได้ตอนอยู่ที่นั่น"}</small>
+  </fieldset>`;
+function setOptions(form, list = [], picks = []) {
   const box = form?.querySelector(".opts-box");
-  if (box) box.innerHTML = list.map((o) => optRowHtml({ ...o, picked: o.id === pick })).join("");
+  if (box) box.innerHTML = list.map((o) => optRowHtml({ ...o, picked: picks.includes(o.id) })).join("");
 }
 function readOptions(form) {
-  let pick = "";
+  const picks = [];
   const list = [...form.querySelectorAll(".opts-box .opt-row")].map((row) => {
     const o = { id: row.dataset.oid };
     row.querySelectorAll("[data-k]").forEach((i) => (o[i.dataset.k] = i.value.trim()));
     o.cost = num(o.cost);
     o.costCurrency = tripCur();
-    if (row.querySelector("[name=optPick]").checked) pick = o.id;
+    if (row.querySelector("[name=optPick]").checked) picks.push(o.id);
     return o;
   }).filter((o) => o.name || o.place);
-  return { list, pick: list.some((o) => o.id === pick) ? pick : "" };
+  return { list, picks: picks.filter((id) => list.some((o) => o.id === id)) };
 }
 // ตัวเลือกสำเร็จรูปสำหรับ "ฝากกระเป๋า"
 function optTemplate(t) {
@@ -1775,37 +1817,54 @@ function optTemplate(t) {
   if (t === "locker") return { name: "ตู้ล็อกเกอร์ที่สถานี", note: "ตู้ไซซ์ใหญ่มักเต็มเร็วช่วงสาย — ถ้ากระเป๋าใหญ่ไปให้เช้า หรือเตรียมที่สำรอง" };
   return { name: "บริการรับฝากกระเป๋า (จองออนไลน์)", note: "เช่น ร้าน/จุดรับฝากที่จองผ่านแอปล่วงหน้า — ดูราคาและเวลาเปิดในแอปก่อนจอง" };
 }
-// ในแถวแพลน: รายการตัวเลือก แตะเพื่อเลือก
-const optOpen = new Set(); // กิจกรรมที่กางรายการตัวเลือกไว้ (จำไว้ตอนวาดใหม่)
-function optionsRowHtml(x) {
-  const ops = optionsOf(x);
+const optOpen = new Set(); // ลิสต์ที่กางไว้ (จำไว้ตอนวาดใหม่)
+// ลิสต์ในหน้าแพลน / การ์ด Wishlist: หุบไว้ แตะหัวเพื่อกาง · แตะรายการ = ติ๊กจะแวะ · ไปแล้ว = ติ๊กตอนอยู่ที่นั่น
+function optionsListHtml(sub, id) {
+  const h = optHost(sub, id);
+  const ops = h ? optionsOf(h.doc) : [];
   if (!ops.length) return "";
-  const pick = ops.find((o) => o.id === x.optionPick);
+  const picks = picksOf(h.doc), done = doneOf(h.doc);
+  const key = `${sub}:${id}`;
+  const sel = ops.filter((o) => picks.includes(o.id));
+  const nd = sel.filter((o) => done.includes(o.id)).length;
   const meta = (o) => [num(o.cost) ? `💰 ${fmtWithTHB(o.cost, o.costCurrency || tripCur())}` : "", o.hours ? `🕘 ${esc(o.hours)}` : ""].filter(Boolean).join(" · ");
-  const item = (o) => `
-      <div class="opt-item ${o.id === x.optionPick ? "is-pick" : ""}">
-        <button type="button" class="opt-btn" data-action="opt-pick" data-id="${esc(x.id)}" data-oid="${esc(o.id)}" aria-pressed="${o.id === x.optionPick}">
+  const item = (o) => {
+    const on = picks.includes(o.id), ok = on && done.includes(o.id);
+    return `
+      <div class="opt-item ${on ? "is-pick" : ""} ${ok ? "is-done" : ""}">
+        <button type="button" class="opt-btn" data-action="opt-pick" data-sub="${sub}" data-id="${esc(id)}" data-oid="${esc(o.id)}" aria-pressed="${on}">
           <span class="opt-dot" aria-hidden="true"></span>
-          <span class="opt-txt"><b>${esc(o.name || placeLabel(o.place, ""))}</b>${meta(o) ? `<small>${meta(o)}</small>` : ""}${o.note ? `<small class="opt-note">${esc(o.note)}</small>` : ""}</span>
+          <span class="opt-txt"><b>${esc(optName(o))}</b>${meta(o) ? `<small>${meta(o)}</small>` : ""}${o.note ? `<small class="opt-note">${esc(o.note)}</small>` : ""}</span>
         </button>
+        ${on ? `<button type="button" class="opt-done" data-action="opt-done" data-sub="${sub}" data-id="${esc(id)}" data-oid="${esc(o.id)}" aria-pressed="${ok}">${ok ? "✓ ไปแล้ว" : "ไปแล้ว?"}</button>` : ""}
         ${o.place || o.name ? `<a class="opt-map" href="${esc(mapUrl(o.place || o.name))}" target="_blank" rel="noopener" aria-label="เปิดแผนที่">📍</a>` : ""}
       </div>`;
-  if (pick) {
-    const rest = ops.filter((o) => o !== pick);
-    return `<div class="opt-list has-pick">${item(pick)}${rest.length ? `<details class="opt-more" data-opt="${esc(x.id)}" ${optOpen.has(x.id) ? "open" : ""}><summary>🔀 เปลี่ยนตัวเลือก (อีก ${rest.length})</summary>${rest.map(item).join("")}</details>` : ""}</div>`;
-  }
-  // ยังไม่เลือก: หุบไว้ก่อน (ไม่กินพื้นที่) แตะหัวเพื่อดูตัวเลือก
-  return `<details class="opt-list opt-fold" data-opt="${esc(x.id)}" ${optOpen.has(x.id) ? "open" : ""}><summary class="opt-head">🔀 <b>ยังไม่ได้เลือก</b> · ${ops.length} ตัวเลือก<span class="opt-chev" aria-hidden="true"></span></summary>${ops.map(item).join("")}</details>`;
+  };
+  const summary = sel.length
+    ? `<span class="opt-sum">📍 <b>แวะ ${sel.length} ที่</b><span class="opt-names">: ${sel.map((o) => esc(optName(o))).join(", ")}</span></span>${nd ? `<span class="opt-badge">✓ ${nd}/${sel.length}</span>` : ""}`
+    : `<span class="opt-sum">🔀 <b>ยังไม่ได้เลือก</b> · ${ops.length} ตัวเลือก</span>`;
+  return `<details class="opt-list opt-fold ${sel.length ? "has-pick" : ""}" data-opt="${esc(key)}" ${optOpen.has(key) ? "open" : ""}><summary class="opt-head">${summary}<span class="opt-chev" aria-hidden="true"></span></summary>${ops.map(item).join("")}</details>`;
 }
-function pickOption(itemId, oid) {
-  const x = data.items.find((i) => i.id === itemId);
-  const o = optionsOf(x).find((v) => v.id === oid);
-  if (!x || !o) return;
-  if (x.optionPick === oid) { store.update(trip.id, "items", itemId, stamp({ optionPick: "" })); toast("ยกเลิกการเลือกแล้ว"); return; }
-  const patch = { optionPick: oid, ...optionPatch(o) };
-  if ((x.place || "") !== patch.place) { const c = coordsFromLink(patch.place); Object.assign(patch, { lat: c?.lat ?? null, lng: c?.lng ?? null, geoFail: false }); geoTried.delete(itemId); }
-  store.update(trip.id, "items", itemId, stamp(patch));
-  toast(`เลือก “${o.name || o.place}” แล้ว`);
+const optionsRowHtml = (x) => optionsListHtml("items", x.id);
+function togglePick(sub, id, oid) {
+  const h = optHost(sub, id);
+  if (!h) return;
+  const ops = optionsOf(h.doc);
+  const o = ops.find((v) => v.id === oid);
+  if (!o) return;
+  const was = picksOf(h.doc);
+  const on = !was.includes(oid);
+  const picks = on ? [...was, oid] : was.filter((v) => v !== oid);
+  store.update(trip.id, h.sub, h.doc.id, stamp({ optionPicks: picks, optionPick: "", optionDone: doneOf(h.doc).filter((v) => picks.includes(v)) }));
+  applyPicksToItems(h, ops, picks);
+  toast(on ? `ติ๊ก “${optName(o)}” แล้ว` : `เอา “${optName(o)}” ออกแล้ว`);
+}
+function toggleOptDone(sub, id, oid) {
+  const h = optHost(sub, id);
+  if (!h) return;
+  const done = doneOf(h.doc);
+  const on = !done.includes(oid);
+  store.update(trip.id, h.sub, h.doc.id, stamp({ optionDone: on ? [...done, oid] : done.filter((v) => v !== oid) }));
 }
 
 /* ---------- รูปตัวอย่างในแพลน (ย่อรูปในเครื่อง → เก็บใน Firestore ฟรี) ----------
@@ -2065,6 +2124,7 @@ function renderWishlist() {
         ${w.source ? `<div class="wish-line muted">👤 ${esc(w.source)}</div>` : ""}
         ${w.timeNeeded ? `<div class="wish-line">${timeHtml(w.timeNeeded)}</div>` : ""}
         ${w.state === "cancel" ? "" : (() => { const c = wishCoords(w); if (!c) queueWishGeocode(w); return travelBoxHtml({ coords: c, query: placeQuery(w.place) || w.name, access: w.access, label: w.name, pending: !c && (geoBusy || geoQueue.some((x) => x.rec.id === w.id)) }); })()}
+        ${optionsListHtml("wishlist", w.id)}
         ${w.note ? `<div class="note">${esc(w.note)}</div>` : ""}
         <div class="wish-actions">
         ${w.state === "done" || w.state === "cancel" ? "" : picking
@@ -2094,6 +2154,7 @@ function wishToPlan(id) {
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
     transport: "", cost: 0, costCurrency: tripCur(), note, wishId: w.id, createdAt: Date.now(),
     ...(c ? { lat: c.lat, lng: c.lng } : {}),
+    ...(() => { const p = itemPatchFromPicks({ place: w.place || w.name }, optionsOf(w), picksOf(w)); delete p.geoFail; return p; })(),
   }));
   store.update(trip.id, "wishlist", id, { plannedDate: sel.value, planLinked: true });
   planOpenId = null;
@@ -2110,6 +2171,7 @@ function openWishForm(w) {
     const pr = String(num(w.priority) || 2);
     form.querySelectorAll("[name=priority]").forEach((r) => (r.checked = r.value === pr));
   }
+  setOptions(form, w ? optionsOf(w) : [], w ? picksOf(w) : []);
   $("#wish-form-title").textContent = w ? "แก้ไขที่อยากไป" : "เพิ่มที่อยากไป";
   const db = $("#wish-drop-btn");
   db.hidden = !w;
@@ -2119,7 +2181,7 @@ function openWishForm(w) {
 
 function closeWishForm() {
   const form = $("#wish-form");
-  if (form) form.reset();
+  if (form) { form.reset(); setOptions(form, [], []); }
   editingWishId = null;
   closeSheet("sheet-wish");
 }
@@ -3796,7 +3858,8 @@ function onClick(e) {
       });
     }
   }
-  else if (action === "opt-pick") pickOption(id, b.dataset.oid);
+  else if (action === "opt-pick") togglePick(b.dataset.sub || "items", id, b.dataset.oid);
+  else if (action === "opt-done") toggleOptDone(b.dataset.sub || "items", id, b.dataset.oid);
   else if (action === "opt-add" || action === "opt-tpl") {
     const box = b.closest("form")?.querySelector(".opts-box");
     if (box) {
@@ -4079,10 +4142,21 @@ function onSubmit(e) {
       rec.links = readLinks(form);
       if (!rec.links) { toast("ลิงก์ตั๋วต้องขึ้นต้นด้วย https://"); return; }
       const op = readOptions(form);
-      rec.options = op.list;
-      rec.optionPick = op.pick;
-      const pk = op.list.find((o) => o.id === op.pick);
-      if (pk) Object.assign(rec, optionPatch(pk));
+      const old0 = editingItemId && data.items.find((i) => i.id === editingItemId);
+      const host = old0 && optHost("items", old0.id);
+      if (host?.sub === "wishlist") {
+        // ลิสต์ของกิจกรรมจาก Wishlist เก็บที่ Wishlist (เห็นตรงกันทั้งสองหน้า)
+        store.update(trip.id, "wishlist", host.doc.id, stamp({ options: op.list, optionPicks: op.picks, optionPick: "", optionDone: doneOf(host.doc).filter((v) => op.picks.includes(v)) }));
+        applyPicksToItems(host, op.list, op.picks, editingItemId);
+      } else {
+        rec.options = op.list;
+        rec.optionPicks = op.picks;
+        rec.optionPick = "";
+        rec.optionDone = doneOf(old0).filter((v) => op.picks.includes(v));
+      }
+      const pp = itemPatchFromPicks({ place: rec.place }, op.list, op.picks);
+      delete pp.lat; delete pp.lng; delete pp.geoFail;
+      Object.assign(rec, pp);
       const c = coordsFromLink(rec.place);
       if (editingItemId) {
         const old = data.items.find((i) => i.id === editingItemId);
@@ -4108,13 +4182,17 @@ function onSubmit(e) {
         mustTry: f.mustTry.trim(), timeNeeded: f.timeNeeded.trim(), access: f.access.trim(),
       };
       if (!rec.name) return;
+      const op = readOptions(form);
       const old = editingWishId && data.wishlist.find((w) => w.id === editingWishId);
+      Object.assign(rec, { options: op.list, optionPicks: op.picks, optionPick: "", optionDone: doneOf(old).filter((v) => op.picks.includes(v)) });
+      if (old) applyPicksToItems({ sub: "wishlist", doc: old }, op.list, op.picks);
+      const wasEdit = !!editingWishId;
       if (old && (old.place || "") !== rec.place) { rec.lat = null; rec.lng = null; geoTried.delete(old.id); } // เปลี่ยนสถานที่ → หาพิกัดใหม่
       if (editingWishId) store.update(trip.id, "wishlist", editingWishId, stamp(rec));
       else store.add(trip.id, "wishlist", stamp({ ...rec, plannedDate: "", planLinked: true, createdAt: now }));
       wishFilter = "all";
       closeWishForm();
-      toast(editingWishId ? "บันทึกแล้ว" : `เพิ่ม “${rec.name}” แล้ว — ยังไม่ได้ใส่ในแพลน`);
+      toast(wasEdit ? "บันทึกแล้ว" : `เพิ่ม “${rec.name}” แล้ว — ยังไม่ได้ใส่ในแพลน`);
       return;
     }
     case "book-form": {

@@ -1056,3 +1056,18 @@ body.pdf-mode { overflow: hidden; }
 .opt-fold[open] .opt-chev { transform: rotate(-135deg); margin-top: 4px; }
 .opt-list:not(.opt-fold) { margin-bottom: 8px; }
 .opt-fold { display: block; margin: 0 0 8px; }
+/* ตัวเลือก/ที่ย่อย: ติ๊กได้หลายที่ (ช่องสี่เหลี่ยม) + ไปแล้ว */
+.opt-pick-in span, .opt-dot { border-radius: 6px; position: relative; }
+.opt-pick-in input:checked + span, .opt-item.is-pick .opt-dot { border-width: 2px; border-color: var(--accent-ink); background: var(--accent-ink); }
+.opt-pick-in input:checked + span::after, .opt-item.is-pick .opt-dot::after { content: ""; position: absolute; left: 6px; top: 2px; width: 5px; height: 10px; border: solid #fff; border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.opt-list.has-pick .opt-item:not(.is-pick) .opt-btn { opacity: .75; }
+.opt-fold.has-pick { border-style: solid; border-color: var(--line); background: transparent; }
+.opt-head { min-width: 0; }
+.opt-sum { min-width: 0; flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.opt-names { color: var(--muted); font-weight: 400; }
+.opt-badge { flex: none; font-size: .75rem; font-weight: 700; color: var(--ok, #2e8b57); background: rgba(46,139,87,.12); border-radius: 999px; padding: 1px 8px; }
+.opt-chev { margin-left: 6px; }
+.opt-done { flex: none; align-self: stretch; min-width: 64px; padding: 0 8px; border: 1px dashed var(--accent); border-radius: 10px; background: var(--card); color: var(--accent-ink); font: inherit; font-size: .78rem; cursor: pointer; white-space: nowrap; }
+.opt-done[aria-pressed="true"] { border-style: solid; border-color: var(--ok, #2e8b57); color: var(--ok, #2e8b57); background: rgba(46,139,87,.1); font-weight: 700; }
+.opt-item.is-done .opt-txt b { text-decoration: line-through; text-decoration-color: rgba(46,139,87,.6); }
+.wish-card .opt-fold { margin: 8px 0; }
