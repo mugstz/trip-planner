@@ -758,6 +758,7 @@ details.card > summary { cursor: pointer; font-weight: 600; }
   --k-kpop: #E2F5EA; --k-kpop-i: #2e8b57;
   --k-hotel: #EEE9F7; --k-hotel-i: #6E5486;
   --k-move: #E6F2F4; --k-move-i: #2f6f7a;
+  --k-bag: #FFF1DC; --k-bag-i: #8a5a12;
   --k-other: #F1F1F1; --k-other-i: #666;
 }
 /* แถวกิจกรรม: ไอคอนประเภท + ติ๊กไปแล้วใต้เวลา */
@@ -880,7 +881,7 @@ details.card > summary { cursor: pointer; font-weight: 600; }
     --ok: #5FC48A; --neg: #FF7A6E;
     --ok-bg: #1F3528; --ok-bg2: #1E2A23; --neg-bg: #3E2222; --neg-bg2: #2E2020; --warn-bg: #3A2D1B; --yellow-bg: #3A3418; --gray-bg: #333; --blue-bg: #1F2A3A;
     --warn-ink: #F2B266; --yellow-ink: #E6CD6A; --glass: rgba(38, 32, 34, .96);
-    --k-sight: #233247; --k-food: #3D2B1C; --k-cafe: #36291F; --k-shop: #402630; --k-kpop: #1F3A2B; --k-hotel: #2E2740; --k-move: #1E3337; --k-other: #333;
+    --k-sight: #233247; --k-food: #3D2B1C; --k-cafe: #36291F; --k-shop: #402630; --k-kpop: #1F3A2B; --k-hotel: #2E2740; --k-move: #1E3337; --k-bag: #3A2E1A; --k-other: #333;
   }
   body { background: var(--bg); color: var(--text); }
   input, select, textarea { background: var(--card); color: var(--text); border-color: var(--line); color-scheme: dark; }
@@ -1002,3 +1003,40 @@ body.pdf-mode { overflow: hidden; }
 .pv-nav[hidden] { display: none; }
 .toast { z-index: 3000; }
 .row .time small.prev-tag span { display: block; white-space: nowrap; font-size: .72rem; }
+
+/* ---------- ตัวเลือกสถานที่ (เช่น ฝากกระเป๋าที่ไหน) ---------- */
+.kind-ic.k-bag, .pin.k-bag { background: var(--k-bag); }
+.form:not(.is-bag) .bag-only { display: none !important; }
+.opt-tpl { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; font-size: .85rem; }
+.opts-box { display: flex; flex-direction: column; gap: 10px; }
+.opts-box:empty { display: none; }
+.opt-row { display: grid; grid-template-columns: auto 1fr auto; gap: 8px; align-items: start; padding: 10px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.opt-fields { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.opt-2 { display: grid; grid-template-columns: 1fr 1.3fr; gap: 6px; }
+.opt-pick-in { position: relative; margin-top: 8px; cursor: pointer; }
+.opt-pick-in input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
+.opt-pick-in span, .opt-dot { display: block; width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--accent); background: var(--card); box-sizing: border-box; flex: none; }
+.opt-pick-in input:checked + span, .opt-item.is-pick .opt-dot { border-width: 7px; border-color: var(--accent-ink); }
+.opt-list { margin: 8px 0 4px; border: 1px dashed var(--accent); border-radius: 12px; padding: 8px; background: var(--accent-soft); }
+.opt-list.has-pick { border-style: solid; border-color: var(--line); background: transparent; }
+.opt-head { font-size: .82rem; margin: 0 2px 6px; color: var(--accent-ink); }
+.opt-item { display: flex; align-items: stretch; gap: 6px; }
+.opt-item + .opt-item { margin-top: 6px; }
+.opt-btn { flex: 1; min-width: 0; display: flex; gap: 10px; align-items: flex-start; text-align: left; padding: 8px 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); color: var(--text); font: inherit; cursor: pointer; }
+.opt-item.is-pick .opt-btn { border-color: var(--accent-ink); box-shadow: 0 0 0 1px var(--accent-ink) inset; }
+.opt-list.has-pick .opt-item:not(.is-pick) .opt-btn { opacity: .6; }
+.opt-txt { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.opt-txt b { font-size: .9rem; font-weight: 600; overflow-wrap: anywhere; }
+.opt-txt small { color: var(--muted); font-size: .78rem; }
+.opt-note { font-style: normal; }
+.opt-map { flex: none; display: grid; place-items: center; width: 38px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); text-decoration: none; }
+.opt-list { margin: 0 0 8px; }
+.opt-list.has-pick { border: none; padding: 0; }
+.opt-item { align-items: flex-start; }
+.opt-map { align-self: stretch; height: auto; min-height: 40px; }
+.opt-txt b, .opt-txt small { overflow-wrap: break-word; word-break: normal; }
+.opt-note { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.opt-more { margin-top: 6px; }
+.opt-more > summary { cursor: pointer; font-size: .82rem; color: var(--accent-ink); padding: 4px 2px; list-style: none; }
+.opt-more > summary::-webkit-details-marker { display: none; }
+.opt-more[open] > summary { margin-bottom: 6px; }
