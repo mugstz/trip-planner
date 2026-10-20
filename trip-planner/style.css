@@ -1001,3 +1001,4 @@ body.pdf-mode { overflow: hidden; }
 .pv-nav.prev { left: 8px; } .pv-nav.next { right: 8px; }
 .pv-nav[hidden] { display: none; }
 .toast { z-index: 3000; }
+.row .time small.prev-tag span { display: block; white-space: nowrap; font-size: .72rem; }

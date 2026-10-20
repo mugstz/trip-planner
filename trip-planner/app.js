@@ -55,6 +55,8 @@ const DATE_FMT = {
   long: { weekday: "long", day: "numeric", month: "long", year: "numeric" },
   weekday: { weekday: "short", day: "numeric", month: "short" },
 };
+// วันก่อนหน้า (YYYY-MM-DD) — ใช้กับกิจกรรม "คืนก่อนหน้า"
+const prevDay = (iso) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const fmtDate = (iso, mode = "short") =>
   iso ? new Date(iso + "T00:00:00").toLocaleDateString("th-TH", DATE_FMT[mode]) : "";
 
@@ -1412,7 +1414,7 @@ function itemHtml(x) {
   return `
     <li class="row item-row st-${st || "none"}" id="item-${esc(x.id)}" data-id="${esc(x.id)}">
       <button type="button" class="drag-handle" aria-label="ลากเพื่อสลับลำดับ" title="ลากเพื่อสลับลำดับ">⋮⋮</button>
-      <div class="time">${esc(x.time) || "—"}${x.prevNight && x.time ? `<small class="prev-tag">คืนก่อน</small>` : ""}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}
+      <div class="time">${esc(x.time) || "—"}${x.prevNight && x.time ? `<small class="prev-tag" title="เป็นเวลาของคืนวันที่ ${fmtDate(prevDay(x.date))}">คืน<span>${fmtDate(prevDay(x.date))}</span></small>` : ""}${num(x.stay) ? `<small>${fmtDur(num(x.stay))}</small>` : ""}
         ${st === "cancel" ? "" : `<label class="done-tick" title="ไปแล้ว"><input type="checkbox" data-action="item-done" data-id="${esc(x.id)}" ${st === "done" ? "checked" : ""} aria-label="ไปแล้ว"><span></span></label>`}</div>
       <div class="kind-ic k-${kindOf(x)}" aria-hidden="true">${kindIcon(kindOf(x))}</div>
       <div class="body">
@@ -3356,7 +3358,7 @@ function buildPrintView() {
                 : esc(x.transport);
               const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
               const warns = hoursWarnings(x);
-              return `<tr><td>${esc(x.time) || "-"}${x.prevNight && x.time ? "<br><small>(คืนก่อน)</small>" : ""}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
+              return `<tr><td>${esc(x.time) || "-"}${x.prevNight && x.time ? `<br><small>(คืน ${fmtDate(prevDay(x.date))})</small>` : ""}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
                 <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${refsText(bk) ? ` (${esc(refsText(bk))})` : ""}` : ""}</td>
                 <td>${esc(placeLabel(x.place, x.activity))}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
                 <td>${esc(x.note)}</td></tr>`;
