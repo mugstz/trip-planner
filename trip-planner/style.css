@@ -973,3 +973,31 @@ body.pdf-mode { overflow: hidden; }
 .form:not(.has-pax) .pax-only { display: none !important; }
 .form.has-pax .no-pax { display: none !important; }
 .pax-only legend small { font-weight: 400; }
+
+/* ---------- รูปตัวอย่างในแพลน ---------- */
+.ph-strip { display: flex; gap: 6px; margin: 0 0 6px; }
+.ph-th { position: relative; flex: 0 0 auto; width: 58px; height: 58px; padding: 0; border: none; border-radius: 10px; overflow: hidden; background: var(--line); cursor: zoom-in; }
+.ph-th img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ph-more { position: absolute; inset: 0; display: grid; place-items: center; background: rgba(0,0,0,.45); color: #fff; font-weight: 700; font-size: .95rem; }
+.row-tix .ph-strip:last-child { margin-bottom: 0; }
+.ph-edit { display: grid; grid-template-columns: repeat(auto-fill, minmax(76px, 1fr)); gap: 8px; }
+.ph-edit:empty { display: none; }
+.ph-cell { position: relative; aspect-ratio: 1; border-radius: 10px; overflow: hidden; background: var(--line); }
+.ph-cell img { width: 100%; height: 100%; object-fit: cover; display: block; cursor: zoom-in; }
+.ph-cell.is-pending img { opacity: .85; cursor: default; }
+.ph-x { position: absolute; top: 4px; right: 4px; width: 26px; height: 26px; min-height: 0; padding: 0; border: none; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; font-size: .8rem; line-height: 26px; cursor: pointer; }
+.ph-add { align-self: flex-start; cursor: pointer; }
+.ph-add[hidden] { display: none; }
+.ph-view { position: fixed; inset: 0; z-index: 2000; background: #0d0b0c; color: #fff; display: flex; flex-direction: column; touch-action: pan-y; }
+.pv-top { display: flex; align-items: center; gap: 8px; padding: calc(10px + env(safe-area-inset-top)) 12px 10px; }
+.pv-title { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.pv-title b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pv-title small { opacity: .7; font-size: .8rem; }
+.pv-btn { width: 40px; height: 40px; min-height: 0; padding: 0; border: none; border-radius: 50%; background: rgba(255,255,255,.12); color: #fff; font-size: 1.05rem; cursor: pointer; }
+.pv-stage { position: relative; flex: 1; min-height: 0; display: grid; place-items: center; padding: 0 0 calc(12px + env(safe-area-inset-bottom)); }
+.pv-stage img { max-width: 100%; max-height: 100%; object-fit: contain; display: block; }
+.pv-load { position: absolute; bottom: calc(18px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%); background: rgba(0,0,0,.6); padding: 4px 12px; border-radius: 999px; font-size: .8rem; }
+.pv-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; min-height: 0; padding: 0; border: none; border-radius: 50%; background: rgba(255,255,255,.14); color: #fff; font-size: 1.6rem; line-height: 1; cursor: pointer; }
+.pv-nav.prev { left: 8px; } .pv-nav.next { right: 8px; }
+.pv-nav[hidden] { display: none; }
+.toast { z-index: 3000; }

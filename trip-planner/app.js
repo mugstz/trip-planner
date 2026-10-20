@@ -4,7 +4,9 @@ import { FIREBASE_CONFIG } from "./firebase-config.js";
    ค่าตั้งต้น
    ============================================================ */
 const SDK = "https://www.gstatic.com/firebasejs/10.12.2";
-const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist", "prep", "shopping"];
+const SUBS = ["items", "wishlist", "bookings", "expenses", "packing", "checklist", "prep", "shopping", "photoThumbs"];
+// รูปขนาดเต็ม: ไม่ฟังสด (โหลดทีละรูปตอนเปิดดู ประหยัดเน็ตและโควตา Firebase) แต่รวมในสำรองข้อมูล/ลบทริป
+const ALL_SUBS = [...SUBS, "photoFull"];
 // [key, ชื่อเต็ม, ไอคอน, ชื่อสั้น (แถบล่างในมือถือ)]
 const TABS = [
   ["plan", "แพลน", "🗓️", "แพลน"], ["wishlist", "Wishlist", "⭐", "Wishlist"], ["bookings", "การจอง", "🎫", "การจอง"],
@@ -159,9 +161,10 @@ async function firebaseStore(cfg) {
     listen: (t, s, cb) => fs.onSnapshot(sub(t, s), (snap) => cb(list(snap)), onErr),
     add: (t, s, data) => fs.addDoc(sub(t, s), data).catch(onErr),
     set: (t, s, id, data) => fs.setDoc(fs.doc(db, "trips", t, s, id), data).catch(onErr),
+    get: (t, s, id) => fs.getDoc(fs.doc(db, "trips", t, s, id)).then((d) => (d.exists() ? { id: d.id, ...d.data() } : null)).catch(() => null),
     async getAll(t) {
       const out = {};
-      for (const s of SUBS) out[s] = (await fs.getDocs(sub(t, s))).docs.map((d) => ({ id: d.id, ...d.data() }));
+      for (const s of ALL_SUBS) out[s] = (await fs.getDocs(sub(t, s))).docs.map((d) => ({ id: d.id, ...d.data() }));
       return out;
     },
     update: (t, s, id, patch) => fs.updateDoc(fs.doc(db, "trips", t, s, id), patch).catch(onErr),
@@ -170,7 +173,7 @@ async function firebaseStore(cfg) {
     async deleteTrip(id) {
       try {
         const refs = [];
-        for (const s of SUBS) (await fs.getDocs(sub(id, s))).forEach((d) => refs.push(d.ref));
+        for (const s of ALL_SUBS) (await fs.getDocs(sub(id, s))).forEach((d) => refs.push(d.ref));
         refs.push(fs.doc(db, "trips", id, "private", auth.currentUser.uid)); // ของคนอื่นลบไม่ได้ (เป็นข้อมูลส่วนตัว)
         for (let i = 0; i < refs.length; i += 400) {
           const batch = fs.writeBatch(db);
@@ -211,7 +214,8 @@ function localStore() {
     listen: (t, s, cb) => watch(() => cb(Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) })))),
     add(t, s, data) { bucket(t, s)[uid()] = clone(data); emit(); },
     set(t, s, id, data) { bucket(t, s)[id] = clone(data); emit(); },
-    async getAll(t) { return Object.fromEntries(SUBS.map((s) => [s, Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) }))])); },
+    async get(t, s, id) { const d = bucket(t, s)[id]; return d ? { id, ...clone(d) } : null; },
+    async getAll(t) { return Object.fromEntries(ALL_SUBS.map((s) => [s, Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) }))])); },
     update(t, s, id, patch) { const b = bucket(t, s); if (b[id]) Object.assign(b[id], clone(patch)); emit(); },
     remove(t, s, id) { delete bucket(t, s)[id]; emit(); },
     deleteTrip(id) { delete db.trips[id]; delete db.subs[id]; delete db.priv[id]; emit(); },
@@ -726,6 +730,12 @@ function renderTripSkeleton() {
           </fieldset>
           <label class="wide">ลิงก์กับการจอง<select name="bookingId"><option value="">— ไม่มี —</option></select></label>
           ${linksFieldHtml()}
+          <fieldset class="sub photo-field">
+            <legend>📷 รูปตัวอย่าง <small class="muted">(มุมถ่ายรูป ท่าโพส เมนู หน้าร้าน — สูงสุด ${MAX_PHOTOS} รูป)</small></legend>
+            <div id="item-photos" class="ph-edit"></div>
+            <label class="btn small ph-add">＋ เพิ่มรูป<input type="file" id="photo-input" accept="image/*" multiple hidden></label>
+            <small class="muted">ระบบย่อรูปให้เล็กลงอัตโนมัติก่อนบันทึก (ฟรี ไม่กินพื้นที่) · เพื่อนในทริปเห็นด้วย</small>
+          </fieldset>
           <label class="wide">หมายเหตุ<input name="note"></label>
         </div>
         <div class="actions">
@@ -992,6 +1002,7 @@ function renderSection(s) {
     shopping: () => { renderShopping(); renderMyBudget(); },
     checklist: renderChecklist,
     prep: renderPrep,
+    photoThumbs: () => { renderPlan(); renderItemSheetPhotos(); },
   })[s]();
 }
 
@@ -1413,7 +1424,7 @@ function itemHtml(x) {
       <div class="row-actions">
         <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
       </div>
-      ${(() => { const c = linkChipsHtml(st === "cancel" ? [] : itemLinks(x), bk ? `<button type="button" class="bk-chip" data-action="goto-booking" data-id="${esc(bk.id)}" title="${esc(bk.type)}: ${esc(bk.title)}"><span class="bk-ic" aria-hidden="true">${isFlight(bk) ? "✈️" : isHotel(bk) ? "🏨" : "🎫"}</span><b>${esc(bk.title)}</b>${refOf(bk, getMe()) ? `<small>${esc(refOf(bk, getMe()))}</small>` : ""}<span class="bk-go" aria-hidden="true">›</span></button>` : ""); return c ? `<div class="row-tix">${c}</div>` : ""; })()}
+      ${(() => { const c = linkChipsHtml(st === "cancel" ? [] : itemLinks(x), bk ? `<button type="button" class="bk-chip" data-action="goto-booking" data-id="${esc(bk.id)}" title="${esc(bk.type)}: ${esc(bk.title)}"><span class="bk-ic" aria-hidden="true">${isFlight(bk) ? "✈️" : isHotel(bk) ? "🏨" : "🎫"}</span><b>${esc(bk.title)}</b>${refOf(bk, getMe()) ? `<small>${esc(refOf(bk, getMe()))}</small>` : ""}<span class="bk-go" aria-hidden="true">›</span></button>` : ""); const ph = photoStripHtml(x.id); return c || ph ? `<div class="row-tix">${ph}${c}</div>` : ""; })()}
     </li>`;
 }
 
@@ -1529,6 +1540,8 @@ function startEdit(id) {
   // รายการเก่าที่มีแค่ช่อง "การเดินทาง" → แปลงเป็นสายแรกให้
   setLegs(legsOf(x).length ? legsOf(x) : x.transport ? [{ line: x.transport }] : []);
   setLinks(form, linksOf(x));
+  pendingPhotos = [];
+  renderItemSheetPhotos();
   $("#item-edited").innerHTML = x.editedBy ? `แก้ล่าสุดโดย <b>${esc(x.editedBy)}</b> · ${ago(x.editedAt)}` : "";
   $("#item-form-title").textContent = "แก้ไขกิจกรรม";
   $("#item-submit").textContent = "บันทึก";
@@ -1549,6 +1562,8 @@ function stopEdit() {
   f.reset();
   setLegs([]);
   setLinks(f, []);
+  pendingPhotos = [];
+  renderItemSheetPhotos();
   $("#item-edited").innerHTML = "";
   f.elements.date.value = tripDays()[dayIdx] || "";
   $("#item-form-title").textContent = "เพิ่มกิจกรรม";
@@ -1683,6 +1698,156 @@ function readLinks(form) {
     out.push({ url, label });
   }
   return out;
+}
+
+/* ---------- รูปตัวอย่างในแพลน (ย่อรูปในเครื่อง → เก็บใน Firestore ฟรี) ----------
+   photoThumbs/{pid}: รูปเล็ก ~320px (ฟังสด แสดงในแพลน)
+   photoFull/{pid}:   รูปใหญ่ ≤1600px (โหลดทีละรูปตอนกดดู) */
+const MAX_PHOTOS = 6;
+const FULL_LIMIT = 450000; // ความยาว data URL สูงสุด (~330 KB) — Firestore จำกัด 1 MB ต่อเอกสาร
+let pendingPhotos = [];    // รูปที่เลือกตอน "เพิ่มกิจกรรม" ใหม่ (บันทึกพร้อมกิจกรรม)
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 10);
+const photosOf = (itemId) => (data.photoThumbs || []).filter((p) => p.itemId === itemId && p.thumb).sort((a, b) => num(a.createdAt) - num(b.createdAt));
+
+async function loadImage(file) {
+  const url = URL.createObjectURL(file);
+  try {
+    const img = new Image();
+    img.src = url;
+    await img.decode();
+    return img;
+  } finally { setTimeout(() => URL.revokeObjectURL(url), 2000); }
+}
+function toJpeg(img, maxSide, q) {
+  const W = img.naturalWidth, H = img.naturalHeight;
+  const k = Math.min(1, maxSide / Math.max(W, H));
+  const w = Math.max(1, Math.round(W * k)), h = Math.max(1, Math.round(H * k));
+  const c = document.createElement("canvas");
+  c.width = w; c.height = h;
+  const ctx = c.getContext("2d");
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h); // PNG โปร่งใส → พื้นขาว
+  ctx.drawImage(img, 0, 0, w, h);
+  return { url: c.toDataURL("image/jpeg", q), w, h };
+}
+async function makePhoto(file) {
+  const img = await loadImage(file);
+  let full;
+  for (const [side, q] of [[1600, 0.8], [1400, 0.75], [1200, 0.72], [1000, 0.68], [800, 0.62], [640, 0.6]]) {
+    full = toJpeg(img, side, q);
+    if (full.url.length < FULL_LIMIT) break;
+  }
+  const thumb = toJpeg(img, 320, 0.7);
+  return { full: full.url, thumb: thumb.url, w: full.w, h: full.h };
+}
+function savePhoto(itemId, p, at = Date.now()) {
+  const pid = newId();
+  store.set(trip.id, "photoFull", pid, { itemId, full: p.full });
+  store.set(trip.id, "photoThumbs", pid, stamp({ itemId, thumb: p.thumb, w: p.w, h: p.h, createdAt: at }));
+}
+function deleteItemPhotos(tripId, itemId) {
+  (data.photoThumbs || []).filter((p) => p.itemId === itemId).forEach((p) => {
+    store.remove(tripId, "photoThumbs", p.id);
+    store.remove(tripId, "photoFull", p.id);
+  });
+}
+async function addPhotoFiles(files) {
+  const itemId = editingItemId;
+  const have = itemId ? photosOf(itemId).length : pendingPhotos.length;
+  const list = [...files].filter((f) => /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp|gif)$/i.test(f.name));
+  const room = Math.max(0, MAX_PHOTOS - have);
+  if (!room) { toast(`ใส่ได้สูงสุด ${MAX_PHOTOS} รูปต่อกิจกรรม`); return; }
+  const use = list.slice(0, room);
+  for (let i = 0; i < use.length; i++) {
+    toast(`กำลังย่อรูป ${i + 1}/${use.length}…`);
+    let p;
+    try { p = await makePhoto(use[i]); }
+    catch (e) { console.error(e); toast("เปิดรูปนี้ไม่ได้ — ลองแคปหน้าจอรูปนั้นแล้วเพิ่มใหม่"); continue; }
+    if (itemId) { if (trip) savePhoto(itemId, p, Date.now() + i); }
+    else pendingPhotos.push(p);
+    renderItemSheetPhotos();
+  }
+  toast(list.length > room ? `เพิ่ม ${use.length} รูป (เต็ม ${MAX_PHOTOS} รูปแล้ว)` : itemId ? "เพิ่มรูปแล้ว" : "เพิ่มรูปแล้ว — จะบันทึกตอนกด “เพิ่ม”");
+}
+function renderItemSheetPhotos() {
+  const box = document.getElementById("item-photos");
+  if (!box) return;
+  const saved = editingItemId ? photosOf(editingItemId) : [];
+  const cells = [
+    ...saved.map((p, i) => `<div class="ph-cell"><img src="${esc(p.thumb)}" alt="" data-action="ph-open" data-id="${esc(editingItemId)}" data-i="${i}"><button type="button" class="ph-x" data-action="ph-del" data-pid="${esc(p.id)}" aria-label="ลบรูป">✕</button></div>`),
+    ...pendingPhotos.map((p, i) => `<div class="ph-cell is-pending"><img src="${esc(p.thumb)}" alt=""><button type="button" class="ph-x" data-action="ph-del-pending" data-i="${i}" aria-label="ลบรูป">✕</button></div>`),
+  ];
+  box.innerHTML = cells.join("");
+  const add = box.parentElement.querySelector(".ph-add");
+  if (add) add.hidden = saved.length + pendingPhotos.length >= MAX_PHOTOS;
+}
+// แถบรูปเล็กในแถวกิจกรรม
+function photoStripHtml(itemId) {
+  const list = photosOf(itemId);
+  if (!list.length) return "";
+  const show = list.slice(0, 4);
+  return `<div class="ph-strip">${show.map((p, i) => `<button type="button" class="ph-th" data-action="ph-open" data-id="${esc(itemId)}" data-i="${i}" aria-label="ดูรูปที่ ${i + 1}"><img src="${esc(p.thumb)}" alt="" loading="lazy">${i === 3 && list.length > 4 ? `<span class="ph-more">+${list.length - 4}</span>` : ""}</button>`).join("")}</div>`;
+}
+// ดูรูปเต็มจอ (ปัดซ้าย–ขวา / ‹ › / ลบ)
+const fullCache = new Map();
+function openPhotoViewer(itemId, start = 0) {
+  let list = photosOf(itemId);
+  if (!list.length) return;
+  let i = Math.min(Math.max(0, start), list.length - 1);
+  const it = data.items.find((x) => x.id === itemId);
+  const wrap = document.createElement("div");
+  wrap.className = "ph-view";
+  wrap.innerHTML = `
+    <div class="pv-top"><div class="pv-title"><b>${esc(it?.activity || "")}</b><small class="pv-n"></small></div>
+      <button type="button" class="pv-btn pv-del" aria-label="ลบรูปนี้">🗑</button><button type="button" class="pv-btn pv-x" aria-label="ปิด">✕</button></div>
+    <div class="pv-stage"><img alt=""><div class="pv-load" hidden>กำลังโหลดรูปชัด…</div></div>
+    <button type="button" class="pv-nav prev" aria-label="รูปก่อนหน้า">‹</button><button type="button" class="pv-nav next" aria-label="รูปถัดไป">›</button>`;
+  document.body.appendChild(wrap);
+  const img = wrap.querySelector("img"), load = wrap.querySelector(".pv-load");
+  const show = async () => {
+    const p = list[i];
+    wrap.querySelector(".pv-n").textContent = `${i + 1}/${list.length}${p.editedBy ? ` · เพิ่มโดย ${p.editedBy}` : ""}`;
+    wrap.querySelectorAll(".pv-nav").forEach((b) => (b.hidden = list.length < 2));
+    img.src = fullCache.get(p.id) || p.thumb;
+    if (fullCache.has(p.id)) { load.hidden = true; return; }
+    load.hidden = false;
+    const f = await store.get(trip.id, "photoFull", p.id);
+    if (f?.full) { fullCache.set(p.id, f.full); if (list[i] === p) img.src = f.full; }
+    if (list[i] === p) { load.hidden = true; if (!f?.full) load.textContent = "ออฟไลน์ — แสดงรูปเล็กแทน"; }
+  };
+  const go = (d) => { if (list.length < 2) return; i = (i + d + list.length) % list.length; show(); };
+  let pushed = false;
+  const close = () => { wrap.remove(); removeEventListener("keydown", onKey); removeEventListener("popstate", onPop); if (pushed) { pushed = false; history.back(); } };
+  const onKey = (e) => { if (e.key === "Escape") close(); else if (e.key === "ArrowLeft") go(-1); else if (e.key === "ArrowRight") go(1); };
+  const onPop = () => { pushed = false; close(); };
+  try { history.pushState({ pv: 1 }, ""); pushed = true; addEventListener("popstate", onPop); } catch {}
+  addEventListener("keydown", onKey);
+  wrap.querySelector(".pv-x").onclick = close;
+  wrap.querySelector(".prev").onclick = () => go(-1);
+  wrap.querySelector(".next").onclick = () => go(1);
+  wrap.querySelector(".pv-stage").addEventListener("click", (e) => { if (e.target !== img) close(); });
+  wrap.querySelector(".pv-del").onclick = async () => {
+    const p = list[i];
+    const full = fullCache.get(p.id) || (await store.get(trip.id, "photoFull", p.id))?.full;
+    const { id: pid, ...thumbDoc } = p;
+    const tripId = trip.id;
+    store.remove(tripId, "photoThumbs", pid);
+    store.remove(tripId, "photoFull", pid);
+    toast("ลบรูปแล้ว", () => { if (full) store.set(tripId, "photoFull", pid, { itemId: p.itemId, full }); store.set(tripId, "photoThumbs", pid, thumbDoc); toast("กู้คืนรูปแล้ว"); });
+    list = list.filter((x) => x.id !== pid);
+    if (!list.length) return close();
+    i = Math.min(i, list.length - 1);
+    show();
+  };
+  // ปัดซ้าย–ขวา
+  let sx = null, sy = 0;
+  wrap.addEventListener("touchstart", (e) => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+  wrap.addEventListener("touchend", (e) => {
+    if (sx === null) return;
+    const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy;
+    sx = null;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) go(dx < 0 ? 1 : -1);
+  });
+  show();
 }
 
 /* ---------- ใครแก้ล่าสุด ---------- */
@@ -3512,6 +3677,18 @@ function onClick(e) {
     if (box) { box.insertAdjacentHTML("beforeend", linkRowHtml()); box.querySelector(".lnk:last-child input").focus(); }
   }
   else if (action === "del-link") b.closest(".lnk").remove();
+  else if (action === "ph-open") openPhotoViewer(id, num(b.dataset.i));
+  else if (action === "ph-del") {
+    const p = (data.photoThumbs || []).find((x) => x.id === b.dataset.pid);
+    if (p) {
+      const { id: pid, ...doc } = p, tripId = trip.id;
+      store.get(tripId, "photoFull", pid).then((f) => {
+        store.remove(tripId, "photoThumbs", pid); store.remove(tripId, "photoFull", pid);
+        toast("ลบรูปแล้ว", () => { if (f?.full) store.set(tripId, "photoFull", pid, { itemId: p.itemId, full: f.full }); store.set(tripId, "photoThumbs", pid, doc); });
+      });
+    }
+  }
+  else if (action === "ph-del-pending") { pendingPhotos.splice(num(b.dataset.i), 1); renderItemSheetPhotos(); }
   else if (action === "goto-booking") {
     setTab("bookings");
     flash(document.getElementById("booking-" + id));
@@ -3617,7 +3794,9 @@ async function confirmDelete(sub, id) {
   if (id === editingBookingId) stopEditBooking();
   if (id === editingWishId) closeWishForm();
   if (id === editingExpenseId) stopEditExpense();
-  toast(`ลบ “${name}” แล้ว`, () => { store.set(tripId, sub, id, copy); toast("กู้คืนแล้ว"); });
+  // กิจกรรมที่มีรูป: ลบรูปตามหลังหมดเวลา "เลิกทำ"
+  const phTimer = sub === "items" && photosOf(id).length ? setTimeout(() => deleteItemPhotos(tripId, id), 9000) : null;
+  toast(`ลบ “${name}” แล้ว`, () => { clearTimeout(phTimer); store.set(tripId, sub, id, copy); toast("กู้คืนแล้ว"); });
 }
 
 /* ---------- สำรอง / กู้คืนข้อมูล ---------- */
@@ -3652,7 +3831,7 @@ async function restoreBackup(file) {
   });
   if (!yes) return;
   const id = store.createTrip({ ...j.trip, name: `${j.trip.name} (กู้คืน)`, createdAt: Date.now() });
-  for (const s of SUBS) for (const { id: did, ...d } of j.subs?.[s] || []) store.set(id, s, did, d); // ใช้ id เดิม → ลิงก์ระหว่างแพลน/การจอง/Wishlist ยังอยู่ครบ
+  for (const s of ALL_SUBS) for (const { id: did, ...d } of j.subs?.[s] || []) store.set(id, s, did, d); // ใช้ id เดิม → ลิงก์ระหว่างแพลน/การจอง/Wishlist ยังอยู่ครบ
   if (j.private && store.setPrivate) store.setPrivate(id, j.private);
   toast("กู้คืนแล้ว");
   location.hash = "#/trip/" + id;
@@ -3675,6 +3854,7 @@ async function deleteTrip() {
 
 function onChange(e) {
   const el = e.target;
+  if (el.id === "photo-input") { const files = [...el.files]; el.value = ""; if (files.length) addPhotoFiles(files); return; }
   // ฟอร์มทริป: พิมพ์ชื่อประเทศ → เลือกประเทศปลายทางให้ / เลือกประเทศ → ตั้งสกุลเงินให้
   if ((el.name === "country" || el.name === "destCode") && el.form?.elements.destCode && el.form?.elements.currency) {
     const fe = el.form.elements;
@@ -3786,7 +3966,12 @@ function onSubmit(e) {
         if (old && (old.place || "") !== rec.place) { Object.assign(rec, { lat: c?.lat ?? null, lng: c?.lng ?? null, geoFail: false }); geoTried.delete(old.id); }
         store.update(trip.id, "items", editingItemId, stamp(rec));
       }
-      else store.add(trip.id, "items", stamp({ ...rec, ...(c ? { lat: c.lat, lng: c.lng } : {}), createdAt: now }));
+      else {
+        const nid = newId();
+        store.set(trip.id, "items", nid, stamp({ ...rec, ...(c ? { lat: c.lat, lng: c.lng } : {}), createdAt: now }));
+        pendingPhotos.forEach((p, i) => savePhoto(nid, p, now + i));
+      }
+      pendingPhotos = [];
       stopEdit();
       const i = tripDays().indexOf(rec.date);
       if (i >= 0) { dayIdx = i; renderPlan(); }
