@@ -1044,3 +1044,15 @@ body.pdf-mode { overflow: hidden; }
 .sheet .actions [data-action="sheet-close"] { order: 1; }
 .sheet .actions .btn.danger { order: 2; margin-left: 0; }
 .sheet .actions .btn.primary { order: 3; margin-left: auto; }
+/* ตัวเลือกที่ยังไม่เลือก: หุบ/กางได้ */
+.opt-fold { padding: 0; }
+.opt-fold > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 4px; margin: 0; padding: 8px 10px; }
+.opt-fold > summary::-webkit-details-marker { display: none; }
+.opt-fold[open] > summary { padding-bottom: 6px; }
+.opt-fold[open] { padding-bottom: 8px; }
+.opt-fold > .opt-item { margin: 0 8px; }
+.opt-fold > .opt-item + .opt-item { margin-top: 6px; }
+.opt-chev { margin-left: auto; width: 8px; height: 8px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: rotate(45deg); transition: transform .15s; flex: none; }
+.opt-fold[open] .opt-chev { transform: rotate(-135deg); margin-top: 4px; }
+.opt-list:not(.opt-fold) { margin-bottom: 8px; }
+.opt-fold { display: block; margin: 0 0 8px; }

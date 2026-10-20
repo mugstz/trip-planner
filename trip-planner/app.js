@@ -1776,6 +1776,7 @@ function optTemplate(t) {
   return { name: "บริการรับฝากกระเป๋า (จองออนไลน์)", note: "เช่น ร้าน/จุดรับฝากที่จองผ่านแอปล่วงหน้า — ดูราคาและเวลาเปิดในแอปก่อนจอง" };
 }
 // ในแถวแพลน: รายการตัวเลือก แตะเพื่อเลือก
+const optOpen = new Set(); // กิจกรรมที่กางรายการตัวเลือกไว้ (จำไว้ตอนวาดใหม่)
 function optionsRowHtml(x) {
   const ops = optionsOf(x);
   if (!ops.length) return "";
@@ -1791,9 +1792,10 @@ function optionsRowHtml(x) {
       </div>`;
   if (pick) {
     const rest = ops.filter((o) => o !== pick);
-    return `<div class="opt-list has-pick">${item(pick)}${rest.length ? `<details class="opt-more"><summary>🔀 เปลี่ยนตัวเลือก (อีก ${rest.length})</summary>${rest.map(item).join("")}</details>` : ""}</div>`;
+    return `<div class="opt-list has-pick">${item(pick)}${rest.length ? `<details class="opt-more" data-opt="${esc(x.id)}" ${optOpen.has(x.id) ? "open" : ""}><summary>🔀 เปลี่ยนตัวเลือก (อีก ${rest.length})</summary>${rest.map(item).join("")}</details>` : ""}</div>`;
   }
-  return `<div class="opt-list"><div class="opt-head">🔀 <b>ยังไม่ได้เลือก</b> · ${ops.length} ตัวเลือก — แตะเพื่อเลือก</div>${ops.map(item).join("")}</div>`;
+  // ยังไม่เลือก: หุบไว้ก่อน (ไม่กินพื้นที่) แตะหัวเพื่อดูตัวเลือก
+  return `<details class="opt-list opt-fold" data-opt="${esc(x.id)}" ${optOpen.has(x.id) ? "open" : ""}><summary class="opt-head">🔀 <b>ยังไม่ได้เลือก</b> · ${ops.length} ตัวเลือก<span class="opt-chev" aria-hidden="true"></span></summary>${ops.map(item).join("")}</details>`;
 }
 function pickOption(itemId, oid) {
   const x = data.items.find((i) => i.id === itemId);
@@ -4197,6 +4199,7 @@ async function init() {
   try { PLACES = await (await fetch("data/places.json", { cache: "no-cache" })).json(); } catch { /* ไม่มีข้อมูลแนะนำ */ }
   app.addEventListener("click", onClick);
   app.addEventListener("change", onChange);
+  app.addEventListener("toggle", (e) => { const d = e.target; if (d.dataset?.opt) d.open ? optOpen.add(d.dataset.opt) : optOpen.delete(d.dataset.opt); }, true);
   app.addEventListener("input", onInput);
   app.addEventListener("keydown", (e) => {
     if ((e.key === "Enter" || e.key === " ") && e.target.matches?.('[data-panel="prep"] .ck > :first-child')) { e.preventDefault(); toggleCollapse(e.target.parentElement); return; }
