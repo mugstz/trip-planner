@@ -1503,19 +1503,32 @@ function readLegs() {
 
 // ในฟอร์ม: ประมาณเวลาเดินทางจากกิจกรรมก่อนหน้าในวันเดียวกัน
 const formGeo = new Map();
+// จุดก่อนหน้า = กิจกรรมที่อยู่ “ก่อนหน้า” ในลำดับเดียวกับหน้าแพลน (เวลา + คืนก่อนหน้า + ลำดับที่ลาก)
+// ถ้าเป็นกิจกรรมแรกของวัน → ใช้ที่พักของคืนก่อน
+function formPrevStop(f) {
+  const date = f.elements.date.value;
+  if (!date) return null;
+  const old = editingItemId && data.items.find((i) => i.id === editingItemId);
+  const me = { id: editingItemId || "__new", date, time: f.elements.time.value, prevNight: !!f.elements.prevNight?.checked && !!f.elements.time.value,
+    order: old && old.date === date ? old.order : 1e9, createdAt: old?.createdAt ?? Date.now() };
+  const list = sortItems([...data.items.filter((x) => x.date === date && x.id !== me.id && x.status !== "cancel"), me]);
+  const i = list.findIndex((x) => x.id === me.id);
+  if (i > 0) return list[i - 1];
+  const h = myHotelForNight(prevDay(date))[0];
+  return h ? { id: "hotel:" + h.id, activity: `ที่พัก ${h.title}`, hotel: h } : null;
+}
 async function updateLegSuggest() {
   const box = $("#leg-suggest"), f = $("#item-form");
   if (!box || !f) return;
-  const date = f.elements.date.value, time = f.elements.time.value;
-  const dayList = sortItems(data.items.filter((x) => x.date === date && x.id !== editingItemId && x.status !== "cancel"));
-  const prev = time ? [...dayList].reverse().find((x) => x.time && x.time <= time) : dayList.at(-1);
+  const prev = formPrevStop(f);
   if (!prev) { box.hidden = true; return; }
   box.hidden = false;
   const place = f.elements.place.value.trim();
   const q = placeQuery(place) || f.elements.activity.value.trim();
   if (!q && !coordsFromLink(place)) { box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ใส่ชื่อสถานที่ แล้วจะประมาณเวลาเดินทางจากจุดนั้นให้`; return; }
-  const a = itemCoords(prev);
+  const a = prev.hotel ? hotelCoords(prev.hotel) : itemCoords(prev);
   let b = coordsFromLink(place) || formGeo.get(q);
+  if (!a && prev.hotel) { box.innerHTML = `🏨 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ยังไม่มีตำแหน่งที่พัก (ใส่ที่อยู่/ลิงก์ Maps ในการจอง)`; return; }
   if (!a) {
     queueItemGeocode(prev);
     box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ${prev.geoFail ? "หาตำแหน่งจุดก่อนหน้าไม่เจอ (ใส่ชื่อสถานที่ภาษาอังกฤษหรือลิงก์ Maps ในกิจกรรมนั้น)" : "กำลังหาตำแหน่ง…"}`;
@@ -1534,6 +1547,7 @@ async function updateLegSuggest() {
   const km = distKm(a, b);
   const est = travelEstimate(km);
   const route = `https://www.google.com/maps/dir/?api=1&origin=${a.lat},${a.lng}&destination=${b.lat},${b.lng}&travelmode=transit`;
+  if (km > 80) { box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> ~${fmtKm(km)} — ไกลเกินจะประมาณ (เช่น บินข้ามประเทศ) ใส่วิธีเดินทางเอง`; return; }
   box.innerHTML = `<div>${est.icon} จาก <b>${esc(prev.activity)}</b>${prev.time ? ` (${esc(prev.time)})` : ""} ~${fmtKm(km)} · ${est.mode} ~<b>${est.min} นาที</b> <small class="muted">(ประมาณ)</small></div>
     <div class="ls-btns"><button type="button" class="btn small" data-action="use-est" data-min="${est.min}" data-mode="${esc(est.mode)}">ใช้ค่านี้</button><a href="${esc(route)}" target="_blank" rel="noopener">ดูสาย/เวลาจริงใน Google Maps</a></div>`;
 }
@@ -4071,7 +4085,7 @@ function onChange(e) {
   } else if (el.id === "budget-input") {
     store.setPrivate(trip.id, { budget: num(el.value) });
     toast(num(el.value) ? `ตั้งงบ ${money(num(el.value))} แล้ว` : "ลบงบแล้ว");
-  } else if (el.closest("#item-form") && ["date", "time", "place", "activity"].includes(el.name)) {
+  } else if (el.closest("#item-form") && ["date", "time", "place", "activity", "prevNight"].includes(el.name)) {
     updateLegSuggest();
   } else if (el.closest("#private-form")) {
     savePrivateField(el);
