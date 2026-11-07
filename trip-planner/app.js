@@ -1531,7 +1531,10 @@ async function updateLegSuggest() {
   if (!a && prev.hotel) { box.innerHTML = `🏨 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ยังไม่มีตำแหน่งที่พัก (ใส่ที่อยู่/ลิงก์ Maps ในการจอง)`; return; }
   if (!a) {
     queueItemGeocode(prev);
-    box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ${prev.geoFail ? "หาตำแหน่งจุดก่อนหน้าไม่เจอ (ใส่ชื่อสถานที่ภาษาอังกฤษหรือลิงก์ Maps ในกิจกรรมนั้น)" : "กำลังหาตำแหน่ง…"}`;
+    const failed = prev.geoFail && !geoBusy;
+    box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ${failed ? `หาตำแหน่งจุดก่อนหน้าไม่เจอ <button type="button" class="btn small" data-action="geo-retry" data-id="${esc(prev.id)}">ลองหาอีกครั้ง</button>
+      <small class="muted geo-tip">ถ้ายังไม่เจอ: ใน Google Maps กดค้างที่หมุด → ก๊อปพิกัด (เช่น 34.6545, 135.4290) แล้ววางในช่อง “สถานที่” ของกิจกรรมนั้น</small>` : "กำลังหาตำแหน่ง…"}`;
+    if (!failed) setTimeout(() => { if (!document.getElementById("sheet-item")?.hidden) updateLegSuggest(); }, 2500);
     return;
   }
   if (b === undefined) {
@@ -1540,7 +1543,7 @@ async function updateLegSuggest() {
     formGeo.set(q, null);
     const country = destInfo().nameEn || trip?.country || "";
     const c = (await geocode(`${q}, ${country}`)) || (await geocode(q));
-    formGeo.set(q, c);
+    formGeo.set(q, c || null);
     return updateLegSuggest();
   }
   if (!b) { box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — หาตำแหน่งสถานที่นี้ไม่เจอ ลองพิมพ์ภาษาอังกฤษหรือวางลิงก์ Google Maps`; return; }
@@ -2917,20 +2920,31 @@ function travelEstimate(km) {
 
 // ตำแหน่งที่พัก: จากพิกัดที่บันทึกไว้ → ลิงก์ Google Maps แบบยาว → ค้นด้วย OpenStreetMap
 function coordsFromLink(s = "") {
-  const m = String(s).match(/@(-?\d+\.\d+),(-?\d+\.\d+)/) || String(s).match(/[?&](?:q|query|ll)=(-?\d+\.\d+),(-?\d+\.\d+)/);
-  return m ? { lat: +m[1], lng: +m[2] } : null;
+  s = String(s);
+  const m = s.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/) // ลิงก์สถานที่ของ Google Maps (ตำแหน่งหมุดจริง)
+    || s.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/)
+    || s.match(/[?&](?:q|query|ll|center|destination)=(-?\d+\.\d+)(?:,|%2C)\s*(-?\d+\.\d+)/i)
+    || s.trim().match(/^(-?\d{1,2}\.\d{3,}),\s*(-?\d{1,3}\.\d{3,})$/); // พิกัดตรงๆ เช่น 34.6545, 135.4290
+  return m && Math.abs(+m[1]) <= 90 && Math.abs(+m[2]) <= 180 ? { lat: +m[1], lng: +m[2] } : null;
 }
 function hotelCoords(h) {
   if (h && Number.isFinite(h.lat) && Number.isFinite(h.lng) && h.lat !== null) return { lat: h.lat, lng: h.lng };
   return coordsFromLink(h?.place);
 }
+// หาพิกัดจากชื่อ: OpenStreetMap (Nominatim) → ไม่เจอลอง Photon (ค้นแบบยืดหยุ่นกว่า เช่น "Osaka aquarium kaiyukan")
+// คืน null = ค้นแล้วไม่เจอจริง / undefined = เน็ตมีปัญหาหรือโดนจำกัดการใช้ → ไว้ลองใหม่ทีหลัง
 async function geocode(q) {
+  let netErr = false;
   try {
     const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": "en" } });
-    const j = await r.json();
-    if (j[0]) return { lat: +j[0].lat, lng: +j[0].lon };
-  } catch {}
-  return null;
+    if (r.ok) { const j = await r.json(); if (j[0]) return { lat: +j[0].lat, lng: +j[0].lon }; } else netErr = true;
+  } catch { netErr = true; }
+  try {
+    const h = trip && hotels().map(hotelCoords).find(Boolean); // ให้น้ำหนักกับที่ใกล้ที่พัก
+    const r = await fetch(`https://photon.komoot.io/api/?limit=1&q=${encodeURIComponent(q)}${h ? `&lat=${h.lat}&lon=${h.lng}` : ""}`);
+    if (r.ok) { const j = await r.json(); const g = j.features?.[0]?.geometry?.coordinates; if (g) return { lat: +g[1], lng: +g[0] }; } else netErr = true;
+  } catch { netErr = true; }
+  return netErr ? undefined : null;
 }
 async function ensureHotelCoords(h) {
   if (!h || hotelCoords(h) || geoTried.has(h.id) || !navigator.onLine) return;
@@ -3114,7 +3128,8 @@ function queueWishGeocode(w) {
 }
 // กิจกรรมในแพลน: หาตำแหน่งเพื่อประมาณเวลาเดินทางระหว่างจุด (หาไม่เจอจะจำไว้ ไม่ค้นซ้ำ)
 function queueItemGeocode(x) {
-  if (!x || !trip || itemCoords(x) || x.geoFail || geoTried.has(x.id) || !navigator.onLine) return;
+  // ไม่เจอเมื่อไม่ถึง 1 วัน → ยังไม่ลองซ้ำ (ของเก่าที่บันทึกเป็น true จะลองใหม่ 1 ครั้ง)
+  if (!x || !trip || itemCoords(x) || (typeof x.geoFail === "number" && Date.now() - x.geoFail < 864e5) || geoTried.has(x.id) || !navigator.onLine) return;
   const q = placeQuery(x.place) || (isLink(x.place) ? "" : x.activity);
   if (!q) return;
   geoTried.add(x.id);
@@ -3127,9 +3142,11 @@ async function runGeoQueue() {
   while (geoQueue.length) {
     const { sub, rec, q } = geoQueue.shift();
     const country = destInfo().nameEn || trip?.country || "";
-    const c = (await geocode(`${q}, ${country}`)) || (await geocode(q));
-    if (c && trip) store.update(trip.id, sub, rec.id, { lat: c.lat, lng: c.lng });
-    else if (trip && sub === "items") store.update(trip.id, "items", rec.id, { geoFail: true });
+    const c1 = await geocode(`${q}, ${country}`);
+    const c = c1 || (await geocode(q));
+    if (c && trip) store.update(trip.id, sub, rec.id, { lat: c.lat, lng: c.lng, geoFail: false });
+    else if (c1 === undefined || c === undefined) { /* เน็ต/โดนจำกัด → ไว้ลองใหม่รอบหน้า */ }
+    else if (trip && sub === "items") store.update(trip.id, "items", rec.id, { geoFail: Date.now() });
     else renderWishlist();
     await new Promise((r) => setTimeout(r, 1100));
   }
@@ -3871,6 +3888,10 @@ function onClick(e) {
         toast("ลบรูปแล้ว", () => { if (f?.full) store.set(tripId, "photoFull", pid, { itemId: p.itemId, full: f.full }); store.set(tripId, "photoThumbs", pid, doc); });
       });
     }
+  }
+  else if (action === "geo-retry") {
+    const x = data.items.find((i) => i.id === id);
+    if (x) { geoTried.delete(id); store.update(trip.id, "items", id, { geoFail: false }); queueItemGeocode({ ...x, geoFail: false }); toast("กำลังหาตำแหน่งใหม่…"); setTimeout(updateLegSuggest, 300); }
   }
   else if (action === "opt-pick") togglePick(b.dataset.sub || "items", id, b.dataset.oid);
   else if (action === "opt-done") toggleOptDone(b.dataset.sub || "items", id, b.dataset.oid);
