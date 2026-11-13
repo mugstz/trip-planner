@@ -2,85 +2,85 @@
   "source": "ธนาคารแห่งประเทศไทย",
   "dataset": "อัตราแลกเปลี่ยนถัวเฉลี่ยของธนาคารพาณิชย์ในกรุงเทพมหานคร",
   "note": "ค่าเป็นบาทต่อ 1 หน่วยเงินต่างประเทศ (แปลงจากหน่วยที่ ธปท. ประกาศแล้ว)",
-  "fetchedAt": "2026-11-12T19:00:20.109Z",
+  "fetchedAt": "2026-11-13T18:37:48.940Z",
   "rates": {
     "JPY": {
-      "period": "2026-11-12",
-      "mid": 0.211377,
-      "selling": 0.21417,
-      "buying_transfer": 0.208583,
+      "period": "2026-11-13",
+      "mid": 0.211953,
+      "selling": 0.214814,
+      "buying_transfer": 0.209091,
       "unit_in_source": 100,
       "name_th": "ญี่ปุ่น : เยน (100 เยน) (JPY)"
     },
     "CNY": {
-      "period": "2026-11-12",
-      "mid": 5.0594,
-      "selling": 5.0931,
-      "buying_transfer": 5.0256,
+      "period": "2026-11-13",
+      "mid": 5.0789,
+      "selling": 5.1197,
+      "buying_transfer": 5.038,
       "unit_in_source": 1,
       "name_th": "จีน : หยวน เรนมินบิ (CNY)"
     },
     "HKD": {
-      "period": "2026-11-12",
-      "mid": 4.3027,
-      "selling": 4.327,
-      "buying_transfer": 4.2783,
+      "period": "2026-11-13",
+      "mid": 4.3194,
+      "selling": 4.3497,
+      "buying_transfer": 4.2891,
       "unit_in_source": 1,
       "name_th": "ฮ่องกง : ดอลลาร์ (HKD) "
     },
     "SGD": {
-      "period": "2026-11-12",
-      "mid": 26.3111,
-      "selling": 26.5632,
-      "buying_transfer": 26.059,
+      "period": "2026-11-13",
+      "mid": 26.3335,
+      "selling": 26.5938,
+      "buying_transfer": 26.0732,
       "unit_in_source": 1,
       "name_th": "สิงคโปร์ : ดอลลาร์ (SGD) "
     },
     "MYR": {
-      "period": "2026-11-12",
-      "mid": 8.2942,
-      "selling": 8.3958,
-      "buying_transfer": 8.1926,
+      "period": "2026-11-13",
+      "mid": 8.3055,
+      "selling": 8.4086,
+      "buying_transfer": 8.2024,
       "unit_in_source": 1,
       "name_th": "มาเลเซีย : ริงกิต (MYR)"
     },
     "USD": {
-      "period": "2026-11-12",
-      "mid": 33.7532,
-      "selling": 33.9088,
-      "buying_transfer": 33.5975,
+      "period": "2026-11-13",
+      "mid": 33.8796,
+      "selling": 34.0385,
+      "buying_transfer": 33.7207,
       "unit_in_source": 1,
       "name_th": "สหรัฐอเมริกา : ดอลลาร์ (USD)"
     },
     "EUR": {
-      "period": "2026-11-12",
-      "mid": 37.4665,
-      "selling": 37.7617,
-      "buying_transfer": 37.1713,
+      "period": "2026-11-13",
+      "mid": 37.4727,
+      "selling": 37.7746,
+      "buying_transfer": 37.1707,
       "unit_in_source": 1,
       "name_th": "ยูโรโซน : ยูโร (EUR)"
     },
     "GBP": {
-      "period": "2026-11-12",
-      "mid": 44.8514,
-      "selling": 45.2202,
-      "buying_transfer": 44.4826,
+      "period": "2026-11-13",
+      "mid": 44.8646,
+      "selling": 45.2445,
+      "buying_transfer": 44.4847,
       "unit_in_source": 1,
       "name_th": "อังกฤษ : ปอนด์สเตอร์ลิง (GBP)"
     },
     "AUD": {
-      "period": "2026-11-12",
-      "mid": 23.1597,
-      "selling": 23.5089,
-      "buying_transfer": 22.8104,
+      "period": "2026-11-13",
+      "mid": 23.0995,
+      "selling": 23.4438,
+      "buying_transfer": 22.7551,
       "unit_in_source": 1,
       "name_th": "ออสเตรเลีย : ดอลลาร์ (AUD)"
     }
   },
   "errors": {
-    "KRW": "ไม่มีข้อมูลในช่วง 2026-10-30 ถึง 2026-11-13: {\"result\":{\"timestamp\":\"2026-11-13 02:00:15\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "TWD": "ไม่มีข้อมูลในช่วง 2026-10-30 ถึง 2026-11-13: {\"result\":{\"timestamp\":\"2026-11-13 02:00:16\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "VND": "ไม่มีข้อมูลในช่วง 2026-10-30 ถึง 2026-11-13: {\"result\":{\"timestamp\":\"2026-11-13 02:00:18\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
-    "LAK": "ไม่มีข้อมูลในช่วง 2026-10-30 ถึง 2026-11-13: {\"result\":{\"timestamp\":\"2026-11-13 02:00:18\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}"
+    "KRW": "ไม่มีข้อมูลในช่วง 2026-10-31 ถึง 2026-11-14: {\"result\":{\"timestamp\":\"2026-11-14 01:37:43\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "TWD": "ไม่มีข้อมูลในช่วง 2026-10-31 ถึง 2026-11-14: {\"result\":{\"timestamp\":\"2026-11-14 01:37:45\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "VND": "ไม่มีข้อมูลในช่วง 2026-10-31 ถึง 2026-11-14: {\"result\":{\"timestamp\":\"2026-11-14 01:37:47\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}",
+    "LAK": "ไม่มีข้อมูลในช่วง 2026-10-31 ถึง 2026-11-14: {\"result\":{\"timestamp\":\"2026-11-14 01:37:47\",\"api\":\"Daily Weighted-average Interbank Exchange Rate - THB / USD\",\"data\":null}}"
   }
 }
