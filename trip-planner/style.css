@@ -1071,3 +1071,12 @@ body.pdf-mode { overflow: hidden; }
 .opt-done[aria-pressed="true"] { border-style: solid; border-color: var(--ok, #2e8b57); color: var(--ok, #2e8b57); background: rgba(46,139,87,.1); font-weight: 700; }
 .opt-item.is-done .opt-txt b { text-decoration: line-through; text-decoration-color: rgba(46,139,87,.6); }
 .wish-card .opt-fold { margin: 8px 0; }
+/* ลิงก์กับการจอง: ติ๊กได้หลายอัน */
+.bk-opts { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.form label.bk-opt { flex-direction: row; cursor: pointer; }
+.bk-opt input { position: absolute; opacity: 0; width: 1px; height: 1px; min-height: 0; }
+.bk-opt span { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 999px; padding: 5px 12px; font-size: .85rem; background: var(--card); color: var(--text); }
+.bk-opt span small { color: var(--muted); }
+.bk-opt input:checked + span { border-color: var(--accent-ink); background: var(--tint); font-weight: 700; box-shadow: 0 0 0 1px var(--accent-ink); }
+.bk-opt input:checked + span::before { content: "✓"; color: var(--accent-ink); }
+.bk-opt input:focus-visible + span { outline: 2px solid var(--accent-ink); }

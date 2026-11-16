@@ -761,7 +761,7 @@ function renderTripSkeleton() {
             <div class="days"><span class="muted">วันหยุด:</span>${DAY_NAMES.map((n, i) => `<label class="day"><input type="checkbox" name="closed" value="${i}"><span>${n}</span></label>`).join("")}</div>
             <input name="hoursNote" placeholder="หมายเหตุ เช่น เข้าครั้งสุดท้าย 16:30 / หยุดวันนักขัตฤกษ์">
           </fieldset>
-          <label class="wide">ลิงก์กับการจอง<select name="bookingId"><option value="">— ไม่มี —</option></select></label>
+          <div class="wide bk-field"><span class="field-label">ลิงก์กับการจอง <small class="muted">(เลือกได้หลายอัน)</small></span><div class="bk-opts" id="bk-opts"></div></div>
           ${linksFieldHtml()}
           ${optFieldHtml(true)}
           <fieldset class="sub photo-field">
@@ -1417,13 +1417,27 @@ function hoursText(x) {
   return parts.join(" · ");
 }
 
+// ช่องติ๊ก "ลิงก์กับการจอง" ในฟอร์มกิจกรรม
+function renderBookingOpts(keep) {
+  const box = document.getElementById("bk-opts");
+  if (!box) return;
+  keep ||= [...box.querySelectorAll("[name=bookingIds]:checked")].map((c) => c.value);
+  const list = [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
+  box.innerHTML = list.length ? list.map((b) => `<label class="bk-opt"><input type="checkbox" name="bookingIds" value="${esc(b.id)}" ${keep.includes(b.id) ? "checked" : ""}><span>${isFlight(b) ? "✈️" : isHotel(b) ? "🏨" : "🎫"} ${esc(b.title)}${b.date ? ` <small>${fmtDate(b.date)}</small>` : ""}</span></label>`).join("")
+    : `<small class="muted">ยังไม่มีการจอง — เพิ่มได้ที่แท็บการจอง</small>`;
+}
+
+/* การจองที่ลิงก์กับกิจกรรม (ได้หลายอัน) — ของเก่าเก็บเป็น bookingId อันเดียว */
+const bookingIdsOf = (x) => (Array.isArray(x?.bookingIds) ? x.bookingIds : x?.bookingId ? [x.bookingId] : []);
+const bookingsOf = (x) => bookingIdsOf(x).map((id) => data.bookings.find((b) => b.id === id)).filter(Boolean);
+
 /* ช่วงนี้เป็นการบินไหม (ดูจากสายที่กรอก / การจองเที่ยวบินที่ลิงก์ไว้) — เวลาเครื่องลงยึดตามไฟลท์ + เวลาท้องถิ่นต่างกัน จึงไม่คำนวณเวลาถึงเอง */
 const FLIGHT_RE = /เครื่องบิน|บิน|flight|✈|airline|airways|air asia|airasia/i;
 const isFlightLeg = (l) => FLIGHT_RE.test(`${l.line || ""}`);
 const isFlightHop = (prev, x) => {
-  const bk = (i) => i?.bookingId && data.bookings.find((b) => b.id === i.bookingId);
+  const flightBk = (i) => bookingsOf(i).some(isFlight);
   const airport = (i) => /airport|สนามบิน|\((DMK|BKK|KIX|NRT|HND|ICN|GMP|CJU|PUS|TPE|HKG|SIN)\)/i.test(`${i?.activity || ""} ${i?.place || ""}`);
-  return legsOf(x).some(isFlightLeg) || FLIGHT_RE.test(x.transport || "") || isFlight(bk(x)) || isFlight(bk(prev)) ||
+  return legsOf(x).some(isFlightLeg) || FLIGHT_RE.test(x.transport || "") || flightBk(x) || flightBk(prev) ||
     (airport(prev) && airport(x) && placeQuery(prev.place) !== placeQuery(x.place)) || /บิน|flight|แลนด์|landing/i.test(`${prev?.activity || ""} ${x.activity || ""}`) && airport(prev) && airport(x);
 };
 
@@ -1473,7 +1487,7 @@ function itemHtml(x) {
   const st = x.status || "";
   const warns = st ? [] : hoursWarnings(x);
   const hrs = hoursText(x);
-  const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
+  const bks = bookingsOf(x);
   return `
     <li class="row item-row st-${st || "none"}" id="item-${esc(x.id)}" data-id="${esc(x.id)}">
       <button type="button" class="drag-handle" aria-label="ลากเพื่อสลับลำดับ" title="ลากเพื่อสลับลำดับ">⋮⋮</button>
@@ -1489,7 +1503,7 @@ function itemHtml(x) {
       <div class="row-actions">
         <button type="button" class="icon" data-action="edit-item" data-id="${esc(x.id)}" title="แก้ไข">✎</button>${delBtn("items", x.id)}
       </div>
-      ${(() => { const c = linkChipsHtml(st === "cancel" ? [] : itemLinks(x), bk ? `<button type="button" class="bk-chip" data-action="goto-booking" data-id="${esc(bk.id)}" title="${esc(bk.type)}: ${esc(bk.title)}"><span class="bk-ic" aria-hidden="true">${isFlight(bk) ? "✈️" : isHotel(bk) ? "🏨" : "🎫"}</span><b>${esc(bk.title)}</b>${refOf(bk, getMe()) ? `<small>${esc(refOf(bk, getMe()))}</small>` : ""}<span class="bk-go" aria-hidden="true">›</span></button>` : ""); const ph = photoStripHtml(x.id), op = st === "cancel" ? "" : optionsRowHtml(x); return c || ph || op ? `<div class="row-tix">${op}${ph}${c}</div>` : ""; })()}
+      ${(() => { const c = linkChipsHtml(st === "cancel" ? [] : itemLinks(x), bks.map((bk) => `<button type="button" class="bk-chip" data-action="goto-booking" data-id="${esc(bk.id)}" title="${esc(bk.type)}: ${esc(bk.title)}"><span class="bk-ic" aria-hidden="true">${isFlight(bk) ? "✈️" : isHotel(bk) ? "🏨" : "🎫"}</span><b>${esc(bk.title)}</b>${refOf(bk, getMe()) ? `<small>${esc(refOf(bk, getMe()))}</small>` : ""}<span class="bk-go" aria-hidden="true">›</span></button>`).join("")); const ph = photoStripHtml(x.id), op = st === "cancel" ? "" : optionsRowHtml(x); return c || ph || op ? `<div class="row-tix">${op}${ph}${c}</div>` : ""; })()}
     </li>`;
 }
 
@@ -1618,7 +1632,8 @@ function startEdit(id) {
   legPolls = 0;
   const form = $("#item-form");
   const f = form.elements;
-  ["date", "time", "activity", "place", "cost", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
+  renderBookingOpts(bookingIdsOf(x));
+  ["date", "time", "activity", "place", "cost", "openTime", "closeTime", "hoursNote", "note"]
     .forEach((k) => (f[k].value = x[k] ?? ""));
   setCur(f.costCurrency, x.costCurrency || "THB");
   fillStay(form, x.stay);
@@ -1658,6 +1673,7 @@ function stopEdit() {
   setLegs([]);
   setLinks(f, []);
   setOptions(f, [], []);
+  renderBookingOpts([]);
   f.classList.remove("is-bag");
   pendingPhotos = [];
   renderItemSheetPhotos();
@@ -1761,9 +1777,8 @@ const siteName = (u) => {
 const linksOf = (x) => (Array.isArray(x?.links) ? x.links : []).map((l) => ({ url: safeUrl(l?.url), label: String(l?.label || "").trim() })).filter((l) => l.url);
 // กิจกรรมที่ลิงก์กับการจอง → รวมลิงก์ของการจองนั้นด้วย (ไม่ซ้ำ)
 function itemLinks(x) {
-  const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
   const seen = new Set();
-  return [...linksOf(x), ...linksOf(bk)].filter((l) => !seen.has(l.url) && seen.add(l.url));
+  return [...linksOf(x), ...bookingsOf(x).flatMap(linksOf)].filter((l) => !seen.has(l.url) && seen.add(l.url));
 }
 const TIX_GO = `<svg class="tix-go" viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M4 2h6v6M10 2 3 9" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 const linkChipsHtml = (links, lead = "") => links.length || lead
@@ -2267,18 +2282,12 @@ function renderBookings() {
   const el = $("#book-list");
   if (!el) return;
   const list = [...data.bookings].sort((a, b) => `${a.date}${a.time}`.localeCompare(`${b.date}${b.time}`));
-  // อัปเดตตัวเลือก "ลิงก์กับการจอง" ในฟอร์มแพลน (คงค่าที่เลือกไว้)
-  const sel = $("#item-form [name=bookingId]");
-  if (sel) {
-    const keep = sel.value;
-    sel.innerHTML = `<option value="">— ไม่มี —</option>` +
-      list.map((b) => `<option value="${esc(b.id)}">${esc(b.type)}: ${esc(b.title)}${b.date ? ` (${fmtDate(b.date)})` : ""}</option>`).join("");
-    sel.value = list.some((b) => b.id === keep) ? keep : "";
-  }
+  // อัปเดตตัวเลือก "ลิงก์กับการจอง" ในฟอร์มแพลน (คงค่าที่ติ๊กไว้)
+  renderBookingOpts();
   const days = tripDays();
   el.innerHTML = hotelSummaryHtml() + (list.length
     ? `<div class="card"><h3>การจองทั้งหมด</h3><ul class="rows">${list.map((b) => {
-        const used = sortItems(data.items.filter((i) => i.bookingId === b.id))
+        const used = sortItems(data.items.filter((i) => bookingIdsOf(i).includes(b.id)))
           .sort((p, q) => (p.date || "").localeCompare(q.date || ""));
         return `
         <li class="row" id="booking-${esc(b.id)}">
@@ -3695,10 +3704,10 @@ function buildPrintView() {
               const travel = legs.length
                 ? legs.map((l) => esc(legText(l))).join("<br>→ ") + (legsMinutes(x) ? `<br><b>รวม ${fmtDur(legsMinutes(x))}</b>` : "")
                 : esc(x.transport);
-              const bk = x.bookingId && data.bookings.find((b) => b.id === x.bookingId);
+              const bks = bookingsOf(x);
               const warns = hoursWarnings(x);
               return `<tr><td>${esc(x.time) || "-"}${x.prevNight && x.time ? `<br><small>(คืน ${fmtDate(prevDay(x.date))})</small>` : ""}${num(x.stay) ? `<br><small>${fmtDur(num(x.stay))}</small>` : ""}</td>
-                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bk ? `<br>${esc(bk.title)}${refsText(bk) ? ` (${esc(refsText(bk))})` : ""}` : ""}</td>
+                <td>${esc(x.activity)}${warns.length ? `<br><b>⚠️ ${warns.map(esc).join(", ")}</b>` : ""}${bks.map((bk) => `<br>${esc(bk.title)}${refsText(bk) ? ` (${esc(refsText(bk))})` : ""}`).join("")}</td>
                 <td>${esc(placeLabel(x.place, x.activity))}</td><td>${esc(hoursText(x))}</td><td>${travel}</td>
                 <td>${esc(x.note)}</td></tr>`;
             }), "c-plan")
@@ -4377,7 +4386,7 @@ function onSubmit(e) {
         stay: Math.min(num(f.stayH), 23) * 60 + Math.min(num(f.stayM), 59), cost: num(f.cost), costCurrency: f.costCurrency || "THB", note: f.note.trim(),
         openTime: f.openTime, closeTime: f.closeTime, hoursNote: f.hoursNote.trim(),
         closedDays: new FormData(form).getAll("closed").map(Number),
-        legs, transport: "", bookingId: f.bookingId || "",
+        legs, transport: "", bookingIds: new FormData(form).getAll("bookingIds"), bookingId: "",
       };
       if (!rec.activity) return;
       rec.links = readLinks(form);

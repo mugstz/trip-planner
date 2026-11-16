@@ -1,5 +1,5 @@
 // เก็บไฟล์เว็บไว้ในเครื่อง เพื่อให้เปิดได้ตอนไม่มีเน็ต
-const CACHE = "trip-planner-v26";
+const CACHE = "trip-planner-v27";
 const SHELL = ["./", "./index.html", "./style.css", "./app.js", "./firebase-config.js", "./data/trips.json", "./data/immigration.json", "./data/places.json", "./manifest.webmanifest", "./icons/icon-192.png", "./icons/apple-touch-icon.png"];
 // ตัวเชื่อม Firebase (โหลดเก็บไว้ด้วย เผื่อเปิดแอปครั้งแรกตอนไม่มีเน็ต) — ต้องตรงกับ SDK ใน app.js
 const SDK_FILES = ["firebase-app.js", "firebase-firestore.js", "firebase-auth.js"].map((f) => `https://www.gstatic.com/firebasejs/10.12.2/${f}`);
