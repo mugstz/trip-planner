@@ -56,6 +56,7 @@ const DATE_FMT = {
   weekday: { weekday: "short", day: "numeric", month: "short" },
 };
 // วันก่อนหน้า (YYYY-MM-DD) — ใช้กับกิจกรรม "คืนก่อนหน้า"
+const nextDay = (iso) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() + 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const prevDay = (iso) => { const d = new Date(iso + "T00:00:00"); d.setDate(d.getDate() - 1); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
 const fmtDate = (iso, mode = "short") =>
   iso ? new Date(iso + "T00:00:00").toLocaleDateString("th-TH", DATE_FMT[mode]) : "";
@@ -136,6 +137,10 @@ async function firebaseStore(cfg) {
       try { await fs.terminate(db); await fs.clearIndexedDbPersistence(db); } catch {}
     },
     uid: () => auth.currentUser?.uid || "",
+    // ข้อมูลที่แก้แล้วส่งขึ้นเซิร์ฟเวอร์ครบหรือยัง (รอไม่เกิน ms)
+    async pendingSynced(ms = 4000) {
+      try { return await Promise.race([fs.waitForPendingWrites(db).then(() => true), new Promise((r) => setTimeout(() => r(false), ms))]); } catch { return false; }
+    },
     // users/{uid}: ข้อมูลของบัญชี เช่น ในแต่ละทริปเป็นใคร
     listenUser: (cb, err) => fs.onSnapshot(fs.doc(db, "users", auth.currentUser.uid), (d) => cb(d.exists() ? d.data() : {}), (e) => { console.error(e); err?.(e); }),
     setUser: (patch) => fs.setDoc(fs.doc(db, "users", auth.currentUser.uid), patch, { merge: true }).catch(onErr),
@@ -152,8 +157,8 @@ async function firebaseStore(cfg) {
       });
       return () => un?.();
     },
-    listenTrip: (id, cb) =>
-      fs.onSnapshot(fs.doc(db, "trips", id), (d) => cb(d.exists() ? { id: d.id, ...d.data() } : null), onErr),
+    listenTrip: (id, cb, err) =>
+      fs.onSnapshot(fs.doc(db, "trips", id), (d) => cb(d.exists() ? { id: d.id, ...d.data() } : null), (e) => (e.code === "permission-denied" && err ? err(e) : onErr(e))),
     createTrip(data) {
       const ref = fs.doc(fs.collection(db, "trips"));
       fs.setDoc(ref, data).catch(onErr);
@@ -164,9 +169,9 @@ async function firebaseStore(cfg) {
     add: (t, s, data) => fs.addDoc(sub(t, s), data).catch(onErr),
     set: (t, s, id, data) => fs.setDoc(fs.doc(db, "trips", t, s, id), data).catch(onErr),
     get: (t, s, id) => fs.getDoc(fs.doc(db, "trips", t, s, id)).then((d) => (d.exists() ? { id: d.id, ...d.data() } : null)).catch(() => null),
-    async getAll(t) {
+    async getAll(t, subs = ALL_SUBS) {
       const out = {};
-      for (const s of ALL_SUBS) out[s] = (await fs.getDocs(sub(t, s))).docs.map((d) => ({ id: d.id, ...d.data() }));
+      for (const s of subs) out[s] = (await fs.getDocs(sub(t, s))).docs.map((d) => ({ id: d.id, ...d.data() }));
       return out;
     },
     update: (t, s, id, patch) => fs.updateDoc(fs.doc(db, "trips", t, s, id), patch).catch(onErr),
@@ -217,8 +222,16 @@ function localStore() {
     add(t, s, data) { bucket(t, s)[uid()] = clone(data); emit(); },
     set(t, s, id, data) { bucket(t, s)[id] = clone(data); emit(); },
     async get(t, s, id) { const d = bucket(t, s)[id]; return d ? { id, ...clone(d) } : null; },
-    async getAll(t) { return Object.fromEntries(ALL_SUBS.map((s) => [s, Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) }))])); },
-    update(t, s, id, patch) { const b = bucket(t, s); if (b[id]) Object.assign(b[id], clone(patch)); emit(); },
+    async getAll(t, subs = ALL_SUBS) { return Object.fromEntries(subs.map((s) => [s, Object.entries(bucket(t, s)).map(([id, d]) => ({ id, ...clone(d) }))])); },
+    update(t, s, id, patch) {
+      const b = bucket(t, s);
+      if (b[id]) for (const [k, v] of Object.entries(clone(patch))) {
+        // "a.b" = ช่องย่อย (แบบเดียวกับ Firestore)
+        if (k.includes(".")) { const [h, ...r] = k.split("."); const o = (b[id][h] = b[id][h] && typeof b[id][h] === "object" ? b[id][h] : {}); o[r.join(".")] = v; }
+        else b[id][k] = v;
+      }
+      emit();
+    },
     remove(t, s, id) { delete bucket(t, s)[id]; emit(); },
     deleteTrip(id) { delete db.trips[id]; delete db.subs[id]; delete db.priv[id]; emit(); },
   };
@@ -239,7 +252,8 @@ let skeletonSig = "";
 let firstTripLoad = true;
 let currentUser = null;  // บัญชีที่ล็อกอินอยู่ (โหมด Firebase)
 let userDoc = {};        // users/{uid}: { me: { tripId: ชื่อในทริป } }
-let priv = {};           // ข้อมูลส่วนตัวของฉันในทริปนี้ (เตรียมผ่าน ตม.)
+let priv = {};
+let privLoaded = false;           // ข้อมูลส่วนตัวของฉันในทริปนี้ (เตรียมผ่าน ตม.)
 
 const tripDays = () => daysBetween(trip?.startDate, trip?.endDate);
 const members = () => trip?.members || [];
@@ -273,7 +287,8 @@ const byCreated = (a, b) => num(a.createdAt) - num(b.createdAt);
 const tripCur = () => trip?.currency || "THB";
 const isForeign = () => tripCur() !== "THB";
 // เรต = 1 หน่วยเงินต่างประเทศ เท่ากับกี่บาท (0 = ยังไม่มีเรต)
-const rateOf = (cur) => (!cur || cur === "THB" ? 1 : cur === tripCur() ? num(trip?.rate) : 0);
+// เปลี่ยนสกุลเงินทริปแล้ว เรตของสกุลเดิมเก็บไว้ใน trip.rates → ค่าใช้จ่ายเก่ายังคิดเป็นบาทได้
+const rateOf = (cur) => (!cur || cur === "THB" ? 1 : cur === tripCur() ? num(trip?.rate) : num(trip?.rates?.[cur]));
 const toTHB = (amount, cur) => num(amount) * rateOf(cur || "THB");
 const fmtCur = (n, cur = "THB") => {
   if (!cur || cur === "THB") return money(n);
@@ -286,6 +301,13 @@ const fmtWithTHB = (n, cur) =>
   : `${fmtCur(n, cur)} <span class="muted">${rateOf(cur) ? `≈ ${money(toTHB(n, cur))}` : "(ยังไม่มีเรต)"}</span>`;
 // แปลงบาท → เงินปลายทาง (ไว้แสดงคู่กัน)
 const thbToTrip = (thb) => (isForeign() && rateOf(tripCur()) ? ` <span class="muted">≈ ${fmtCur(thb / rateOf(tripCur()), tripCur())}</span>` : "");
+// ตั้งค่าช่องสกุลเงินตอนแก้รายการเก่า (เพิ่มตัวเลือกสกุลเดิมถ้าไม่มีในลิสต์)
+function setCur(sel, cur) {
+  if (!sel) return;
+  cur = cur || tripCur();
+  if (![...sel.options].some((o) => o.value === cur)) sel.add(new Option(cur, cur));
+  sel.value = cur;
+}
 const curSelect = (name, selected) => {
   const opts = [...new Set([tripCur(), "THB"])];
   return `<select name="${name}" class="cur-select">${opts.map((c) => `<option value="${c}" ${c === selected ? "selected" : ""}>${c}</option>`).join("")}</select>`;
@@ -346,6 +368,7 @@ const sortItems = (list) =>
    เปลี่ยนหน้า
    ============================================================ */
 function cleanup() {
+  geoQueue.length = 0;
   unsubs.forEach((u) => u && u());
   unsubs = [];
   trip = null;
@@ -448,6 +471,11 @@ function renderUserBox() {
 }
 
 async function logout() {
+  // ออกจากระบบจะล้างข้อมูลในเครื่อง → ถ้ายังมีที่แก้ตอนออฟไลน์แล้วยังไม่ได้ส่งขึ้น จะหาย
+  if (store.pendingSynced && !(await store.pendingSynced())) {
+    const go = await confirmDialog({ title: "ยังมีข้อมูลที่ยังไม่ได้ส่งขึ้น", message: "ข้อมูลที่แก้ตอนไม่มีเน็ตยังไม่ถึงเซิร์ฟเวอร์ ถ้าออกจากระบบตอนนี้จะหาย — ต่อเน็ตแล้วรอสักครู่ก่อนดีกว่า", okText: "ออกเลย (ยอมให้หาย)", cancelText: "ยังไม่ออก", icon: "⚠️" });
+    if (!go) return;
+  }
   const yes = await confirmDialog({ title: "ออกจากระบบ?", message: "ข้อมูลที่เก็บไว้ในเครื่องนี้จะถูกล้าง เข้าใหม่ได้ด้วยอีเมลและรหัสผ่าน", okText: "ออกจากระบบ", icon: "👋" });
   if (!yes) return;
   await store.signOut();
@@ -535,6 +563,7 @@ async function importSample() {
     const id = store.createTrip({
       name: t.name, country: t.country, startDate: t.startDate, endDate: t.endDate,
       members: t.members, currency: t.currency || "THB", createdAt: Date.now(),
+      ...(useAccount() ? { emails: [myEmail()] } : {}), // Rules ให้สร้างได้เฉพาะทริปที่มีอีเมลตัวเอง
     });
     if (t.currency && t.currency !== "THB") updateRate(id, t.currency, true);
     (t.items || []).forEach((it, i) => store.add(id, "items", { ...it, createdAt: Date.now() + i }));
@@ -583,7 +612,7 @@ function renderEmailFields(form) {
   box.dataset.map = JSON.stringify(map);
   const names = [...new Set(form.elements.members.value.split(/[\n,]/).map((s) => s.trim()).filter(Boolean))];
   // ทริปใหม่: ใส่อีเมลเราให้ชื่อแรกไว้ก่อน (แก้ได้)
-  const noneYet = !Object.keys(map).some((k) => k !== "__me" && map[k]);
+  const noneYet = !names.some((n) => map[n]);
   box.innerHTML = names.length ? names.map((n, i) => `<label class="em-row"><span>${esc(n)}</span><input type="email" data-em="${esc(n)}" value="${esc(map[n] ?? (i === 0 && noneYet ? map.__me || "" : ""))}" placeholder="อีเมลของ ${esc(n)}" autocomplete="off" inputmode="email"></label>`).join("")
     : `<p class="muted small-note">ใส่รายชื่อผู้ร่วมทริปก่อน</p>`;
 }
@@ -633,8 +662,7 @@ function openTrip(id) {
     trip = { members: [], ...t };
     if (firstTripLoad) {
       firstTripLoad = false;
-      const today = new Date().toISOString().slice(0, 10);
-      const i = tripDays().indexOf(today);
+      const i = tripDays().indexOf(localToday());
       if (i >= 0) dayIdx = i;
       // เรตอัตโนมัติ (ไม่ใช่ใส่เอง) → อัปเดตให้วันละครั้งตอนเปิดทริป
       if (t.currency && t.currency !== "THB" && (t.rateUpdated !== todayISO() || t.rateSource === "manual")) {
@@ -647,15 +675,18 @@ function openTrip(id) {
     renderAll();
     // ยังไม่ได้เลือกว่าเป็นใคร → ถามก่อนเข้าทริป
     if (first && !getMe() && !adminGuest() && !lsGet("me-skip-" + t.id)) showMePicker();
-  }));
+  }, () => { app.innerHTML = noAccessHtml(); })); // ไม่มีสิทธิ์ (ไม่ได้อยู่ในทริป/ถูกเอาออก)
   SUBS.forEach((s) => unsubs.push(store.listen(id, s, (list) => {
     data[s] = list;
     if (skeletonSig) renderSection(s);
+    if (s === "items" || s === "wishlist" || s === "bookings") setTimeout(sweepFarCoords, 1500);
   })));
   // การ์ด "ถัดไป": อัปเดตทุกนาที (เฉพาะช่วงที่อยู่ในทริป)
   const tick = setInterval(() => { if (trip && tripDays().includes(localToday())) refreshNextCard(); }, 60000);
   unsubs.push(() => clearInterval(tick));
+  privLoaded = false;
   unsubs.push(store.listenPrivate(id, (p) => {
+    privLoaded = true;
     priv = p || {};
     if (skeletonSig) { renderPrep(); syncBookForm(); renderMyBudget(); renderShopping(); }
   }));
@@ -1128,7 +1159,9 @@ const localToday = () => { const d = new Date(); return `${d.getFullYear()}-${St
 function nextCardHtml(d, active) {
   if (d !== localToday()) return "";
   const now = localNowMin();
-  const timed = active.filter((x) => effMin(x) !== null && x.status !== "done");
+  // กิจกรรม "คืนก่อนหน้า" ของพรุ่งนี้ = คืนนี้ (เช่น ไปสนามบิน 22:00)
+  const tonight = data.items.filter((x) => x.date === nextDay(d) && x.prevNight && x.time && x.status !== "cancel").map((x) => ({ ...x, prevNight: false }));
+  const timed = sortItems([...active, ...tonight]).filter((x) => effMin(x) !== null && x.status !== "done");
   const cur = timed.find((x) => effMin(x) <= now && now < effMin(x) + (num(x.stay) || 60));
   const next = timed.find((x) => effMin(x) > now);
   if (!cur && !next) return active.length ? `<div class="next-card done-day">🌙 วันนี้ครบทุกแพลนแล้ว พักผ่อนเยอะๆ</div>` : "";
@@ -1248,10 +1281,11 @@ async function wxBase() {
 async function loadWeather(force = false) {
   if (!trip || wxState === "loading" || (wxState === "done" && !force)) return;
   wxState = "loading";
+  const wxTrip = trip.id; // โหลดเสร็จตอนเปลี่ยนทริปไปแล้ว → ไม่ใช้ผล
   try {
     const days = tripDays();
     const base = await wxBase();
-    if (!base) { wxState = "done"; return; }
+    if (!base) { wxState = "done"; renderPlan(); return; }
     // จุดของแต่ละวัน = ที่พักคืนนั้น (ปัดทศนิยม 1 ตำแหน่ง ≈ 10 กม. รวมเป็นกลุ่มเดียวกัน)
     const locOf = (d) => { const h = hotelForNight(d)[0] || hotels().find((x) => x.checkOutDate === d); const c = (h && hotelCoords(h)) || base; return { lat: +c.lat.toFixed(1), lng: +c.lng.toFixed(1), place: h?.title || trip.name }; };
     const groups = new Map();
@@ -1261,6 +1295,7 @@ async function loadWeather(force = false) {
     let cache = null;
     try { cache = JSON.parse(lsGet(cacheKey)); } catch {}
     const fresh = cache && cache.sig === sig && Date.now() - cache.at < 3 * 3600e3;
+    if (trip?.id !== wxTrip) return;
     if (fresh) { WX = cache.data; wxState = "done"; renderPlan(); return; }
     if (!navigator.onLine) { if (cache?.data) WX = cache.data; wxState = "done"; renderPlan(); return; }
     const out = {};
@@ -1280,6 +1315,7 @@ async function loadWeather(force = false) {
         (r.daily?.time || []).forEach((d, i) => { const td = shiftYear(d, 1); (out[td] ||= { place: g.place }).ly = { date: d, ...wmo(r.daily.weather_code[i]), max: r.daily.temperature_2m_max[i], min: r.daily.temperature_2m_min[i], mm: r.daily.precipitation_sum[i] }; });
       } catch {}
     }
+    if (trip?.id !== wxTrip) return;
     WX = out;
     lsSet(cacheKey, JSON.stringify({ at: Date.now(), sig, data: out }));
   } catch (e) { console.warn(e); }
@@ -1331,7 +1367,9 @@ function itemCoords(x) {
   if (!x) return null;
   if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) return { lat: x.lat, lng: x.lng };
   const w = x.wishId && data.wishlist.find((v) => v.id === x.wishId);
-  return (w && wishCoords(w)) || coordsFromLink(x.place);
+  // ใช้พิกัดของ Wishlist เฉพาะตอนที่สถานที่ยังเป็นที่เดียวกัน (เลือกที่ย่อย/แก้สถานที่แล้ว → หาใหม่)
+  const same = w && (x.place || "") === (w.place || w.name || "");
+  return (same && wishCoords(w)) || coordsFromLink(x.place);
 }
 const routeEnd = (x) => { const c = itemCoords(x); return c ? `${c.lat},${c.lng}` : placeQuery(x.place) || ""; };
 const dirUrlItems = (a, b) => {
@@ -1357,7 +1395,8 @@ function travelMinutes(prev, x) {
 function hoursWarnings(x) {
   const warn = [];
   const closed = Array.isArray(x.closedDays) ? x.closedDays.map(Number) : [];
-  if (x.date && closed.includes(new Date(x.date + "T00:00:00").getDay())) warn.push("ปิดวันนี้!");
+  const vd = x.prevNight && x.time ? prevDay(x.date) : x.date; // คืนก่อนหน้า = ไปจริงวันก่อน
+  if (vd && closed.includes(new Date(vd + "T00:00:00").getDay())) warn.push("ปิดวันนี้!");
   const t = toMin(x.time), o = toMin(x.openTime), c = toMin(x.closeTime);
   if (t !== null && o !== null && c !== null) {
     const inside = c > o ? t >= o && t < c : t >= o || t < c; // รองรับร้านเปิดข้ามเที่ยงคืน
@@ -1467,8 +1506,15 @@ function setItemStatus(id, status) {
 function reorderDay(ids) {
   const items = ids.map((id) => data.items.find((i) => i.id === id)).filter(Boolean);
   const times = items.map(effMin).filter((m) => m !== null).sort((p, q) => p - q);
+  // เวลาเดิมทั้งหมดยังอยู่ครบ: แจกให้กิจกรรมที่มีเวลาตามลำดับใหม่
+  // กิจกรรมไม่มีเวลาที่ลากไปไว้กลางแพลน → ใช้เวลาเดียวกับอันก่อนหน้า (ลำดับตัดสินด้วย order) · ที่อยู่ท้ายสุดยังไม่มีเวลาเหมือนเดิม
+  let lastTimed = -1;
+  items.forEach((x, i) => { if (effMin(x) !== null) lastTimed = i; });
+  let ptr = 0, prevM;
   items.forEach((x, i) => {
-    const m = times[i];
+    let m;
+    if (i <= lastTimed) m = effMin(x) !== null ? times[ptr++] : prevM ?? times[0];
+    if (m !== undefined) prevM = m;
     const time = m === undefined ? "" : fromMin((m + 1440) % 1440);
     const prevNight = m !== undefined && m < 0;
     const patch = {};
@@ -1503,6 +1549,7 @@ function readLegs() {
 
 // ในฟอร์ม: ประมาณเวลาเดินทางจากกิจกรรมก่อนหน้าในวันเดียวกัน
 const formGeo = new Map();
+let legPollT = null, legPolls = 0; // รอหาตำแหน่งจุดก่อนหน้า (ถามซ้ำไม่เกิน 8 ครั้ง)
 // จุดก่อนหน้า = กิจกรรมที่อยู่ “ก่อนหน้า” ในลำดับเดียวกับหน้าแพลน (เวลา + คืนก่อนหน้า + ลำดับที่ลาก)
 // ถ้าเป็นกิจกรรมแรกของวัน → ใช้ที่พักของคืนก่อน
 function formPrevStop(f) {
@@ -1534,7 +1581,7 @@ async function updateLegSuggest() {
     const failed = prev.geoFail && !geoBusy;
     box.innerHTML = `📍 จุดก่อนหน้า: <b>${esc(prev.activity)}</b> — ${failed ? `หาตำแหน่งจุดก่อนหน้าไม่เจอ <button type="button" class="btn small" data-action="geo-retry" data-id="${esc(prev.id)}">ลองหาอีกครั้ง</button>
       <small class="muted geo-tip">ถ้ายังไม่เจอ: ใน Google Maps กดค้างที่หมุด → ก๊อปพิกัด (เช่น 34.6545, 135.4290) แล้ววางในช่อง “สถานที่” ของกิจกรรมนั้น</small>` : "กำลังหาตำแหน่ง…"}`;
-    if (!failed) setTimeout(() => { if (!document.getElementById("sheet-item")?.hidden) updateLegSuggest(); }, 2500);
+    if (!failed && legPolls++ < 8) { clearTimeout(legPollT); legPollT = setTimeout(() => { if (!document.getElementById("sheet-item")?.hidden) updateLegSuggest(); }, 2500); }
     return;
   }
   if (b === undefined) {
@@ -1565,10 +1612,12 @@ function startEdit(id) {
   const x = data.items.find((i) => i.id === id);
   if (!x) return;
   editingItemId = id;
+  legPolls = 0;
   const form = $("#item-form");
   const f = form.elements;
-  ["date", "time", "activity", "place", "cost", "costCurrency", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
+  ["date", "time", "activity", "place", "cost", "openTime", "closeTime", "hoursNote", "bookingId", "note"]
     .forEach((k) => (f[k].value = x[k] ?? ""));
+  setCur(f.costCurrency, x.costCurrency || "THB");
   fillStay(form, x.stay);
   form.querySelectorAll("[name=kind]").forEach((r) => (r.checked = r.value === kindOf(x)));
   form.classList.toggle("is-bag", kindOf(x) === "bag");
@@ -1593,6 +1642,7 @@ function startEdit(id) {
 
 function newItem() {
   stopEdit();
+  legPolls = 0;
   openSheet("sheet-item", "[name=activity]");
   updateLegSuggest();
 }
@@ -1767,12 +1817,14 @@ function optHost(sub, id) {
 // ติ๊กไว้ที่เดียว → ใช้เป็นสถานที่ของกิจกรรม · มีราคา → รวมเป็นค่าใช้จ่ายของกิจกรรม
 function itemPatchFromPicks(x, ops, picks) {
   const sel = ops.filter((o) => picks.includes(o.id));
-  if (!sel.length) return {};
+  // ค่าใช้จ่ายที่มาจากตัวเลือก → เอาติ๊กออกแล้วต้องล้างด้วย (ค่าที่ใส่เองไม่แตะ)
+  if (!sel.length) return x.costFromPicks ? { cost: 0, costFromPicks: false } : {};
   const patch = {};
   if (sel.length === 1) patch.place = sel[0].place || sel[0].name || "";
   const priced = sel.filter((o) => num(o.cost));
   const cur = priced[0]?.costCurrency || tripCur();
-  if (priced.length && priced.every((o) => (o.costCurrency || tripCur()) === cur)) { patch.cost = priced.reduce((t, o) => t + num(o.cost), 0); patch.costCurrency = cur; }
+  if (priced.length && priced.every((o) => (o.costCurrency || tripCur()) === cur)) { patch.cost = priced.reduce((t, o) => t + num(o.cost), 0); patch.costCurrency = cur; patch.costFromPicks = true; }
+  else if (!priced.length && x.costFromPicks) Object.assign(patch, { cost: 0, costFromPicks: false });
   if (patch.place !== undefined) {
     if ((x.place || "") === patch.place) delete patch.place;
     else { const c = coordsFromLink(patch.place); Object.assign(patch, { lat: c?.lat ?? null, lng: c?.lng ?? null, geoFail: false }); if (x.id) geoTried.delete(x.id); }
@@ -1780,7 +1832,6 @@ function itemPatchFromPicks(x, ops, picks) {
   return patch;
 }
 function applyPicksToItems(host, ops, picks, skipId = "") {
-  if (!picks.length) return;
   const items = host.sub === "wishlist" ? data.items.filter((i) => i.wishId === host.doc.id) : [host.doc];
   items.filter((x) => x.id !== skipId).forEach((x) => {
     const p = itemPatchFromPicks(x, ops, picks);
@@ -1928,13 +1979,18 @@ function savePhoto(itemId, p, at = Date.now()) {
   store.set(trip.id, "photoFull", pid, { itemId, full: p.full });
   store.set(trip.id, "photoThumbs", pid, stamp({ itemId, thumb: p.thumb, w: p.w, h: p.h, createdAt: at }));
 }
-function deleteItemPhotos(tripId, itemId) {
-  (data.photoThumbs || []).filter((p) => p.itemId === itemId).forEach((p) => {
-    store.remove(tripId, "photoThumbs", p.id);
-    store.remove(tripId, "photoFull", p.id);
+function deleteItemPhotos(tripId, itemId, ids = null) {
+  (ids || (data.photoThumbs || []).filter((p) => p.itemId === itemId).map((p) => p.id)).forEach((pid) => {
+    store.remove(tripId, "photoThumbs", pid);
+    store.remove(tripId, "photoFull", pid);
   });
 }
+let photoBusy = 0; // กำลังย่อรูปอยู่ → ยังไม่ให้กดบันทึก (กันรูปหาย/ไปติดกิจกรรมอื่น)
 async function addPhotoFiles(files) {
+  photoBusy++;
+  try { await addPhotoFilesInner(files); } finally { photoBusy--; }
+}
+async function addPhotoFilesInner(files) {
   const itemId = editingItemId;
   const have = itemId ? photosOf(itemId).length : pendingPhotos.length;
   const list = [...files].filter((f) => /^image\//.test(f.type) || /\.(heic|heif|jpe?g|png|webp|gif)$/i.test(f.name));
@@ -2134,7 +2190,7 @@ function renderWishlist() {
         <div class="meta wish-meta">
           <span class="badge">${kindIcon(KIND_OF_WISH[w.category] || "other")} ${esc(w.category || "อื่นๆ")}</span>
           ${w.place || w.name ? `<a href="${esc(mapUrl(w.place || w.name))}" target="_blank" rel="noopener">📍 ${esc(placeLabel(w.place, w.name))}</a>` : ""}
-          ${w.link ? `<a href="${esc(w.link)}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
+          ${safeUrl(w.link) ? `<a href="${esc(safeUrl(w.link))}" target="_blank" rel="noopener">${linkLabel(w.link)}</a>` : ""}
           ${editedHtml(w)}
         </div>
         ${w.mustTry ? `<div class="wish-line">🍽️ <b>ต้องลอง:</b> ${esc(w.mustTry)}</div>` : ""}
@@ -2170,7 +2226,7 @@ function wishToPlan(id) {
   store.add(trip.id, "items", stamp({
     date: sel.value, time: "", activity: w.name, place: w.place || w.name,
     transport: "", cost: 0, costCurrency: tripCur(), note, wishId: w.id, createdAt: Date.now(),
-    ...(c ? { lat: c.lat, lng: c.lng } : {}),
+    ...(c ? { lat: c.lat, lng: c.lng, geoChecked: !!w.geoChecked } : {}),
     ...(() => { const p = itemPatchFromPicks({ place: w.place || w.name }, optionsOf(w), picksOf(w)); delete p.geoFail; return p; })(),
   }));
   store.update(trip.id, "wishlist", id, { plannedDate: sel.value, planLinked: true });
@@ -2248,7 +2304,7 @@ function renderBookings() {
 
 /* ---------- ที่พัก ---------- */
 const isHotel = (b) => b?.type === "ที่พัก";
-const hotels = () => data.bookings.filter(isHotel).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+const hotels = () => (data.bookings || []).filter(isHotel).sort((a, b) => (a.date || "").localeCompare(b.date || ""));
 const nightsOf = (b) => Math.max(0, daysBetween(b.date, b.checkOutDate).length - 1);
 // คืนที่ต้องมีที่พัก = ทุกคืนตั้งแต่วันไป ถึงก่อนวันกลับ
 const tripNights = () => tripDays().slice(0, -1);
@@ -2446,7 +2502,7 @@ function settleHtml(forPrint = false) {
              ${forPrint ? "" : `</details>`}
            </li>`).join("")}</ul>`
           : `<p class="ok-text">✓ ไม่มียอดค้าง ทุกคนเคลียร์กันครบแล้ว</p>`}
-         <details class="paid-table"><summary>ดูยอดที่แต่ละคนออกไปก่อน</summary>
+         <details class="paid-table" ${forPrint ? "open" : ""}><summary>ดูยอดที่แต่ละคนออกไปก่อน</summary>
          <div class="table-wrap"><table><thead><tr><th>ชื่อ</th><th class="num">ออกไปก่อน</th><th class="num">ส่วนที่ต้องจ่าย</th></tr></thead>
          <tbody>${members().map((m) => `<tr><td>${esc(m)}${m === me ? " (ฉัน)" : ""}</td><td class="num">${money(paid[m])}</td><td class="num">${money(owe[m])}</td></tr>`).join("")}</tbody></table></div></details>`
       : `<p class="muted">ยังไม่มีรายการค่าใช้จ่าย</p>`) +
@@ -2486,7 +2542,7 @@ function updateExpensePreview() {
   const cur = f.elements.currency.value;
   const v = num(f.elements.amount.value);
   const n = [...document.querySelectorAll("#expense-form [name=splitWith]:checked")].length || 1;
-  out.textContent = v ? `${cur !== "THB" ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))} · ` : "ยังไม่มีเรต · ") : ""}หาร ${n} คน = คนละ ${shareText({ amount: v, currency: cur })}` : "";
+  out.textContent = v ? `${cur !== "THB" ? (rateOf(cur) ? `≈ ${money(toTHB(v, cur))} · ` : "ยังไม่มีเรต · ") : ""}หาร ${n} คน = คนละ ${shareText({ amount: v, currency: cur, splitWith: [...document.querySelectorAll("#expense-form [name=splitWith]:checked")].map((c) => c.value) })}` : "";
 }
 
 function renderMoney() {
@@ -2537,7 +2593,8 @@ function renderMyBudget() {
   if (!box) return;
   const me = getMe();
   if (!me) { box.innerHTML = `<h3>💰 งบของฉัน</h3><p class="muted">เลือก “ฉันคือใคร?” ก่อน เพื่อดูงบของตัวเอง</p>`; return; }
-  if (box.contains(document.activeElement) && document.activeElement.id === "budget-input") return;
+  if (box.contains(document.activeElement) && /^(INPUT|TEXTAREA|SELECT)$/.test(document.activeElement.tagName)) return; // กำลังพิมพ์อยู่
+  const ownOpen = box.querySelector("details.mb-own")?.open;
   const st = myBudgetStats();
   const budget = num(priv.budget);
   const pct = budget ? Math.min(100, Math.round((st.total / budget) * 100)) : 0;
@@ -2561,7 +2618,7 @@ function renderMyBudget() {
       <li><span>ค่าใช้จ่ายส่วนตัว</span><b>${money(st.own)}</b></li>
       <li><span>ของที่ซื้อแล้ว (ลิสต์ช้อป)</span><b>${money(st.shop)}</b></li>
     </ul>
-    <details class="mb-own" ${list.length ? "" : ""}>
+    <details class="mb-own" ${ownOpen ? "open" : ""}>
       <summary>ค่าใช้จ่ายส่วนตัว (${list.length}) — เพิ่ม/ดูรายการ</summary>
       <form id="myexp-form" class="inline-form mb-form">
         <input name="title" required placeholder="เช่น ขนม, ค่ารถส่วนตัว">
@@ -2596,7 +2653,8 @@ function startEditExpense(id) {
   if (!e) return;
   editingExpenseId = id;
   const f = $("#expense-form").elements;
-  ["title", "amount", "currency", "paidBy", "date"].forEach((k) => (f[k].value = e[k] ?? ""));
+  ["title", "amount", "paidBy", "date"].forEach((k) => (f[k].value = e[k] ?? ""));
+  setCur(f.currency, e.currency || "THB");
   const sp = splitOf(e);
   document.querySelectorAll("#expense-form [name=splitWith]").forEach((c) => (c.checked = sp.includes(c.value)));
   $("#expense-form-title").textContent = "แก้ไขค่าใช้จ่าย";
@@ -2751,7 +2809,7 @@ async function delShop(id) {
 let shopMigrating = false;
 function migrateShop() {
   const me = getMe();
-  if (!me || shopMigrating) return;
+  if (!me || shopMigrating || !privLoaded) return; // รอข้อมูลส่วนตัวโหลดก่อน ไม่งั้นทับลิสต์เดิม
   const old = (data.shopping || []).filter((x) => x.owner === me);
   if (!old.length) return;
   shopMigrating = true;
@@ -2768,7 +2826,7 @@ function openShopForm(x) {
   editingShopId = x?.id || null;
   const f = form.elements;
   if (x) ["name", "shop", "price", "qty", "note"].forEach((k) => (f[k].value = x[k] ?? ""));
-  f.currency.value = x?.currency || tripCur();
+  setCur(f.currency, x?.currency || tripCur());
   const dl = $("#shop-names");
   dl.innerHTML = [...new Set(shopList().map((s) => s.shop).filter(Boolean))].map((s) => `<option value="${esc(s)}">`).join("");
   $("#shop-form-title").textContent = x ? "แก้ไขของที่อยากซื้อ" : "เพิ่มของที่อยากซื้อ";
@@ -2884,7 +2942,7 @@ function openTripEdit(id) {
           <button type="button" class="btn danger" data-action="delete-trip">ลบทริป</button>
         </div>
       </div>`;
-  }));
+  }, () => { app.innerHTML = noAccessHtml(); }));
 }
 
 /* ============================================================
@@ -2932,20 +2990,58 @@ function hotelCoords(h) {
   return coordsFromLink(h?.place);
 }
 // หาพิกัดจากชื่อ: OpenStreetMap (Nominatim) → ไม่เจอลอง Photon (ค้นแบบยืดหยุ่นกว่า เช่น "Osaka aquarium kaiyukan")
+// ชื่อซ้ำหลายที่ (เช่น วัด Kiyomizu-dera มีหลายจังหวัด) → เลือกที่ใกล้ที่พักของทริปที่สุด และค้นเฉพาะในประเทศปลายทาง
 // คืน null = ค้นแล้วไม่เจอจริง / undefined = เน็ตมีปัญหาหรือโดนจำกัดการใช้ → ไว้ลองใหม่ทีหลัง
-async function geocode(q) {
+// จุดอ้างอิง = ที่พักทุกที่ในทริป (ทริปหลายเมืองก็เลือกได้ถูก)
+const geoRefs = () => (trip ? hotels().map(hotelCoords).filter(Boolean) : []);
+const geoRef = () => geoRefs()[0] || null;
+const refDist = (c, refs) => Math.min(...refs.map((r) => distKm(c, r)));
+const nearest = (cands, refs) => (!cands.length ? null : !refs?.length ? cands[0] : cands.reduce((a, b) => (refDist(a, refs) <= refDist(b, refs) ? a : b)));
+// Nominatim ให้ใช้ไม่เกิน 1 ครั้ง/วินาที → ต่อคิวทุกการเรียก
+let nomLast = 0, nomChain = Promise.resolve();
+const nomWait = () => (nomChain = nomChain.then(async () => { const w = nomLast + 1100 - Date.now(); if (w > 0) await new Promise((r) => setTimeout(r, w)); nomLast = Date.now(); }));
+async function geocode(q, { local = true } = {}) {
   let netErr = false;
+  const refs = geoRefs(), ref = refs[0];
+  const cc = local && trip && /^[A-Z]{2}$/.test(destOf()) ? `&countrycodes=${destOf().toLowerCase()}` : "";
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": "en" } });
-    if (r.ok) { const j = await r.json(); if (j[0]) return { lat: +j[0].lat, lng: +j[0].lon }; } else netErr = true;
+    await nomWait();
+    const r = await fetch(`https://nominatim.openstreetmap.org/search?format=json&limit=5${cc}&q=${encodeURIComponent(q)}`, { headers: { "Accept-Language": "en" } });
+    if (r.ok) { const j = await r.json(); const c = nearest(j.map((v) => ({ lat: +v.lat, lng: +v.lon })), refs); if (c) return c; } else netErr = true;
   } catch { netErr = true; }
   try {
-    const h = trip && hotels().map(hotelCoords).find(Boolean); // ให้น้ำหนักกับที่ใกล้ที่พัก
-    const r = await fetch(`https://photon.komoot.io/api/?limit=1&q=${encodeURIComponent(q)}${h ? `&lat=${h.lat}&lon=${h.lng}` : ""}`);
-    if (r.ok) { const j = await r.json(); const g = j.features?.[0]?.geometry?.coordinates; if (g) return { lat: +g[1], lng: +g[0] }; } else netErr = true;
+    const r = await fetch(`https://photon.komoot.io/api/?limit=5&q=${encodeURIComponent(q)}${ref ? `&lat=${ref.lat}&lon=${ref.lng}` : ""}`);
+    if (r.ok) {
+      const j = await r.json();
+      let fs = j.features || [];
+      const want = cc && destOf();
+      if (want && fs.some((f) => f.properties?.countrycode === want)) fs = fs.filter((f) => f.properties?.countrycode === want);
+      const c = nearest(fs.map((f) => f.geometry?.coordinates).filter(Boolean).map((g) => ({ lat: +g[1], lng: +g[0] })), refs);
+      if (c) return c;
+    } else netErr = true;
   } catch { netErr = true; }
   return netErr ? undefined : null;
 }
+// ตำแหน่งที่ระบบหาให้เอง แต่ไกลจากที่พักเกิน 250 กม. → น่าจะได้ที่ผิด (ชื่อซ้ำ) ให้หาใหม่ครั้งเดียว
+const FAR_KM = 250;
+const geoSwept = new Set();
+function sweepFarCoords() {
+  if (!trip || !data.items) return;
+  const refs = geoRefs();
+  if (!trip || !refs.length || !navigator.onLine) return;
+  const bad = (x) => !x.geoChecked && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !coordsFromLink(x.place) && refDist({ lat: x.lat, lng: x.lng }, refs) > FAR_KM;
+  for (const [sub, list] of [["items", data.items || []], ["wishlist", data.wishlist || []]]) {
+    list.filter((x) => !geoSwept.has(x.id) && bad(x)).forEach((x) => {
+      geoSwept.add(x.id);
+      const q = placeQuery(x.place) || (sub === "wishlist" ? x.name : isLink(x.place) ? "" : x.activity);
+      if (!q) return;
+      geoTried.add(x.id);
+      geoQueue.push({ sub, rec: x, q, recheck: true, tripId: trip.id });
+    });
+  }
+  runGeoQueue();
+}
+
 async function ensureHotelCoords(h) {
   if (!h || hotelCoords(h) || geoTried.has(h.id) || !navigator.onLine) return;
   geoTried.add(h.id);
@@ -3123,7 +3219,7 @@ function queueWishGeocode(w) {
   if (!w || wishCoords(w) || geoTried.has(w.id) || !navigator.onLine) return;
   if (isLink(w.place) && !placeNameFromLink(w.place)) return; // ลิงก์สั้นอ่านชื่อไม่ได้
   geoTried.add(w.id);
-  geoQueue.push({ sub: "wishlist", rec: w, q: placeQuery(w.place) || w.name });
+  geoQueue.push({ sub: "wishlist", rec: w, q: placeQuery(w.place) || w.name, tripId: trip?.id });
   runGeoQueue();
 }
 // กิจกรรมในแพลน: หาตำแหน่งเพื่อประมาณเวลาเดินทางระหว่างจุด (หาไม่เจอจะจำไว้ ไม่ค้นซ้ำ)
@@ -3133,22 +3229,27 @@ function queueItemGeocode(x) {
   const q = placeQuery(x.place) || (isLink(x.place) ? "" : x.activity);
   if (!q) return;
   geoTried.add(x.id);
-  geoQueue.push({ sub: "items", rec: x, q });
+  geoQueue.push({ sub: "items", rec: x, q, tripId: trip.id });
   runGeoQueue();
 }
 async function runGeoQueue() {
   if (geoBusy) return;
   geoBusy = true;
   while (geoQueue.length) {
-    const { sub, rec, q } = geoQueue.shift();
+    const job = geoQueue.shift();
+    const { sub, rec, q, recheck } = job;
+    if (job.tripId && job.tripId !== trip?.id) continue; // เปลี่ยนทริปไปแล้ว
     const country = destInfo().nameEn || trip?.country || "";
     const c1 = await geocode(`${q}, ${country}`);
-    const c = c1 || (await geocode(q));
-    if (c && trip) store.update(trip.id, sub, rec.id, { lat: c.lat, lng: c.lng, geoFail: false });
+    let c = c1 || (await geocode(q));
+    if (!c && c !== undefined) c = await geocode(q, { local: false }); // ไม่อยู่ในประเทศปลายทาง เช่น สนามบินดอนเมือง
+    if (job.tripId && job.tripId !== trip?.id) continue;
+    if (!(data[sub] || []).some((v) => v.id === rec.id)) continue; // ถูกลบไปแล้ว
+    if (c && trip) store.update(trip.id, sub, rec.id, { lat: c.lat, lng: c.lng, geoFail: false, geoChecked: true });
+    else if (recheck) { if (trip && c !== undefined && c1 !== undefined) store.update(trip.id, sub, rec.id, { geoChecked: true }); }
     else if (c1 === undefined || c === undefined) { /* เน็ต/โดนจำกัด → ไว้ลองใหม่รอบหน้า */ }
     else if (trip && sub === "items") store.update(trip.id, "items", rec.id, { geoFail: Date.now() });
     else renderWishlist();
-    await new Promise((r) => setTimeout(r, 1100));
   }
   geoBusy = false;
 }
@@ -3160,7 +3261,7 @@ function addSuggestToWishlist(id) {
   const src = p.sources?.[0];
   store.add(trip.id, "wishlist", {
     name: p.name, category: SG_TO_WISH[cat] || "อื่นๆ", place: p.nameEn, link: src?.url || "",
-    note: p.season?.label || "", timeNeeded: p.time || "", access: p.access || "", lat: p.lat, lng: p.lng,
+    note: p.season?.label || "", timeNeeded: p.time || "", access: p.access || "", lat: p.lat, lng: p.lng, geoChecked: true,
     plannedDate: "", planLinked: true, priority: 2, source: `สถานที่แนะนำ · ${src?.publisher || ""}`, suggestId: id, createdAt: Date.now(),
   });
   toast(`เพิ่ม “${p.name}” ใน Wishlist แล้ว`);
@@ -3287,11 +3388,14 @@ function readinessChecks() {
   const info = destInfo();
   const missing = tripNights().filter((d) => !hotelForNightOf(d, me).length);
   const mine = myFlights(me);
-  const out = mine.some((b) => b.date === trip.startDate);
-  const ret = mine.some((b) => b.date === trip.endDate);
+  // ไฟลท์ดึก/ข้ามคืน: นับวันก่อนวันไป และวันหลังวันกลับด้วย
+  const isOut = (b) => b.date === trip.startDate || b.date === prevDay(trip.startDate);
+  const isRet = (b) => b.date === trip.endDate || b.date === nextDay(trip.endDate);
+  const out = mine.some(isOut);
+  const ret = mine.some(isRet);
   const checks = [
-    [out ? "ok" : "no", "ตั๋วเครื่องบินขาไปของฉัน", out ? mine.filter((b) => b.date === trip.startDate).map((b) => b.title).join(", ") : `ยังไม่มีเที่ยวบินวันที่ ${fmtDate(trip.startDate)} ที่ติ๊กชื่อ ${me}`],
-    [ret ? "ok" : "no", "ตั๋วเครื่องบินขากลับของฉัน", ret ? mine.filter((b) => b.date === trip.endDate).map((b) => b.title).join(", ") : `ยังไม่มีเที่ยวบินวันที่ ${fmtDate(trip.endDate)} ที่ติ๊กชื่อ ${me} — ตม. มักขอดูตั๋วขากลับ`],
+    [out ? "ok" : "no", "ตั๋วเครื่องบินขาไปของฉัน", out ? mine.filter(isOut).map((b) => b.title).join(", ") : `ยังไม่มีเที่ยวบินวันที่ ${fmtDate(trip.startDate)} ที่ติ๊กชื่อ ${me}`],
+    [ret ? "ok" : "no", "ตั๋วเครื่องบินขากลับของฉัน", ret ? mine.filter(isRet).map((b) => b.title).join(", ") : `ยังไม่มีเที่ยวบินวันที่ ${fmtDate(trip.endDate)} ที่ติ๊กชื่อ ${me} — ตม. มักขอดูตั๋วขากลับ`],
     [missing.length ? "no" : "ok", "ที่พักครบทุกคืน", missing.length ? `ยังขาด ${missing.length} คืน: ${missing.map((d) => fmtDate(d)).join(", ")}` : `ครบ ${tripNights().length} คืน`],
   ];
   if (info.domestic) { // เที่ยวในประเทศ: อาจขับรถไป ไม่ต้องมีไฟลท์ / ไม่มีพาสปอร์ต / ไม่ต้องเลือกอาชีพ
@@ -3366,7 +3470,7 @@ function renderSos() {
     <h3>🆘 ฉุกเฉิน & ที่พัก</h3>
     <p class="muted small-note sos-sub">ใช้ได้ตอนออฟไลน์ (ถ้าเคยเปิดหน้านี้ตอนมีเน็ต)</p>
     ${h ? `<div class="sos-hotel">
-        <div class="sh-label">🏨 ที่พัก${tripDays().includes(todayISO()) ? "คืนนี้" : "คืนแรก"}</div>
+        <div class="sh-label">🏨 ${(() => { const t = todayISO(), d = tripDays().includes(t) ? t : trip.startDate; return myHotelForNight(d).includes(h) ? `ที่พัก${d === t ? "คืนนี้" : "คืนแรก"}` : h.checkOutDate === d ? "ที่พักที่เช็คเอาท์วันนี้" : "ที่พักในทริป (ไม่ใช่ของคืนนี้)"; })()}</div>
         <div class="sh-name">${esc(h.title)}</div>
         ${h.addressLocal ? `<div class="sh-local" data-action="taxi-card" data-id="${esc(h.id)}" role="button" tabindex="0">${esc(h.addressLocal)}</div>` : ""}
         ${h.address ? `<div class="sh-en">${esc(h.address)}</div>` : `<div class="warn-soft small-note">ยังไม่มีที่อยู่ — เพิ่มในแท็บการจอง</div>`}
@@ -3737,9 +3841,11 @@ async function savePdfFile(title, doc, btn) {
     const blocks = [...host.children];
     for (let i = 0; i < blocks.length; i++) {
       const el = blocks[i];
+      if (!el.offsetHeight) continue; // บล็อกว่าง (เช่น ไม่มีเช็กลิสต์) → html2canvas ได้ภาพสูง 0 แล้ว jsPDF error
       const cs = getComputedStyle(el);
       const gapTop = parseFloat(cs.marginTop) || 0, gapBot = parseFloat(cs.marginBottom) || 0;
       const canvas = await window.html2canvas(el, { scale: 2, backgroundColor: "#ffffff", logging: false, windowWidth: W });
+      if (!canvas.height || !canvas.width) continue;
       const hPx = canvas.height / 2;
       let hMm = hPx * mmPerPx;
       y += gapTop * mmPerPx;
@@ -3773,7 +3879,13 @@ async function savePdfFile(title, doc, btn) {
     busy("");
     if (navigator.canShare?.({ files: [file] })) {
       try { await navigator.share({ files: [file], title }); return; }
-      catch (e) { if (e.name === "AbortError") return; }
+      catch (e) {
+        if (e.name === "AbortError") return;
+        // iPhone: สร้างนานเกินไป ระบบไม่นับว่าเป็นการแตะของผู้ใช้ → ขอให้แตะอีกครั้งเพื่อแชร์
+        if (e.name === "NotAllowedError" && await confirmDialog({ title: "PDF พร้อมแล้ว", message: "แตะ “แชร์ / บันทึก” เพื่อเซฟไฟล์หรือส่งต่อ", okText: "แชร์ / บันทึก", cancelText: "ปิด", icon: "📄" })) {
+          try { await navigator.share({ files: [file], title }); return; } catch (e2) { if (e2.name === "AbortError") return; }
+        }
+      }
     }
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -3951,6 +4063,27 @@ function onClick(e) {
   else if (action === "forgot") forgotPassword();
 }
 
+/* ---------- เปลี่ยนชื่อสมาชิก: ย้ายชื่อในข้อมูลทั้งหมด ---------- */
+function memberUsed(all, m) {
+  return (all.expenses || []).some((e) => e.paidBy === m || (e.splitWith || []).includes(m) || (e.settled && m in e.settled))
+    || (all.bookings || []).some((b) => (b.passengers || []).includes(m) || (b.refs && m in b.refs))
+    || (all.packing || []).some((p) => p.owner === m);
+}
+function renameMember(all, from, to) {
+  const ren = (arr) => (Array.isArray(arr) ? arr.map((x) => (x === from ? to : x)) : arr);
+  const renKey = (o) => (o && from in o ? Object.fromEntries(Object.entries(o).map(([k, v]) => [k === from ? to : k, v])) : o);
+  (all.expenses || []).forEach((e) => {
+    if (!(e.paidBy === from || (e.splitWith || []).includes(from) || (e.settled && from in e.settled))) return;
+    store.update(trip.id, "expenses", e.id, { paidBy: e.paidBy === from ? to : e.paidBy || "", ...(e.splitWith ? { splitWith: ren(e.splitWith) } : {}), settled: renKey(e.settled || {}) });
+  });
+  (all.bookings || []).forEach((b) => {
+    if (!((b.passengers || []).includes(from) || (b.refs && from in b.refs))) return;
+    store.update(trip.id, "bookings", b.id, { ...(b.passengers ? { passengers: ren(b.passengers) } : {}), ...(b.refs ? { refs: renKey(b.refs) } : {}) });
+  });
+  (all.packing || []).forEach((p) => { if (p.owner === from) store.update(trip.id, "packing", p.id, { owner: to }); });
+  if (userDoc?.me?.[trip.id] === from) { userDoc = { ...userDoc, me: { ...(userDoc.me || {}), [trip.id]: to } }; store.setUser({ me: { [trip.id]: to } }); }
+}
+
 /* ---------- Pop-up ยืนยัน ---------- */
 function confirmDialog({ title, message, okText = "ลบ", cancelText = "ยกเลิก", requireText = "", icon = "🗑️" }) {
   return new Promise((resolve) => {
@@ -3979,7 +4112,8 @@ function confirmDialog({ title, message, okText = "ลบ", cancelText = "ยก
     };
     const onKey = (e) => {
       if (e.key === "Escape") close(false);
-      else if (e.key === "Enter" && !ok.disabled) { e.preventDefault(); close(true); }
+      // Enter = ยืนยัน เฉพาะตอนพิมพ์ในช่องยืนยัน หรือโฟกัสที่ปุ่มยืนยัน (ปุ่มอื่นให้ทำงานตามปุ่มนั้น)
+      else if (e.key === "Enter" && !ok.disabled && (document.activeElement === inp || document.activeElement === ok)) { e.preventDefault(); close(true); }
     };
     document.addEventListener("keydown", onKey);
     wrap.addEventListener("click", (e) => {
@@ -4010,7 +4144,8 @@ async function confirmDelete(sub, id) {
   if (id === editingWishId) closeWishForm();
   if (id === editingExpenseId) stopEditExpense();
   // กิจกรรมที่มีรูป: ลบรูปตามหลังหมดเวลา "เลิกทำ"
-  const phTimer = sub === "items" && photosOf(id).length ? setTimeout(() => deleteItemPhotos(tripId, id), 9000) : null;
+  const pids = sub === "items" ? photosOf(id).map((p) => p.id) : [];
+  const phTimer = pids.length ? setTimeout(() => deleteItemPhotos(tripId, id, pids), 9000) : null;
   toast(`ลบ “${name}” แล้ว`, () => { clearTimeout(phTimer); store.set(tripId, sub, id, copy); toast("กู้คืนแล้ว"); });
 }
 
@@ -4022,7 +4157,7 @@ async function downloadBackup() {
     const { id, ...tripData } = trip;
     // ข้อมูลส่วนตัวของฉัน (อ่านครั้งเดียว)
     const mine = await new Promise((res) => { let un = null; let done = false; un = store.listenPrivate(id, (p) => { if (done) return; done = true; res(p || {}); setTimeout(() => un?.(), 0); }); setTimeout(() => { if (!done) { done = true; res({}); } }, 4000); });
-    const payload = { app: "trip-planner", version: 1, exportedAt: new Date().toISOString(), tripId: id, trip: tripData, subs, private: Object.keys(mine).length ? mine : undefined };
+    const payload = { app: "trip-planner", version: 1, exportedAt: new Date().toISOString(), tripId: id, trip: tripData, subs, owner: myEmail() || "local", private: Object.keys(mine).length ? mine : undefined };
     const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
@@ -4045,9 +4180,11 @@ async function restoreBackup(file) {
     okText: "กู้คืน", icon: "💾",
   });
   if (!yes) return;
-  const id = store.createTrip({ ...j.trip, name: `${j.trip.name} (กู้คืน)`, createdAt: Date.now() });
+  const emails = useAccount() ? [...new Set([...(j.trip.emails || []), myEmail()])] : j.trip.emails;
+  const id = store.createTrip({ ...j.trip, ...(emails ? { emails } : {}), name: `${j.trip.name} (กู้คืน)`, createdAt: Date.now() });
   for (const s of ALL_SUBS) for (const { id: did, ...d } of j.subs?.[s] || []) store.set(id, s, did, d); // ใช้ id เดิม → ลิงก์ระหว่างแพลน/การจอง/Wishlist ยังอยู่ครบ
-  if (j.private && store.setPrivate) store.setPrivate(id, j.private);
+  // ข้อมูลส่วนตัว (ชื่อในพาสปอร์ต ประกัน ฯลฯ) กู้คืนเฉพาะไฟล์ของบัญชีเดียวกัน — ไฟล์ของเพื่อนจะไม่ทับข้อมูลเรา
+  if (j.private && store.setPrivate && (!useAccount() || j.owner === myEmail())) store.setPrivate(id, j.private);
   toast("กู้คืนแล้ว");
   location.hash = "#/trip/" + id;
 }
@@ -4072,7 +4209,7 @@ function onChange(e) {
   if (el.name === "kind" && el.form?.id === "item-form") el.form.classList.toggle("is-bag", el.value === "bag");
   if (el.id === "photo-input") { const files = [...el.files]; el.value = ""; if (files.length) addPhotoFiles(files); return; }
   // ฟอร์มทริป: พิมพ์ชื่อประเทศ → เลือกประเทศปลายทางให้ / เลือกประเทศ → ตั้งสกุลเงินให้
-  if ((el.name === "country" || el.name === "destCode") && el.form?.elements.destCode && el.form?.elements.currency) {
+  if ((el.name === "country" || el.name === "destCode") && el.form?.id === "create-form" && el.form?.elements.destCode && el.form?.elements.currency) {
     const fe = el.form.elements;
     if (el.name === "country") { const g = guessDest(el.value); if (g !== "OTHER" && fe.destCode.value === "OTHER") fe.destCode.value = g; }
     const cur = IMMI.countries?.[fe.destCode.value]?.currency;
@@ -4096,7 +4233,8 @@ function onChange(e) {
   } else if (el.dataset.action === "settle") {
     const e = data.expenses.find((x) => x.id === el.dataset.id);
     if (e) {
-      store.update(trip.id, "expenses", e.id, stamp({ settled: { ...(e.settled || {}), [el.dataset.m]: el.checked } }));
+      // อัปเดตเฉพาะช่องของคนนี้ (กันติ๊กพร้อมกันแล้วทับกัน)
+      store.update(trip.id, "expenses", e.id, stamp({ ["settled." + el.dataset.m]: el.checked }));
       toast(el.checked ? `✓ ${el.dataset.m} โอนคืน ${e.paidBy} แล้ว (${e.title})` : "ยกเลิกติ๊กแล้ว");
     }
   } else if (el.dataset.action === "shop-bought") {
@@ -4153,9 +4291,39 @@ function onSubmit(e) {
     case "trip-form": {
       const t = readTripForm(form);
       if (!t) return;
+      // ลบ/เปลี่ยนชื่อสมาชิกที่ยังมีค่าใช้จ่าย/การจองอยู่ → ต้องย้ายชื่อในข้อมูลด้วย ไม่งั้นยอดหารเงินเพี้ยน
+      const removed = members().filter((m) => !t.members.includes(m));
+      if (removed.length && !form.dataset.renameOk) {
+        const added = t.members.filter((m) => !members().includes(m));
+        (async () => {
+          const all = await store.getAll(trip.id, ["expenses", "bookings", "packing"]);
+          const used = removed.filter((m) => memberUsed(all, m));
+          if (!used.length) { form.dataset.renameOk = "1"; form.requestSubmit(); return; }
+          if (removed.length === 1 && added.length === 1) {
+            const [from, to] = [removed[0], added[0]];
+            const ok = await confirmDialog({ title: `เปลี่ยนชื่อ “${from}” เป็น “${to}”?`, message: "จะเปลี่ยนชื่อในค่าใช้จ่าย การหารเงิน การจอง และของที่ต้องเตรียมให้ด้วย ยอดโอนจะได้ไม่เพี้ยน", okText: "เปลี่ยนชื่อ", cancelText: "ยกเลิก", icon: "✏️" });
+            if (!ok) return;
+            renameMember(all, from, to);
+            form.dataset.renameFrom = from;
+            form.dataset.renameOk = "1";
+            form.requestSubmit();
+          } else {
+            await confirmDialog({ title: "ยังลบชื่อนี้ไม่ได้", message: `ยังมีค่าใช้จ่าย/การจอง/ของที่ต้องเตรียมที่ใช้ชื่อ <b>${used.map(esc).join(", ")}</b> — ถ้าจะเปลี่ยนชื่อ ให้แก้ทีละคน (ลบชื่อเก่า 1 ชื่อ + ใส่ชื่อใหม่ 1 ชื่อ) หรือลบ/แก้รายการเหล่านั้นก่อน`, okText: "เข้าใจแล้ว", cancelText: "ปิด", icon: "⚠️" });
+          }
+        })();
+        return;
+      }
+      const rf = form.dataset.renameFrom;
+      delete form.dataset.renameOk; delete form.dataset.renameFrom;
+      if (rf && useAccount()) {
+        const to = t.members.find((m) => !members().includes(m));
+        const em = (trip.memberEmails || {})[rf];
+        if (to && em && t.memberEmails && !t.memberEmails[to]) { t.memberEmails[to] = em; t.emails = [...new Set([...(t.emails || []), em])]; }
+      }
       delete t.useChecklist;
       const curChanged = t.currency !== tripCur();
-      if (curChanged) Object.assign(t, { rate: 0, rateDate: "", rateUpdated: "", rateSource: "" });
+      if (curChanged) Object.assign(t, { rate: num((trip.rates || {})[t.currency]), rateDate: "", rateUpdated: "", rateSource: "",
+        rates: { ...(trip.rates || {}), ...(num(trip.rate) && tripCur() !== "THB" ? { [tripCur()]: num(trip.rate) } : {}) } });
       store.updateTrip(trip.id, t);
       if (curChanged) updateRate(trip.id, t.currency, true);
       toast("บันทึกข้อมูลทริปแล้ว");
@@ -4163,6 +4331,7 @@ function onSubmit(e) {
       return;
     }
     case "item-form": {
+      if (photoBusy) { toast("รอย่อรูปให้เสร็จก่อน แล้วค่อยกดบันทึก"); return; }
       const legs = readLegs();
       const rec = {
         date: f.date, time: f.time, activity: f.activity.trim(), place: f.place.trim(),
@@ -4189,7 +4358,7 @@ function onSubmit(e) {
         rec.optionPick = "";
         rec.optionDone = doneOf(old0).filter((v) => op.picks.includes(v));
       }
-      const pp = itemPatchFromPicks({ place: rec.place }, op.list, op.picks);
+      const pp = itemPatchFromPicks({ place: rec.place, costFromPicks: old0?.costFromPicks && num(rec.cost) === num(old0.cost) }, op.list, op.picks);
       delete pp.lat; delete pp.lng; delete pp.geoFail;
       Object.assign(rec, pp);
       const c = coordsFromLink(rec.place);
@@ -4212,7 +4381,7 @@ function onSubmit(e) {
     }
     case "wish-form": {
       const rec = {
-        name: f.name.trim(), category: f.category, place: f.place.trim(), link: f.link.trim(), note: f.note.trim(),
+        name: f.name.trim(), category: f.category, place: f.place.trim(), link: safeUrl(f.link), note: f.note.trim(),
         priority: num(f.priority) || 2, source: f.source.trim(),
         mustTry: f.mustTry.trim(), timeNeeded: f.timeNeeded.trim(), access: f.access.trim(),
       };
@@ -4320,7 +4489,7 @@ async function init() {
   });
   app.addEventListener("submit", onSubmit);
   document.addEventListener("keydown", (e) => {
-    if (e.key !== "Escape" || document.querySelector(".modal-backdrop")) return;
+    if (e.key !== "Escape" || document.querySelector(".modal-backdrop, .ph-view, .taxi-full, #pdf-overlay")) return;
     const open = [...document.querySelectorAll(".sheet-backdrop:not([hidden])")].at(-1);
     if (open) requestCloseSheet(open.id);
   });
