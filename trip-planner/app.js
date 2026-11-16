@@ -1457,7 +1457,7 @@ function connectorHtml(prev, x) {
     ${legs.length
       ? `<ol class="legs">${legs.map((l) => `<li>${isFlightLeg(l) ? "✈️" : "🚃"} ${esc(legText(l))}</li>`).join("")}</ol>`
       : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
-    ${far && !flight && !legs.length ? `<div class="muted">ห่างกัน ~${Math.round(far).toLocaleString()} กม. — ไกลเกินจะประมาณให้ ใส่วิธีเดินทางเองในกิจกรรมนี้</div>` : ""}
+    ${far && !flight && !legs.length ? `<div class="muted">ห่างกัน ~${Math.round(far).toLocaleString()} กม. — ถ้าจริงๆ อยู่ใกล้กัน แปลว่าระบบหาตำแหน่งผิด <button type="button" class="btn small" data-action="geo-redo" data-a="${esc(prev.id)}" data-b="${esc(x.id)}">📍 หาตำแหน่งใหม่</button><br><small>ถ้ายังผิด: วางพิกัดในช่อง “สถานที่” (กดค้างใน Google Maps → ก๊อปตัวเลข)</small></div>` : ""}
     ${est ? `<div class="conn-est">${est.icon} ห่างกัน ~${fmtKm(est.km)} · ${est.mode} ~${est.min} นาที <small class="muted">(ประมาณจากระยะทาง)</small></div>` : ""}
     ${legs.length || eta || route ? `<div class="conn-meta">${legs.length && legsMinutes(x) ? `<b>เดินทางรวม ${fmtDur(legsMinutes(x))}</b>` : ""}${eta}${route && !flight ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทางจริง</a>` : ""}</div>` : ""}
     </div></details>
@@ -3025,21 +3025,54 @@ async function geocode(q, { local = true } = {}) {
 // ตำแหน่งที่ระบบหาให้เอง แต่ไกลจากที่พักเกิน 250 กม. → น่าจะได้ที่ผิด (ชื่อซ้ำ) ให้หาใหม่ครั้งเดียว
 const FAR_KM = 250;
 const geoSwept = new Set();
+// พิกัดที่ระบบหาเองของกิจกรรมนี้อยู่ที่ไหน (กิจกรรมจาก Wishlist ใช้พิกัดของ Wishlist)
+function coordHost(x) {
+  if (!x || coordsFromLink(x.place)) return null; // ใส่พิกัด/ลิงก์เองแล้ว → ไม่แตะ
+  if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) return { sub: "items", rec: x };
+  const w = x.wishId && data.wishlist.find((v) => v.id === x.wishId);
+  if (w && (x.place || "") === (w.place || w.name || "") && Number.isFinite(w.lat) && !coordsFromLink(w.place)) return { sub: "wishlist", rec: w };
+  return null;
+}
+function queueRecheck(h, force = false) {
+  if (!h || (!force && (h.rec.geoChecked || geoSwept.has(h.rec.id)))) return false;
+  const x = h.rec;
+  const q = placeQuery(x.place) || (h.sub === "wishlist" ? x.name : isLink(x.place) ? "" : x.activity);
+  if (!q) return false;
+  geoSwept.add(x.id);
+  geoTried.add(x.id);
+  geoQueue.push({ sub: h.sub, rec: x, q, recheck: true, tripId: trip.id });
+  return true;
+}
+// ตำแหน่งที่ระบบหาให้เองแต่น่าจะผิด (ชื่อซ้ำ) → หาใหม่ครั้งเดียว:
+// 1) ไกลจากที่พักทุกที่เกิน 250 กม.  2) จุดติดกันในวันเดียวกันห่างเกิน 80 กม. (ที่ไม่ใช่การบิน)
 function sweepFarCoords() {
-  if (!trip || !data.items) return;
+  if (!trip || !data.items || !navigator.onLine) return;
+  hotels().forEach((h) => { if (!hotelCoords(h)) ensureHotelCoords(h); }); // ต้องรู้ตำแหน่งที่พักก่อน ถึงจะเลือกที่ถูกได้
   const refs = geoRefs();
-  if (!trip || !refs.length || !navigator.onLine) return;
-  const bad = (x) => !x.geoChecked && Number.isFinite(x.lat) && Number.isFinite(x.lng) && !coordsFromLink(x.place) && refDist({ lat: x.lat, lng: x.lng }, refs) > FAR_KM;
+  if (!refs.length) return;
+  const far = (c) => refDist(c, refs) > FAR_KM;
   for (const [sub, list] of [["items", data.items || []], ["wishlist", data.wishlist || []]]) {
-    list.filter((x) => !geoSwept.has(x.id) && bad(x)).forEach((x) => {
-      geoSwept.add(x.id);
-      const q = placeQuery(x.place) || (sub === "wishlist" ? x.name : isLink(x.place) ? "" : x.activity);
-      if (!q) return;
-      geoTried.add(x.id);
-      geoQueue.push({ sub, rec: x, q, recheck: true, tripId: trip.id });
-    });
+    list.filter((x) => Number.isFinite(x.lat) && Number.isFinite(x.lng) && !coordsFromLink(x.place) && far({ lat: x.lat, lng: x.lng })).forEach((x) => queueRecheck({ sub, rec: x }));
   }
+  const byDay = {};
+  data.items.filter((x) => x.status !== "cancel").forEach((x) => (byDay[x.date] ||= []).push(x));
+  Object.values(byDay).forEach((list) => {
+    const s = sortItems(list);
+    for (let i = 1; i < s.length; i++) {
+      const a = s[i - 1], b = s[i];
+      if (legsOf(b).length || isFlightHop(a, b) || kindOf(a) === "move" || kindOf(b) === "move") continue;
+      const ca = itemCoords(a), cb = itemCoords(b);
+      if (ca && cb && distKm(ca, cb) > 80) { queueRecheck(coordHost(a)); queueRecheck(coordHost(b)); }
+    }
+  });
   runGeoQueue();
+}
+// ปุ่ม "หาตำแหน่งใหม่" ที่เส้นเชื่อม (ไกลเกินจะประมาณ)
+function redoGeo(ids) {
+  let n = 0;
+  ids.forEach((id) => { const x = data.items.find((i) => i.id === id); if (queueRecheck(coordHost(x), true)) n++; });
+  runGeoQueue();
+  toast(n ? `กำลังหาตำแหน่งใหม่ ${n} จุด…` : "จุดนี้ใส่พิกัด/ลิงก์ไว้เองแล้ว — แก้ที่ช่องสถานที่ของกิจกรรมนั้น");
 }
 
 async function ensureHotelCoords(h) {
@@ -4001,6 +4034,7 @@ function onClick(e) {
       });
     }
   }
+  else if (action === "geo-redo") redoGeo([b.dataset.a, b.dataset.b]);
   else if (action === "geo-retry") {
     const x = data.items.find((i) => i.id === id);
     if (x) { geoTried.delete(id); store.update(trip.id, "items", id, { geoFail: false }); queueItemGeocode({ ...x, geoFail: false }); toast("กำลังหาตำแหน่งใหม่…"); setTimeout(updateLegSuggest, 300); }
