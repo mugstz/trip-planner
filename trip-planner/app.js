@@ -1371,7 +1371,9 @@ function itemCoords(x) {
   const same = w && (x.place || "") === (w.place || w.name || "");
   return (same && wishCoords(w)) || coordsFromLink(x.place);
 }
-const routeEnd = (x) => { const c = itemCoords(x); return c ? `${c.lat},${c.lng}` : placeQuery(x.place) || ""; };
+// ชื่อที่ใช้ค้นหา: สถานที่ → ถ้าเป็นลิงก์สั้น (maps.app.goo.gl) ที่อ่านชื่อไม่ได้ ใช้ชื่อกิจกรรมแทน
+const itemQuery = (x) => placeQuery(x?.place) || x?.activity || "";
+const routeEnd = (x) => { const c = itemCoords(x); return c ? `${c.lat},${c.lng}` : itemQuery(x); };
 const dirUrlItems = (a, b) => {
   const o = routeEnd(a), d = routeEnd(b);
   return o && d ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(o)}&destination=${encodeURIComponent(d)}&travelmode=transit` : "";
@@ -1459,12 +1461,13 @@ function connectorHtml(prev, x) {
       : x.transport ? `<div>🚃 ${esc(x.transport)}</div>` : ""}
     ${far && !flight && !legs.length ? `<div class="muted">ห่างกัน ~${Math.round(far).toLocaleString()} กม. — ถ้าจริงๆ อยู่ใกล้กัน แปลว่าระบบหาตำแหน่งผิด <button type="button" class="btn small" data-action="geo-redo" data-a="${esc(prev.id)}" data-b="${esc(x.id)}">📍 หาตำแหน่งใหม่</button><br><small>ถ้ายังผิด: วางพิกัดในช่อง “สถานที่” (กดค้างใน Google Maps → ก๊อปตัวเลข)</small></div>` : ""}
     ${est ? `<div class="conn-est">${est.icon} ห่างกัน ~${fmtKm(est.km)} · ${est.mode} ~${est.min} นาที <small class="muted">(ประมาณจากระยะทาง)</small></div>` : ""}
+    ${!legs.length && !x.transport && !est && !far && !flight ? `<div class="muted">ยังหาตำแหน่งไม่ได้ เลยประมาณเวลาเดินทางไม่ได้ <button type="button" class="btn small" data-action="geo-redo" data-a="${esc(prev.id)}" data-b="${esc(x.id)}">📍 หาตำแหน่งใหม่</button><br><small>ลิงก์สั้นแบบ maps.app.goo.gl ไม่มีพิกัดในลิงก์ — วางพิกัดแทน (กดค้างใน Google Maps → ก๊อปตัวเลข)</small></div>` : ""}
     ${legs.length || eta || route ? `<div class="conn-meta">${legs.length && legsMinutes(x) ? `<b>เดินทางรวม ${fmtDur(legsMinutes(x))}</b>` : ""}${eta}${route && !flight ? `<a href="${esc(route)}" target="_blank" rel="noopener">🗺️ ดูเส้นทางจริง</a>` : ""}</div>` : ""}
     </div></details>
   </li>`;
 }
 
-const mapLinkItem = (x) => (x.place ? `<a href="${esc(mapUrl(x.place))}" target="_blank" rel="noopener">📍 ${esc(placeLabel(x.place, "เปิดแผนที่"))}</a>` : "");
+const mapLinkItem = (x) => (x.place ? `<a href="${esc(mapUrl(x.place))}" target="_blank" rel="noopener">📍 ${esc(placeLabel(x.place, x.activity || "เปิดแผนที่"))}</a>` : "");
 
 function itemHtml(x) {
   const st = x.status || "";
@@ -3031,12 +3034,12 @@ function coordHost(x) {
   if (Number.isFinite(x.lat) && Number.isFinite(x.lng)) return { sub: "items", rec: x };
   const w = x.wishId && data.wishlist.find((v) => v.id === x.wishId);
   if (w && (x.place || "") === (w.place || w.name || "") && Number.isFinite(w.lat) && !coordsFromLink(w.place)) return { sub: "wishlist", rec: w };
-  return null;
+  return { sub: "items", rec: x }; // ยังไม่มีพิกัด → หาให้กิจกรรมนี้
 }
 function queueRecheck(h, force = false) {
   if (!h || (!force && (h.rec.geoChecked || geoSwept.has(h.rec.id)))) return false;
   const x = h.rec;
-  const q = placeQuery(x.place) || (h.sub === "wishlist" ? x.name : isLink(x.place) ? "" : x.activity);
+  const q = h.sub === "wishlist" ? placeQuery(x.place) || x.name : itemQuery(x);
   if (!q) return false;
   geoSwept.add(x.id);
   geoTried.add(x.id);
@@ -3070,7 +3073,7 @@ function sweepFarCoords() {
 // ปุ่ม "หาตำแหน่งใหม่" ที่เส้นเชื่อม (ไกลเกินจะประมาณ)
 function redoGeo(ids) {
   let n = 0;
-  ids.forEach((id) => { const x = data.items.find((i) => i.id === id); if (queueRecheck(coordHost(x), true)) n++; });
+  ids.forEach((id) => { const x = data.items.find((i) => i.id === id); if (x && queueRecheck(coordHost(x), true)) { n++; if (x.geoFail) store.update(trip.id, "items", x.id, { geoFail: false }); } });
   runGeoQueue();
   toast(n ? `กำลังหาตำแหน่งใหม่ ${n} จุด…` : "จุดนี้ใส่พิกัด/ลิงก์ไว้เองแล้ว — แก้ที่ช่องสถานที่ของกิจกรรมนั้น");
 }
@@ -3259,7 +3262,7 @@ function queueWishGeocode(w) {
 function queueItemGeocode(x) {
   // ไม่เจอเมื่อไม่ถึง 1 วัน → ยังไม่ลองซ้ำ (ของเก่าที่บันทึกเป็น true จะลองใหม่ 1 ครั้ง)
   if (!x || !trip || itemCoords(x) || (typeof x.geoFail === "number" && Date.now() - x.geoFail < 864e5) || geoTried.has(x.id) || !navigator.onLine) return;
-  const q = placeQuery(x.place) || (isLink(x.place) ? "" : x.activity);
+  const q = itemQuery(x);
   if (!q) return;
   geoTried.add(x.id);
   geoQueue.push({ sub: "items", rec: x, q, tripId: trip.id });
